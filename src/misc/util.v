@@ -47,10 +47,12 @@ Proof. firstorder. Qed.
     such as inequality as separate relations rather than notations, so that the existing [symmetry]
     will work for them. However, this most likely breaks other things. *)
 
+(*
 Lemma biinduction_iff `{Biinduction R}
   (P1 : Prop) (P2 : R → Prop) (P2_proper : Proper ((=) ==> iff) P2) :
   (P1 ↔ P2 0) → (∀ n, P2 n ↔ P2 (1 + n)) → ∀ n, P1 ↔ P2 n.
 Proof. intros ? ?. apply biinduction; [solve_proper | easy | firstorder]. Qed.
+*)
 
 (* Isn't this in the stdlib? *)
 Definition is_Some `(x : option A) :=

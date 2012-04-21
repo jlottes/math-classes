@@ -1,187 +1,167 @@
-Require Import 
-  Ring abstract_algebra 
-  theory.rings theory.dec_fields.
+Require Import
+  abstract_algebra theory.subsetoids theory.common_props theory.subrings theory.products.
+Require Import Ring stdlib_ring.
 
-Inductive Frac R `{Rap : Equiv R} `{Rzero : Zero R} : Type := frac { num: R; den: R; den_ne_0: den ≠ 0 }.
-  (* We used to have [den] and [den_nonzero] bundled, which did work relatively nicely with Program, but the
-   extra messyness in proofs etc turned out not to be worth it. *)
-Arguments frac {R Rap Rzero} _ _ _.
-Arguments num {R Rap Rzero} _.
-Arguments den {R Rap Rzero} _.
-Arguments den_ne_0 {R Rap Rzero} _ _.
+Local Open Scope grp_scope. (* notation for inverse *)
+
+Definition FracPair (A:Type) := (A*A)%type.
+
+Definition Frac {A} {Ae:Equiv A} {Azero:Zero A} D : Subset (FracPair _) 
+  := λ f, let (a,b) := f in a ∊ D ∧ b ∊ D ₀.
+
+Definition frac_equiv {A} {Ae:Equiv A} {Amult:Mult A} (f f' : FracPair _)
+  := let (a,b) := f in let (c,d) := f' in a*d = b*c.
+
+Lemma frac_equiv_proper : Find_Proper_Signature (@frac_equiv) 0
+  (∀ `{CommutativeRing (R:=D)}, 
+    Proper ((Frac D,prod_equiv) ==> (Frac D,prod_equiv) ==> impl) frac_equiv).
+Proof. intro. intros. intros [a b] [c d] [[[??][??]][E1 E2]]
+                             [e f] [g h] [[[??][??]][E3 E4]].
+  intro E. simpl in E1,E2,E3,E4,E. simpl.
+  rewrite_on D <- E1. rewrite_on D <- E2. rewrite_on D <- E3. now rewrite_on D <- E4.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@frac_equiv) 0 _) => eexact frac_equiv_proper : typeclass_instances.
+
+Existing Instance NonZero_subset.
 
 Section contents.
-Context `{IntegralDomain R} `{∀ x y, Decision (x = y)}.
 
-Add Ring R: (stdlib_ring_theory R).
+  Context `(D:Subset A) `{CommutativeRing (A:=A) (R:=D)} `{!IntegralDomain D} `{∀ x y, Stable (x = y)}.
 
-Global Instance Frac_equiv : Equiv (Frac R) | 0 := λ x y, num x * den y = num y * den x.
+  Instance: SubSetoid (Ae:=prod_equiv) (Frac D).
+  Proof. split. apply _. intros [a b] [c d] [E1 E2] [??].
+    simpl in E1, E2. split. now rewrite <-E1. now rewrite <-E2.
+  Qed.
 
-Instance: Setoid (Frac R).
-Proof with auto.
-  split; red; unfold equiv, Frac_equiv.
-    reflexivity.
-   intros x y E. now symmetry.
-  intros [nx dx] [ny dy] [nz dz] V W. simpl in *.
-  apply (left_cancellation_ne_0 (.*.) dy)...
-  rewrite 2!associativity.
-  rewrite 2!(commutativity dy).
-  rewrite V, <- W. ring.
-Qed.
+  Add Ring D1 : (stdlib_ring_theory D).
 
-Global Instance Frac_dec : ∀ x y: Frac R, Decision (x = y)
-  := λ x y, decide_rel (=) (num x * den y) (num y * den x).
+  Global Instance: SubEquivalence (Frac D) (frac_equiv).
+  Proof. split.
+  + intros [a b] [??]. exact (commutativity a b).
+  + intros [a b] [??] [c d] [??] E. change (a*d = b*c) in E.
+    change (c*b = d*a). rewrite (commutativity (f:=(.*.)) c b).
+    rewrite <- E. exact (commutativity a d).
+  + intros [a b] [??] [c d] [??] [e f] [??] E1 E2.
+    change (a*d = b*c) in E1.
+    change (c*f = d*e) in E2.
+    change (a*f = b*e).
+    apply (left_cancellation (.*.) d D (a*f) (b*e)).
+    rewrite_on D -> (commutativity (f:=(.*.)) b e).
+    rewrite (associativity (f:=(.*.)) d e b).
+    rewrite (associativity (f:=(.*.)) d a f).
+    rewrite_on D -> (commutativity (f:=(.*.)) d a).
+    rewrite_on D -> E1. rewrite_on D <- E2.
+    subring D.
+  Qed.
 
-(* injection from R *)
-Global Program Instance Frac_inject: Cast R (Frac R) := λ r, frac r 1 _.
-Next Obligation. exact (is_ne_0 1). Qed.
+  Instance frac_equiv_ext : Equiv (FracPair _) :=
+    equiv_ext (Ae := prod_equiv) (Frac D) frac_equiv.
 
-Instance: Proper ((=) ==> (=)) Frac_inject.
-Proof. intros x1 x2 E. unfold equiv, Frac_equiv. simpl. now rewrite E. Qed.
+  Instance: SubSetoid (Frac D) := equiv_ext_subsetoid (Ae:=prod_equiv) (Frac D) frac_equiv.
 
-(* Relations, operations and constants *)
-Global Program Instance Frac_plus: Plus (Frac R) :=
-  λ x y, frac (num x * den y + num y * den x) (den x * den y) _.
-Next Obligation. destruct x, y. simpl. now apply mult_ne_0. Qed.
+  Instance frac_inject : Cast A (FracPair A) := λ x, pair x 1.
 
-Global Instance Frac_0: Zero (Frac R) := ('0 : Frac R).
-Global Instance Frac_1: One (Frac R) := ('1 : Frac R).
+  Instance frac_zero   : Zero   (FracPair _) := pair 0 1.
+  Instance frac_one    : One    (FracPair _) := pair 1 1.
+  Instance frac_plus   : Plus   (FracPair _) := λ f f', let (a,b) := f in let (c,d) := f' in pair (a*d + b*c) (b*d).
+  Instance frac_mult   : Mult   (FracPair _) := λ f f', let (a,b) := f in let (c,d) := f' in pair (a*c) (b*d).
+  Instance frac_negate : Negate (FracPair _) := λ f, let (a,b) := f in pair (- a) b.
+  Instance frac_inv    : Inv    (FracPair A) := λ f, let (a,b) := f in pair b a.
 
-Global Instance Frac_negate: Negate (Frac R) := λ x, frac (- num x) (den x) (den_ne_0 x).
+  Let ext_correct x `{!x ∊ Frac D} y `{!y ∊ Frac D} : x = y ↔ frac_equiv x y
+    := equiv_ext_correct (Ae:=prod_equiv) (Frac D) frac_equiv x y.
 
-Global Program Instance Frac_mult: Mult (Frac R) := λ x y, frac (num x * num y) (den x * den y) _.
-Next Obligation. destruct x, y. simpl. now apply mult_ne_0. Qed.
+  Local Ltac reduce :=
+   rewrite ext_correct; [ simpl | split; apply _ .. ].
+  Local Ltac dispatch1 E := change E; intros [a b] [??]; reduce; subring D.
+  Local Ltac dispatch2 E := change E; intros [a b] [??] [c d] [??]; reduce; subring D.
+  Local Ltac dispatch3 E := change E; intros [a b] [??] [c d] [??] [e f] [??]; reduce; subring D.
 
-Ltac unfolds := unfold Frac_negate, Frac_plus, equiv, Frac_equiv in *; simpl in *.
-Ltac ring_on_ring := repeat intro; unfolds; try ring.
+  Instance: CommutativeRing (Frac D).
+  Proof. split. split. split. split. split. apply _.
+  + dispatch3 (Associative (+) (Frac D)).
+  + change (SubSetoid_Binary_Morphism (+) (Frac D) (Frac D) (Frac D)).
+    split; try apply _. intros [a1 b1] [a2 b2] E1 [c1 d1] [c2 d2] E2. unfold_sigs.
+    rewrite ext_correct in E1,E2; try apply _. simpl in E1,E2.
+    destruct el, el0, el1, el2. split. split; split; apply _.
+    reduce. transitivity (d1 * (a1 * b2) * d2 + b1 * (c1 * d2) * b2). subring D.
+    rewrite_on D -> E1. rewrite_on D -> E2. subring D.
+  + change (0 ∊ (Frac D)). split; apply _.
+  + dispatch1 (LeftIdentity (+) 0 (Frac D)).
+  + dispatch1 (RightIdentity (+) 0 (Frac D)).
+  + change (SubSetoid_Morphism (-) (Frac D) (Frac D)).
+    split; try apply _. intros [a1 b1] [a2 b2] E1. unfold_sigs.
+    rewrite ext_correct in E1; try apply _. simpl in E1.
+    destruct el, el0. split. split; split; apply _.
+    reduce. rewrite <- (negate_mult_distr_l a1 b2). rewrite_on D -> E1. subring D.
+  + dispatch1 (LeftInverse (+) (-) 0 (Frac D)).
+  + dispatch1 (RightInverse (+) (-) 0 (Frac D)).
+  + dispatch2 (Commutative (+) (Frac D)).
+  + split. split. split. apply _.
+  - dispatch3 (Associative (.*.) (Frac D)).
+  - change (SubSetoid_Binary_Morphism (.*.) (Frac D) (Frac D) (Frac D)).
+    split; try apply _. intros [a1 b1] [a2 b2] E1 [c1 d1] [c2 d2] E2. unfold_sigs.
+    rewrite ext_correct in E1,E2; try apply _. simpl in E1,E2.
+    destruct el, el0, el1, el2. split. split; split; apply _.
+    reduce. transitivity ((a1*b2)*(c1*d2)). subring D.
+    rewrite_on D -> E1. rewrite_on D -> E2. subring D.
+  - change (1 ∊ (Frac D)). split; apply _.
+  - dispatch1 (LeftIdentity (.*.) 1 (Frac D)).
+  - dispatch1 (RightIdentity (.*.) 1 (Frac D)).
+  - dispatch2 (Commutative (.*.) (Frac D)).
+  + dispatch3 (LeftDistribute (.*.) (+) (Frac D)).
+  Qed.
 
-Lemma Frac_nonzero_num x : x ≠ 0 ↔ num x ≠ 0.
-Proof.
-  split; intros E F; apply E; unfolds.
-   rewrite F. ring.
-  rewrite right_identity in F.
-  rewrite F. apply left_absorb.
-Qed.
+  Instance: SubSetoid_Morphism (cast A (FracPair A)) D (Frac D).
+  Proof. split; try apply _. intros ?? E. unfold_sigs.
+    split. split; split; apply _. unfold cast, frac_inject.
+    reduce. rewrite_on D -> E. subring D.
+  Qed.
 
-Instance: Proper ((=) ==> (=) ==> (=)) Frac_plus.
-Proof with try ring.
-  intros x x' E y y' E'. unfolds.
-  transitivity (num x * den x' * den y * den y' + num y * den y' * den x * den x')...
-  rewrite E, E'...
-Qed.
+  Instance: Ring_Morphism (cast A (FracPair A)) D (Frac D).
+  Proof with try apply _. split... split...
+  + split... intros x ? y ?. change ( ' (x+y) = 'x + 'y ). unfold cast, frac_inject.
+    reduce. subring D.
+  + split... intros x ? y ?. change ( ' (x*y) = 'x * 'y ). unfold cast, frac_inject.
+    reduce. subring D.
+  + exists (1:A). exists (_:1 ∊ D). reflexivity.
+  Qed.
 
-Instance: Proper ((=) ==> (=)) Frac_negate.
-Proof.
-  intros x y E. unfolds.
-  rewrite <-negate_mult_distr_l, E. ring.
-Qed.
+  Instance: Injective (cast A (FracPair A)) D (Frac D).
+  Proof. rewrite <- (rng_mor_injective (R:=D) (R':=Frac D) (cast A (FracPair A))).
+    intros x ? E. change (pair x 1 = 0) in E.
+    rewrite ext_correct in E. simpl in E.
+    transitivity (x*1). now rewrite (mult_1_r x). rewrite E. exact (right_absorb 1).
+    split; apply _. apply _.
+  Qed.
 
-Instance: Proper ((=) ==> (=) ==> (=)) Frac_mult.
-Proof with try ring.
-  intros x y E x0 y0 E'. unfolds.
-  transitivity (num x * den y * (num x0 * den y0))...
-  rewrite E, E'...
-Qed.
+  Lemma frac_nonzero : (Frac D) ₀ = λ f, let (a,b) := f in a ∊ D ₀ ∧ b ∊ D ₀.
+  Proof. intros [a b]. split.
+  + intros [[??]nz]. split. split. apply _. mc_contradict nz.
+    reduce. rewrite_on D -> nz. subring D. apply _.
+  + intros [[? anz]?]. split. split; apply _. intro E1.
+    rewrite ext_correct in E1. simpl in E1.
+    mc_contradict anz. rewrite (mult_1_r a) in E1. now rewrite (right_absorb b) in E1.
+    split; apply _. apply _.
+  Qed.
 
-Global Instance: Ring (Frac R).
-Proof. repeat (split; try apply _); ring_on_ring. Qed.
+  Instance: Field (Frac D).
+  Proof. split. apply _.
+  + intro E1. rewrite ext_correct in E1; try apply _. simpl in E1.
+    rewrite (mult_1_l 1), (mult_1_l 0) in E1.
+    pose proof intdom_nontrivial. contradiction.
+  + change (SubSetoid_Morphism (⁻¹) (Frac D ₀) (Frac D ₀)).
+    split; try apply _. intros [a1 b1] [a2 b2] E1. unfold_sigs.
+    rewrite ext_correct in E1; try apply _. simpl in E1.
+    rewrite frac_nonzero in el, el0. destruct el, el0.
+    split. split. change ( (pair a1 b1)⁻¹ ∊ (Frac D) ₀ ). rewrite frac_nonzero. now split.
+                  change ( (pair a2 b2)⁻¹ ∊ (Frac D) ₀ ). rewrite frac_nonzero. now split.
+    reduce. now symmetry.
+  + intros [a b] el. rewrite frac_nonzero in el. destruct el. reduce. subring D.
+  Qed.
 
-Global Instance Frac_dec_recip: DecRecip (Frac R) := λ x,
-  match decide_rel (=) (num x) 0 with
-  | left _ => 0
-  | right P => frac (den x) (num x) P
-  end.
-
-Instance: Setoid_Morphism Frac_dec_recip.
-Proof.
-  split; try apply _.
-  intros [xn xd Px] [yn yd Py]. unfolds. unfold Frac_dec_recip. simpl.
-  case (decide_rel (=) xn 0); case (decide_rel (=) yn 0); intros Ey Ex; simpl.
-     reflexivity.
-    rewrite Ex. intros E. destruct Ey.
-    apply (right_cancellation_ne_0 (.*.) xd); trivial.
-    rewrite <-E. ring.
-   rewrite Ey. intros E. destruct Ex.
-   apply (right_cancellation_ne_0 (.*.) yd); trivial.
-   rewrite E. ring.
-  symmetry.
-  now rewrite (commutativity yd), (commutativity xd).
-Qed.
-
-Global Instance: DecField (Frac R).
-Proof.
-  constructor; try apply _.
-    red. unfolds.
-    rewrite 2!mult_1_r.
-    apply (is_ne_0 1).
-   unfold dec_recip, Frac_dec_recip.
-   case (decide_rel _); simpl; intuition.
-  intros [xn xs] Ex.
-  unfold dec_recip, Frac_dec_recip.
-  case (decide_rel _); simpl.
-   intros E. destruct Ex. unfolds. rewrite E. ring.
-  intros. ring_on_ring.
-Qed.
-
-Lemma Frac_dec_mult_num_den x :
-  x = 'num x / 'den x.
-Proof.
-  unfold dec_recip, Frac_dec_recip.
-  case (decide_rel _); simpl; intros E.
-   now destruct (den_ne_0 x).
-  unfolds. ring.
-Qed.
-
-(* A final word about inject *)
-Global Instance: SemiRing_Morphism Frac_inject.
-Proof.
-  repeat (constructor; try apply _); try reflexivity.
-   intros x y. change ((x + y) * (1 * 1) = (x * 1 + y * 1) * 1). ring.
-  intros x y. change ((x * y) * (1 * 1) = x * y * 1). ring.
-Qed.
-
-Global Instance: Injective Frac_inject.
-Proof.
-  repeat (constructor; try apply _).
-  intros x y. unfolds. rewrite 2!mult_1_r. intuition.
-Qed.
 End contents.
 
-Typeclasses Opaque Frac_equiv.
 
-Section morphisms.
-Context `{IntegralDomain R1} `{∀ x y : R1, Decision (x = y)}.
-Context `{IntegralDomain R2} `{∀ x y : R2, Decision (x = y)}.
-Context `(f : R1 → R2) `{!SemiRing_Morphism f} `{!Injective f}.
 
-Program Definition Frac_lift (x : Frac R1) : Frac R2 := frac (f (num x)) (f (den x)) _.
-Next Obligation.
-  apply injective_ne_0.
-  now apply (den_ne_0 x).
-Qed.
 
-Instance: Proper ((=) ==> (=)) Frac_lift.
-Proof.
-  intros x y E.
-  unfold equiv, Frac_equiv, Frac_lift in *. simpl.
-  now rewrite <-2!preserves_mult, E.
-Qed.
-
-Global Instance: SemiRing_Morphism Frac_lift.
-Proof.
-  pose proof (_:Ring (Frac R1)).
-  repeat (split; try apply _); unfold equiv, Frac_equiv, Frac_lift in *; simpl.
-     intros x y. now rewrite preserves_plus, ?preserves_mult.
-    now rewrite preserves_0, preserves_1.
-   intros x y. now rewrite ?preserves_mult.
-  now rewrite preserves_1.
-Qed.
-
-Global Instance: Injective Frac_lift.
-Proof.
-  split; try apply _.
-  intros x  y E.
-  unfold equiv, Frac_equiv, Frac_lift in *. simpl in *.
-  apply (injective f). now rewrite 2!preserves_mult.
-Qed.
-End morphisms.

@@ -21,3 +21,14 @@ Ltac solve_propholds :=
   | [ |- PropHolds (?P) ] => apply _
   | [ |- ?P ] => change (PropHolds P); apply _
   end.
+
+Ltac mc_contradict H :=
+  match goal with
+  |- PropHolds ?P => unfold PropHolds
+  | _ => idtac
+  end;
+  match type of H with
+  | PropHolds ?P => unfold PropHolds in H
+  | _ => idtac
+  end;
+  contradict H.

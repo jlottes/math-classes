@@ -1,124 +1,199 @@
-Require
-  theory.setoids.
 Require Import
-  Morphisms abstract_algebra.
+  theory.subsetoids theory.common_props.
+Require Import
+  abstract_algebra.
 
-Section semigroup_props.
-Context `{SemiGroup G}.
+Local Open Scope grp_scope. (* notation for inverse *)
+Local Notation e := mon_unit.
 
-Global Instance sg_op_mor_1: ∀ x, Setoid_Morphism (x &) | 0.
-Proof. split; try apply _. Qed.
+Lemma sg_op_closed `{GroupG: Group (G:=G)} `{x ∊ G} `{y ∊ G} : x & y ∊ G. Proof _.
+Hint Extern 0 (@Element _ _ (@sg_op _ _ _ _)) => eapply @sg_op_closed : typeclass_instances. 
 
-Global Instance sg_op_mor_2: ∀ x, Setoid_Morphism (& x) | 0.
-Proof. split; try apply _. solve_proper. Qed.
-End semigroup_props.
+Lemma sg_op_proper_fp : Find_Proper_Signature (@sg_op) 0
+  (∀ A Ae Sop S `{!@SemiGroup A Ae Sop S}, Proper ((S,=)==>(S,=)==>(S,=)) (&)).
+Proof. intros ?? ???. apply _. Qed.
+Hint Extern 0 (Find_Proper_Signature (@sg_op) 0 _) => eexact sg_op_proper_fp : typeclass_instances.
+
+Instance sg_op_sm1 `{SemiGroup (S:=G)} `{g ∊ G} : SubSetoid_Morphism (g &) G G. Proof submorphism_binary_1 (&) g.
+Instance sg_op_sm2 `{SemiGroup (S:=G)} `{g ∊ G} : SubSetoid_Morphism (& g) G G. Proof submorphism_binary_2 (&) g.
+
+Ltac structure_proper :=
+  intro; intros; intros ?? E ?; split; try apply _; rewrite <- E; apply _.
+
+Lemma semigroup_proper: Find_Proper_Signature (@SemiGroup) 0
+  (∀ A Ae Sop, Proper ((=)==>impl) (@SemiGroup A Ae Sop)).
+Proof. structure_proper. Qed.
+Hint Extern 0 (Find_Proper_Signature (@SemiGroup) 0 _) => eexact semigroup_proper : typeclass_instances.
+
+Lemma monoid_proper: Find_Proper_Signature (@Monoid) 0
+  (∀ A Ae Mop Munit, Proper ((=)==>impl) (@Monoid A Ae Mop Munit)).
+Proof. structure_proper. Qed.
+Hint Extern 0 (Find_Proper_Signature (@Monoid) 0 _) => eexact monoid_proper : typeclass_instances.
+
+Lemma commonoid_proper: Find_Proper_Signature (@CommutativeMonoid) 0
+  (∀ A Ae Mop Munit, Proper ((=)==>impl) (@CommutativeMonoid A Ae Mop Munit)).
+Proof. structure_proper. Qed.
+Hint Extern 0 (Find_Proper_Signature (@CommutativeMonoid) 0 _) => eexact commonoid_proper : typeclass_instances.
+
+Section monoid_props.
+Context `{Monoid (M:=M)}.
+
+Lemma monoid_unit_unique_l x `{!x ∊ M} `{!LeftIdentity (&) x M} : x = e.
+Proof. now rewrite <- (right_identity x), (left_identity e). Qed.
+
+Lemma monoid_unit_unique_r x `{!x ∊ M} `{!RightIdentity (&) x M} : x = e.
+Proof. now rewrite <- (left_identity x), (right_identity e). Qed.
+
+End monoid_props.
+
+Lemma group_proper: Find_Proper_Signature (@Group) 0
+  (∀ A Ae Gop Gunit Ginv, Proper ((=)==>impl) (@Group A Ae Gop Gunit Ginv)).
+Proof. structure_proper. Qed.
+Hint Extern 0 (Find_Proper_Signature (@Group) 0 _) => eexact group_proper : typeclass_instances.
+
+Lemma abgroup_proper: Find_Proper_Signature (@AbGroup) 0
+  (∀ A Ae Gop Gunit Ginv, Proper ((=)==>impl) (@AbGroup A Ae Gop Gunit Ginv)).
+Proof. structure_proper. Qed.
+Hint Extern 0 (Find_Proper_Signature (@AbGroup) 0 _) => eexact abgroup_proper : typeclass_instances.
+
+Instance abgroup_is_commonoid `{AbGroup (G:=G)} : CommutativeMonoid G.
+Proof. split; apply _. Qed.
+
+Lemma inv_closed `{GroupG: Group (G:=G)} `{x ∊ G} : x⁻¹ ∊ G. Proof _.
+Hint Extern 1 (@Element _ _ (@inv _ _ _)) => eapply @inv_closed : typeclass_instances. 
+
+Lemma inv_proper_fp : Find_Proper_Signature (@inv) 0
+  (∀ A Ginv Ae Gop Gunit G `{@Group A Ae Gop Gunit Ginv G}, Proper ((G,=)==>(G,=)) (⁻¹)).
+Proof. intros ?? ?????. apply _. Qed.
+Hint Extern 0 (Find_Proper_Signature (@inv) 0 _) => eexact inv_proper_fp : typeclass_instances.
 
 Section group_props.
-Context `{Group G}.
-Global Instance negate_involutive: Involutive (-).
+Context `{GroupG: Group (G:=G)}.
+
+Global Instance inverse_involutive: Involutive (⁻¹) G.
 Proof.
-  intros x.
+  intros x ?.
   rewrite <-(left_identity x) at 2.
-  rewrite <-(left_inverse (- x)).
-  rewrite <-associativity.
-  rewrite left_inverse.
-  now rewrite right_identity.
+  rewrite_on G <-(left_inverse x⁻¹).
+  rewrite_on G <-(associativity (x⁻¹)⁻¹ x⁻¹ x).
+  rewrite_on G ->(left_inverse x).
+  now rewrite (right_identity (x⁻¹)⁻¹).
 Qed.
 
-Global Instance: Injective (-).
+Global Instance: Injective (⁻¹) G G.
 Proof.
-  repeat (split; try apply _).
-  intros x y E.
-  now rewrite <-(involutive x), <-(involutive y), E.
+  split; try apply _.
+  intros x ? y ? E.
+  rewrite_on G <-(involutive x).
+  rewrite_on G <-(involutive y).
+  now rewrite_on G ->E.
 Qed.
 
-Lemma negate_mon_unit : -mon_unit = mon_unit.
-Proof. rewrite <-(left_inverse mon_unit) at 2. now rewrite right_identity. Qed.
+Lemma inv_mon_unit : e⁻¹ = e.
+Proof. rewrite <-(left_inverse e) at 2. now rewrite (right_identity e⁻¹). Qed.
 
-Global Instance: ∀ z : G, LeftCancellation (&) z.
+Global Instance group_left_cancellation z `{!z ∊ G} : LeftCancellation (&) z G.
 Proof.
-  intros z x y E.
-  rewrite <-(left_identity x), <-(left_inverse z), <-associativity.
-  rewrite E.
-  now rewrite associativity, left_inverse, left_identity.
+  intros x ? y ? E.
+  rewrite <-(left_identity x).
+  rewrite_on G <-(left_inverse z).
+  rewrite_on G <-(associativity z⁻¹ z x).
+  rewrite_on G ->E.
+  rewrite_on G ->(associativity z⁻¹ z y).
+  rewrite_on G ->(left_inverse z).
+  now rewrite (left_identity y).
 Qed.
 
-Global Instance: ∀ z : G, RightCancellation (&) z.
+Global Instance group_right_cancellation z `{!z ∊ G} : RightCancellation (&) z G.
 Proof.
-  intros z x y E.
-  rewrite <-(right_identity x), <-(right_inverse z), associativity.
-  rewrite E.
-  now rewrite <-associativity, right_inverse, right_identity.
+  intros x ? y ? E.
+  rewrite <-(right_identity x).
+  rewrite_on G <-(right_inverse z).
+  rewrite_on G ->(associativity x z z⁻¹).
+  rewrite_on G ->E.
+  rewrite_on G <-(associativity y z z⁻¹).
+  rewrite_on G ->(right_inverse z).
+  now rewrite (right_identity y).
 Qed.
 
-Lemma negate_sg_op_distr `{!AbGroup G} x y: -(x & y) = -x & -y.
+Lemma inv_sg_op_distr x `{!x ∊ G} y `{!y ∊ G}: (x & y)⁻¹ = y⁻¹ & x⁻¹.
 Proof.
-  rewrite <-(left_identity (-x & -y)).
-  rewrite <-(left_inverse (x & y)).
-  rewrite <-associativity.
-  rewrite <-associativity.
-  rewrite (commutativity (-x) (-y)).
-  rewrite (associativity y).
-  rewrite right_inverse.
-  rewrite left_identity.
-  rewrite right_inverse.
-  now rewrite right_identity.
+  rewrite <-(left_identity (y⁻¹ & x⁻¹)).
+  rewrite_on G <-(left_inverse (x & y)).
+  rewrite_on G <-(associativity (x & y)⁻¹ (x & y) (y⁻¹ & x⁻¹)).
+  rewrite_on G <-(associativity x y (y⁻¹ & x⁻¹)).
+  rewrite_on G ->(associativity y y⁻¹ x⁻¹).
+  rewrite_on G ->(right_inverse y).
+  rewrite_on G ->(left_identity x⁻¹).
+  rewrite_on G ->(right_inverse x).
+  now rewrite (right_identity (x & y)⁻¹).
 Qed.
+
 End group_props.
 
-Section groupmor_props.
-  Context `{Group A} `{Group B} {f : A → B} `{!Monoid_Morphism f}.
+Lemma abgroup_inv_distr `{AbGroup (G:=G)} x `{!x ∊ G} y `{!y ∊ G}: (x & y)⁻¹ = x⁻¹ & y⁻¹.
+Proof. rewrite (inv_sg_op_distr x y). apply commutativity; apply _. Qed.
 
-  Lemma preserves_negate x : f (-x) = -f x.
-  Proof.
-    apply (left_cancellation (&) (f x)).
-    rewrite <-preserves_sg_op.
-    rewrite 2!right_inverse.
+Section groupmor_props.
+  Context `{G:Subset A} `{H:Subset B} `{Group (A:=A) (G:=G)} `{Group (A:=B) (G:=H)} {f : A → B} `{!SemiGroup_Morphism f G H}.
+
+  Global Instance: Monoid_Morphism f G H.
+  Proof with try apply _. split...
+    eapply (right_cancellation (&) (f e))...
+    rewrite <-preserves_sg_op...
+    rewrite_on G ->(left_identity (e:A)).
+    rewrite left_identity...
+    reflexivity.
+  Qed.
+
+  Lemma preserves_inverse x `{!x ∊ G}: f x⁻¹ = (f x)⁻¹.
+  Proof with try apply _.
+    eapply (left_cancellation (&) (f x))...
+    rewrite <-preserves_sg_op...
+    rewrite_on G ->(right_inverse x).
+    rewrite right_inverse...
     apply preserves_mon_unit.
   Qed.
 End groupmor_props.
 
-Instance semigroup_morphism_proper {A B eA eB opA opB} :
-  Proper ((=) ==> iff) (@SemiGroup_Morphism A B eA eB opA opB) | 1.
-Proof.
-  assert (∀ (f g : A → B), g = f → SemiGroup_Morphism f → SemiGroup_Morphism g) as P.
-   intros f g E [? ? ? ?].
-   split; try apply _.
-    eapply setoids.morphism_proper; eauto.
-   intros x y. now rewrite (E (x & y)), (E x), (E y).
-  intros f g ?; split; intros Mor.
-   apply P with f. destruct Mor. now symmetry. apply _.
-  now apply P with g.
-Qed.
+Ltac structure_mor_proper mor_a mor_b :=
+  intro; intros; intros S1 S2 ES T1 T2 ET ?; mor_a; mor_b;
+  split; [ now rewrite <-ES | now rewrite <-ET | rewrite <-ES, <-ET; apply _ | ..].
 
-Instance monoid_morphism_proper {A B eA eB opA uA opB uB} :
-  Proper ((=) ==> iff) (@Monoid_Morphism A B eA eB opA uA opB uB) | 1.
-Proof.
-  assert (∀ (f g : A → B), g = f → Monoid_Morphism f → Monoid_Morphism g) as P.
-   intros f g E [? ? ? ?].
-   split; try apply _.
-    eapply semigroup_morphism_proper; eauto.
-   now rewrite (E mon_unit mon_unit).
-  intros f g ?; split; intros Mor.
-   apply P with f. destruct Mor. now symmetry. apply _.
-  now apply P with g.
+Lemma semigroup_morphism_proper: Find_Proper_Signature (@SemiGroup_Morphism) 0
+  (∀ A Ae B Be Sop Top f, Proper ((=) ==> (=) ==> impl) (@SemiGroup_Morphism A Ae B Be Sop Top f)).
+Proof. structure_mor_proper ltac:(pose proof sgmor_a) ltac:(pose proof sgmor_b).
+  intros x Hx y Hy. rewrite <-ES in Hx. rewrite <-ES in Hy. apply preserves_sg_op; apply _.
 Qed.
+Hint Extern 0 (Find_Proper_Signature (@SemiGroup_Morphism) 0 _) => eexact semigroup_morphism_proper : typeclass_instances.
+
+Lemma monoid_morphism_proper: Find_Proper_Signature (@Monoid_Morphism) 0
+  (∀ A Ae B Be Sunit Tunit Sop Top f,
+    Proper ((=) ==> (=) ==> impl) (@Monoid_Morphism A Ae B Be Sunit Tunit Sop Top f)).
+Proof. structure_mor_proper ltac:(pose proof monmor_a) ltac:(pose proof monmor_b).
+  apply preserves_mon_unit.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@Monoid_Morphism) 0 _) => eexact monoid_morphism_proper : typeclass_instances.
 
 Section from_another_sg.
-  Context `{SemiGroup A} `{Setoid B}
-   `{Bop : SgOp B} (f : B → A) `{!Injective f} (op_correct : ∀ x y, f (x & y) = f x & f y).
+  Context {A} {Ae:Equiv A} {S:Subset A} {Sop:SgOp A} `{!SemiGroup S}.
+  Context `{SubSetoid (A:=B) (S:=T)} {Top:SgOp B} `{!SubSetoid_Binary_Morphism (&) T T T}.
+  Context (f : B → A) `{!Injective f T S} (op_correct : ∀ x `{!x ∊ T} y `{!y ∊ T}, f (x & y) = f x & f y).
 
-  Instance: Setoid_Morphism f := injective_mor f.
-  Instance: Proper ((=) ==> (=) ==> (=)) Bop.
-  Proof. intros ? ? E1 ? ? E2. apply (injective f). rewrite 2!op_correct. apply sg_op_proper; now apply sm_proper. Qed.
-
-  Lemma projected_sg: SemiGroup B.
-  Proof.
-    split; try apply _.
-    repeat intro; apply (injective f). now rewrite !op_correct, associativity.
+  Existing Instance injective_mor.
+  Lemma projected_sg: SemiGroup T.
+  Proof with try apply _.
+    split... intros ??????. apply (injective f)...
+    rewrite op_correct...
+    rewrite_on S -> (op_correct y _ z _).
+    rewrite op_correct...
+    rewrite_on S -> (op_correct x _ y _).
+    rewrite_on S -> (associativity (f x) (f y) (f z)).
+    reflexivity.
   Qed.
 End from_another_sg.
 
+(*
 Section from_another_com_sg.
   Context `{CommutativeSemiGroup A} `{Setoid B}
    `{Bop : SgOp B} (f : B → A) `{!Injective f} (op_correct : ∀ x y, f (x & y) = f x & f y).
@@ -129,20 +204,28 @@ Section from_another_com_sg.
     repeat intro; apply (injective f). now rewrite !op_correct, commutativity.
   Qed.
 End from_another_com_sg.
+*)
 
+(*
 Section from_another_monoid.
-  Context `{Monoid A} `{Setoid B}
-   `{Bop : SgOp B} `{Bunit : MonUnit B} (f : B → A) `{!Injective f}
-   (op_correct : ∀ x y, f (x & y) = f x & f y) (unit_correct : f mon_unit = mon_unit).
+  Context `{Monoid (M:=M)}.
+  Context `{SubSetoid (A:=B) (S:=N)} {Nunit: MonUnit B} `{!e ∊ N}
+          {Nop:SgOp B} `{!SubSetoid_Binary_Morphism (&) N N N}.
+  Context (f : B → A) `{!Injective f N M} (op_correct : ∀ x `{!x ∊ N} y `{!y ∊ N}, f (x & y) = f x & f y)
+    (unit_correct : f e = e).
 
-  Lemma projected_monoid: Monoid B.
-  Proof.
-    split. now apply (projected_sg f).
-     repeat intro; apply (injective f). now rewrite op_correct, unit_correct, left_identity.
-    repeat intro; apply (injective f). now rewrite op_correct, unit_correct, right_identity.
+  Existing Instance injective_mor.
+
+  Lemma projected_monoid: Monoid N.
+  Proof with try apply _.
+    split... now apply (projected_sg f).
+     intros ??. apply (injective f)... rewrite op_correct, unit_correct, left_identity... reflexivity.
+    intros ??. apply (injective f)... rewrite op_correct, unit_correct, right_identity... reflexivity.
   Qed.
 End from_another_monoid.
+*)
 
+(*
 Section from_another_com_monoid.
   Context `{CommutativeMonoid A} `{Setoid B}
    `{Bop : SgOp B} `{Bunit : MonUnit B} (f : B → A) `{!Injective f}
@@ -185,3 +268,5 @@ Section from_another_ab_group.
     repeat intro; apply (injective f). now rewrite op_correct, commutativity.
   Qed.
 End from_another_ab_group.
+
+*)
