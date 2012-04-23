@@ -33,12 +33,12 @@ Section defs.
 
 End defs.
 
-Hint Extern 0 (@Equiv  (@SubsetSig _ _)) => eapply @subsetsig_equiv  : typeclass_instances.
-Hint Extern 0 (@Zero   (@SubsetSig _ _)) => eapply @subsetsig_zero   : typeclass_instances.
-Hint Extern 0 (@One    (@SubsetSig _ _)) => eapply @subsetsig_one    : typeclass_instances.
-Hint Extern 0 (@Plus   (@SubsetSig _ _)) => eapply @subsetsig_plus   : typeclass_instances.
-Hint Extern 0 (@Mult   (@SubsetSig _ _)) => eapply @subsetsig_mult   : typeclass_instances.
-Hint Extern 0 (@Negate (@SubsetSig _ _)) => eapply @subsetsig_negate : typeclass_instances.
+Hint Extern 0 (@Equiv  (@SubsetSig _ ?S)) => eapply (subsetsig_equiv  S) : typeclass_instances.
+Hint Extern 0 (@Zero   (@SubsetSig _ ?S)) => eapply (subsetsig_zero   S) : typeclass_instances.
+Hint Extern 0 (@One    (@SubsetSig _ ?S)) => eapply (subsetsig_one    S) : typeclass_instances.
+Hint Extern 0 (@Plus   (@SubsetSig _ ?S)) => eapply (subsetsig_plus   S) : typeclass_instances.
+Hint Extern 0 (@Mult   (@SubsetSig _ ?S)) => eapply (subsetsig_mult   S) : typeclass_instances.
+Hint Extern 0 (@Negate (@SubsetSig _ ?S)) => eapply (subsetsig_negate S) : typeclass_instances.
 
 
 Class SubsetSig_Quote `{Ae:Equiv A} (S:Subset A) x (sx : SubsetSig S) := subsetsig_quote_eq : x = ` sx.
