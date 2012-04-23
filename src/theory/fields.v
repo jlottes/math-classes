@@ -9,7 +9,7 @@ Existing Instance NonZero_subset.
 Lemma field_proper: Find_Proper_Signature (@Field) 0
   (∀ A Ae Aplus Amult Azero Aone Anegate Ainv,
    Proper ((=)==>impl) (@Field A Ae Aplus Amult Azero Aone Anegate Ainv)).
-Proof. intro. intros. intros S T E ?. split; try apply _; rewrite <-E; apply _. Qed.
+Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@Field) 0 _) => eexact field_proper : typeclass_instances.
 
 Lemma mult_inv_closed `{Field (F:=F)} x `{!x ∊ F ₀} : x⁻¹ ∊ F ₀.
@@ -26,17 +26,17 @@ Section props.
     intros x ? y [? yn0]. change (x*y ∊ F ₀). split...
     intro E. mc_contradict yn0.
       rewrite <- (mult_1_l y).
-      rewrite_on F <- (field_inv_l x _).
+      rewrite_on F <- (field_inv_l x).
       rewrite <- (associativity x⁻¹ x y).
       rewrite_on F -> E.
       exact (right_absorb x⁻¹).
     intros x ?.
-    rewrite (commutativity x x⁻¹). exact (field_inv_l x _).
+    rewrite (commutativity x x⁻¹). exact (field_inv_l x).
     rewrite (_:F ₀ ⊆ F)...
   Qed.
 
-  Lemma mult_inv_l x `{!x ∊ F ₀} : x⁻¹ * x = 1. Proof field_inv_l x _.
-  Lemma mult_inv_r x `{!x ∊ F ₀} : x / x = 1. Proof inverse_r (G:=(F ₀)) x _.
+  Lemma mult_inv_l x `{!x ∊ F ₀} : x⁻¹ * x = 1. Proof field_inv_l x.
+  Lemma mult_inv_r x `{!x ∊ F ₀} : x / x = 1. Proof inverse_r (G:=(F ₀)) x.
   Lemma mult_inv_involutive x `{!x ∊ F ₀} : (x⁻¹)⁻¹ = x. Proof involutive (S:=(F ₀)) x.
 
   Lemma field_units : RingUnits F = F ₀.

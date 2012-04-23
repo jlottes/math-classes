@@ -64,13 +64,13 @@ Hint Extern 0 (Find_Proper_Signature (@negate) 0 _) => eexact negate_proper : ty
 Lemma rng_proper: Find_Proper_Signature (@Rng) 0
   (∀ A Ae Aplus Amult Azero Anegate,
    Proper ((=)==>impl) (@Rng A Ae Aplus Amult Azero Anegate)).
-Proof. intros ??????. intros S T E ?. split; try apply _; rewrite <- E; apply _. Qed.
+Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@Rng) 0 _) => eexact rng_proper : typeclass_instances.
 
 Lemma ring_proper: Find_Proper_Signature (@Ring) 0
   (∀ A Ae Aplus Amult Azero Aone Anegate,
    Proper ((=)==>impl) (@Ring A Ae Aplus Amult Azero Aone Anegate)).
-Proof. intros ???????. intros S T E ?. split; try apply _; rewrite <- E; apply _. Qed.
+Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@Ring) 0 _) => eexact ring_proper : typeclass_instances.
 
 Instance ring_is_rng `{Ring (R:=R)} : Rng R := {}.
@@ -78,7 +78,7 @@ Instance ring_is_rng `{Ring (R:=R)} : Rng R := {}.
 Lemma comring_proper: Find_Proper_Signature (@CommutativeRing) 0
   (∀ A Ae Aplus Amult Azero Aone Anegate,
    Proper ((=)==>impl) (@CommutativeRing A Ae Aplus Amult Azero Aone Anegate)).
-Proof. intros ???????. intros S T E ?. split; try apply _; rewrite <- E; apply _. Qed.
+Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@CommutativeRing) 0 _) => eexact comring_proper : typeclass_instances.
 
 Instance comring_is_ring `{CommutativeRing (R:=R)} : Ring R.
@@ -93,7 +93,7 @@ Qed.
 Lemma intdomain_proper: Find_Proper_Signature (@IntegralDomain) 0
   (∀ A Ae Aplus Amult Azero Aone Anegate,
    Proper ((=)==>impl) (@IntegralDomain A Ae Aplus Amult Azero Aone Anegate)).
-Proof. intros ???????. intros S T E [???]. split; try apply _; rewrite <- E; apply _. Qed.
+Proof. intro. intros. intros S T E [???]. split; try apply _; rewrite <- E; apply _. Qed.
 Hint Extern 0 (Find_Proper_Signature (@IntegralDomain) 0 _) => eexact intdomain_proper : typeclass_instances.
 
 Lemma rng_is_ring `{Rng (A:=A) (R:=R)} {Aone: One A} `{!1 ∊ R} :

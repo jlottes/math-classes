@@ -35,7 +35,7 @@ Section contents.
 
   Add Ring D1 : (stdlib_ring_theory D).
 
-  Global Instance: SubEquivalence (Frac D) (frac_equiv).
+  Global Instance: SubEquivalence frac_equiv (Frac D).
   Proof. split.
   + intros [a b] [??]. exact (commutativity a b).
   + intros [a b] [??] [c d] [??] E. change (a*d = b*c) in E.

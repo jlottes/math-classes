@@ -3,6 +3,7 @@ Require Import abstract_algebra theory.subset.
 (* When the following properties hold, they hold also on subsets, and for any subrelations of (=). *)
 
 Local Ltac solve := intro; intros; intros R1 R2 ER S1 S2 ES P ?; intros; unfold flip in *; apply ER; apply P; apply _.
+Lemma SubReflexive_proper   : Find_Proper_Signature (@SubReflexive)    0 (∀ A                , Proper (subrelation++>(⊆)-->impl) (@SubReflexive    A                )). Proof. solve. Qed.
 Lemma Associative_proper    : Find_Proper_Signature (@Associative)     0 (∀ A f              , Proper (subrelation++>(⊆)-->impl) (@Associative     A f              )). Proof. solve. Qed.
 Lemma Commutative_proper    : Find_Proper_Signature (@Commutative)     0 (∀ A B f            , Proper (subrelation++>(⊆)-->impl) (@Commutative     A B f            )). Proof. solve. Qed.
 Lemma LeftIdentity_proper   : Find_Proper_Signature (@LeftIdentity)    0 (∀ A B op x         , Proper (subrelation++>(⊆)-->impl) (@LeftIdentity    A B op x         )). Proof. solve. Qed.
@@ -15,6 +16,7 @@ Lemma Involutive_proper     : Find_Proper_Signature (@Involutive)      0 (∀ A 
 Lemma LeftDistribute_proper : Find_Proper_Signature (@LeftDistribute)  0 (∀ A f g            , Proper (subrelation++>(⊆)-->impl) (@LeftDistribute  A f g            )). Proof. solve. Qed.
 Lemma RightDistribute_proper: Find_Proper_Signature (@RightDistribute) 0 (∀ A f g            , Proper (subrelation++>(⊆)-->impl) (@RightDistribute A f g            )). Proof. solve. Qed.
 
+Hint Extern 0 (Find_Proper_Signature (@SubReflexive   ) 0 _) => eexact SubReflexive_proper    : typeclass_instances.
 Hint Extern 0 (Find_Proper_Signature (@Associative    ) 0 _) => eexact Associative_proper     : typeclass_instances.
 Hint Extern 0 (Find_Proper_Signature (@Commutative    ) 0 _) => eexact Commutative_proper     : typeclass_instances.
 Hint Extern 0 (Find_Proper_Signature (@LeftIdentity   ) 0 _) => eexact LeftIdentity_proper    : typeclass_instances.
@@ -26,6 +28,44 @@ Hint Extern 0 (Find_Proper_Signature (@RightInverse   ) 0 _) => eexact RightInve
 Hint Extern 0 (Find_Proper_Signature (@Involutive     ) 0 _) => eexact Involutive_proper      : typeclass_instances.
 Hint Extern 0 (Find_Proper_Signature (@LeftDistribute ) 0 _) => eexact LeftDistribute_proper  : typeclass_instances.
 Hint Extern 0 (Find_Proper_Signature (@RightDistribute) 0 _) => eexact RightDistribute_proper : typeclass_instances.
+
+Lemma SubIrreflexive_proper : Find_Proper_Signature (@SubIrreflexive) 0
+  (∀ A, Proper (subrelation-->(⊆)-->impl) (@SubIrreflexive A)).
+Proof. red. intros. intros R1 R2 ER S1 S2 ES P ?. intros. unfold flip in *.
+  pose proof (subirreflexivity R1 x) as Q. contradict Q. now apply ER.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@SubIrreflexive) 0 _) => eexact SubIrreflexive_proper : typeclass_instances.
+
+Lemma SubSymmetric_proper : Find_Proper_Signature (@SubSymmetric) 0
+  (∀ A, Proper (relation_equivalence==>(⊆)-->impl) (@SubSymmetric A)).
+Proof. intro. intros R1 R2 ER S1 S2 ES P ?. intros. unfold flip in *. apply ER. apply P; try apply _. now apply ER. Qed.
+Hint Extern 0 (Find_Proper_Signature (@SubSymmetric) 0 _) => eexact SubSymmetric_proper : typeclass_instances.
+
+Lemma SubTransitive_proper : Find_Proper_Signature (@SubTransitive) 0
+  (∀ A, Proper (relation_equivalence==>(⊆)-->impl) (@SubTransitive A)).
+Proof. intro. intros R1 R2 ER S1 S2 ES P x ? y ? z ? ??. unfold flip in *. apply ER.
+  apply (P x _ y _ z _); now apply ER.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@SubTransitive) 0 _) => eexact SubTransitive_proper : typeclass_instances.
+
+Lemma SubEquivalence_proper : Find_Proper_Signature (@SubEquivalence) 0
+  (∀ A, Proper (relation_equivalence==>(⊆)-->impl) (@SubEquivalence A)).
+Proof. intro. intros R1 R2 ER S1 S2 ES ?. unfold flip in *. split; rewrite <- ER, ES; apply _. Qed.
+Hint Extern 0 (Find_Proper_Signature (@SubEquivalence) 0 _) => eexact SubEquivalence_proper : typeclass_instances.
+
+Lemma SubAntiSymmetric_proper : Find_Proper_Signature (@SubAntiSymmetric) 0
+  (∀ A Ae, Proper (relation_equivalence==>(⊆)-->impl) (@SubAntiSymmetric A Ae)).
+Proof. red. intros. intros R1 R2 ER S1 S2 ES ?. unfold flip in *.
+  intros x ? y ? ??. apply (subantisymmetry R1 x y); now apply ER.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@SubAntiSymmetric) 0 _) => eexact SubAntiSymmetric_proper : typeclass_instances.
+
+Lemma TotalRelation_proper : Find_Proper_Signature (@TotalRelation) 0
+  (∀ A, Proper (subrelation++>(⊆)-->impl) (@TotalRelation A)).
+Proof. intro. intros R1 R2 ER S1 S2 ES P x ? y ?. unfold flip in *.
+  destruct (total R1 x y); [ left | right ]; now apply ER.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@TotalRelation) 0 _) => eexact TotalRelation_proper : typeclass_instances.
 
 Lemma NonZero_proper : Find_Proper_Signature (@NonZero) 0
   (∀ A Ae Azero, Proper ((=)==>(=)) (@NonZero A Ae Azero)).

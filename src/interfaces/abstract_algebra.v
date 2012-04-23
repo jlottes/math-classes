@@ -175,8 +175,11 @@ Section upper_classes.
 
 End upper_classes.
 
+Arguments inverse_l {A Ae Gop Gunit Ginv G Group} _ {_}.
+Arguments inverse_r {A Ae Gop Gunit Ginv G Group} _ {_}.
 Arguments mult_1_l {A Ae Aplus Amult Azero Aone R SemiRing} _ {_}.
 Arguments mult_1_r {A Ae Aplus Amult Azero Aone R SemiRing} _ {_}.
+Arguments field_inv_l {A Ae Aplus Amult Azero Aone Anegate Ainv F Field} _ {_}.
 
 Hint Extern 4 (PropHolds (1 ≠ 0)) => eapply @intdom_nontrivial : typeclass_instances.
 Hint Extern 5 (PropHolds (1 ≠ 0)) => eapply @field_nontrivial : typeclass_instances.

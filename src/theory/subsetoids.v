@@ -237,7 +237,7 @@ Section relation_extension.
   Instance equiv_ext_sub : subrelation (=) equiv_ext.
   Proof. intros ?? E. now right. Qed.
 
-  Context `{!SubSetoid S} `{!SubEquivalence S R} `{!Proper ((S,=)==>(S,=)==>impl) R}.
+  Context `{!SubSetoid S} `{!SubEquivalence R S} `{!Proper ((S,=)==>(S,=)==>impl) R}.
 
   Lemma equiv_ext_correct x `{!x ∊ S} y `{!y ∊ S} : equiv_ext x y ↔ R x y.
   Proof. unfold equiv_ext. split. intros [[??]|E]. tauto. rewrite_on S ->E.

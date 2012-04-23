@@ -4,15 +4,25 @@ Definition NonZero `{Equiv A} {Azero:Zero A} (S:Subset A) : Subset A
   := λ x, x ∊ S ∧ PropHolds (x ≠ 0).
 Notation "R ₀" := (NonZero R) (at level 20, no associativity) : mc_scope.
 
-Class SubReflexive  `(S:Subset A) (R : relation A) : Prop := subreflexivity  x `{!x ∊ S}                         : R x x.
-Class SubSymmetric  `(S:Subset A) (R : relation A) : Prop := subsymmetry     x `{!x ∊ S} y `{!y ∊ S}             : R x y → R y x.
-Class SubTransitive `(S:Subset A) (R : relation A) : Prop := subtransitivity x `{!x ∊ S} y `{!y ∊ S} z `{!z ∊ S} : R x y → R y z → R x z.
+Class SubReflexive   `(R : relation A) (S:Subset A) : Prop := subreflexivity   x `{!x ∊ S}                         : R x x.
+Class SubIrreflexive `(R : relation A) (S:Subset A) : Prop := subirreflexivity x `{!x ∊ S}                         : ¬ R x x.
+Class SubSymmetric   `(R : relation A) (S:Subset A) : Prop := subsymmetry      x `{!x ∊ S} y `{!y ∊ S}             : R x y → R y x.
+Class SubTransitive  `(R : relation A) (S:Subset A) : Prop := subtransitivity  x `{!x ∊ S} y `{!y ∊ S} z `{!z ∊ S} : R x y → R y z → R x z.
 
-Class SubEquivalence `(S:Subset A) (R : relation A) : Prop :=
-  { subequiv_reflexive  :> SubReflexive  S R
-  ; subequiv_symmetric  :> SubSymmetric  S R
-  ; subequiv_transitive :> SubTransitive S R
+Arguments subirreflexivity {A} R {S SubIrreflexive} x {_} _.
+
+Class SubEquivalence `(R : relation A) (S:Subset A) : Prop :=
+  { subequiv_reflexive  :> SubReflexive  R S
+  ; subequiv_symmetric  :> SubSymmetric  R S
+  ; subequiv_transitive :> SubTransitive R S
   }.
+
+Class SubAntiSymmetric `{Ae:Equiv A} (R: relation A) (S:Subset A) : Prop := subantisymmetry x `{!x ∊ S} y `{!y ∊ S} : R x y → R y x → x = y.
+Arguments subantisymmetry {A Ae} R {S SubAntiSymmetric} _ {_} _ {_} _ _.
+
+
+Class TotalRelation `(R : relation A) (S:Subset A) : Prop := total x `{!x ∊ S} y `{!y ∊ S} : R x y ∨ R y x.
+Arguments total {A} _ {S TotalRelation} x {_} y {_}.
 
 Class Associative {A} f `{!Equiv A} (S:Subset A) :=
   associativity x `{!x ∊ S} y `{!y ∊ S} z `{!z ∊ S} : f x (f y z) = f (f x y) z.

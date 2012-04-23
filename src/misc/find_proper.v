@@ -350,9 +350,9 @@ Ltac conv_join_apply p :=
   match goal with |- Proper ?S ?f =>
     match type of p with Proper ?R f =>
       let with_c c :=
-        (* let t := type of c in idtac "got conversion" t; *)
-        let p' := constr:(c f f p p : Proper S f) in
-        (* let t := type of p' in idtac t; *)
+        (*let t := type of c in idtac "got conversion" t;*)
+        let p' := constr:(c f f (conj p p) : Proper S f) in
+        (*let t := type of p' in idtac t;*)
         eexact p'
       in build_chain_join_conv R S with_c
     | _ => (* idtac "conv_and_apply failure"; *) fail
@@ -370,6 +370,7 @@ Ltac compare_tails p :=
   match constr:(pair tg t) with
   | pair (flip ?R) ?R => first [ conv_inv_apply p | fail 2 ]
   | pair ?R (flip ?R) => first [ conv_inv_apply p | fail 2 ]
+  | pair iff impl => first [ conv_join_apply p | fail 2 ]
   | _ => conv_apply p
   | _ => conv_inv_apply p
   | _ => conv_join_apply p

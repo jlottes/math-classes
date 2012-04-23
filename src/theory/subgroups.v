@@ -125,7 +125,7 @@ Section cosets.
   Definition coset_equiv_l a b := a⁻¹ & b ∊ H.
   Definition coset_equiv_r a b := a & b⁻¹ ∊ H.
 
-  Instance coset_l_subequiv: SubEquivalence G coset_equiv_l.
+  Instance coset_l_subequiv: SubEquivalence coset_equiv_l G.
   Proof. unfold coset_equiv_l. split.
   + intros ??. rewrite (left_inverse x). apply _.
   + intros ?????. assert (y⁻¹ & x = (x⁻¹ & y)⁻¹) as E.
@@ -140,7 +140,7 @@ Section cosets.
     rewrite E. apply _.
   Qed.
 
-  Global Instance coset_r_subequiv: SubEquivalence G coset_equiv_r.
+  Global Instance coset_r_subequiv: SubEquivalence coset_equiv_r G.
   Proof. unfold coset_equiv_r. split.
   + intros ??. rewrite (right_inverse x). apply _.
   + intros ?????. assert (y & x⁻¹ = (x & y⁻¹)⁻¹) as E.

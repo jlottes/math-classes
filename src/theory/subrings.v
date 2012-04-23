@@ -127,7 +127,7 @@ Section quotient_ring.
   Existing Instance ideal_rng_i.
   Existing Instance ideal_sub.
 
-  Global Instance ideal_subequiv : SubEquivalence R (ideal_equiv I) := _.
+  Global Instance ideal_subequiv : SubEquivalence (ideal_equiv I) R := _.
 
   Local Notation "(∼)" := (equiv_ext R (ideal_equiv I)).
 
