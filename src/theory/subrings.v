@@ -115,7 +115,7 @@ Lemma ideal_equiv_proper : Find_Proper_Signature (@ideal_equiv) 0
    Proper ((R,=)==>(R,=)==>impl) (ideal_equiv I)).
 Proof. intro. intros.
   change (Proper ((R,=) ==> (R,=) ==> impl) (@coset_equiv_r A I Aplus Anegate)).
-  find_proper.
+  intros ?? E1 ?? E2 ?. unfold_sigs. rewrite_on R <- E1. now rewrite_on R <- E2.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@ideal_equiv) 0 _) => eexact ideal_equiv_proper : typeclass_instances.
 
