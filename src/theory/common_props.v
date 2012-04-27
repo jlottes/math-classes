@@ -1,4 +1,4 @@
-Require Import abstract_algebra theory.subset.
+Require Import abstract_algebra theory.subsetoids.
 
 (* When the following properties hold, they hold also on subsets, and for any subrelations of (=). *)
 
@@ -68,23 +68,20 @@ Qed.
 Hint Extern 0 (Find_Proper_Signature (@TotalRelation) 0 _) => eexact TotalRelation_proper : typeclass_instances.
 
 Lemma NonZero_proper : Find_Proper_Signature (@NonZero) 0
-  (∀ A Ae Azero, Proper ((=)==>(=)) (@NonZero A Ae Azero)).
-Proof. intro. intros. intros ?? ES. split; intros [??]; split; try assumption.
-  now rewrite <-ES. now rewrite ES.
-Qed.
+  (∀ A Aue Azero, Proper ((⊆)++>(⊆)) (@NonZero A Aue Azero)).
+Proof. intro. intros. intros ?? ES x [??]. split. now rewrite <-ES. assumption. Qed.
 Hint Extern 0 (Find_Proper_Signature (@NonZero) 0 _) => eexact NonZero_proper : typeclass_instances.
 
-Lemma NonZero_proper2 : Find_Proper_Signature (@NonZero) 1
-  (∀ A Ae Azero, Proper ((⊆)++>(⊆)) (@NonZero A Ae Azero)).
-Proof. intro. intros. intros ?? ES x [??]. split. now rewrite <-ES. assumption. Qed.
-Hint Extern 0 (Find_Proper_Signature (@NonZero) 1 _) => eexact NonZero_proper2 : typeclass_instances.
-
-Lemma NonZero_subset `{Equiv A} `{Zero A} (S:Subset A) : S ₀ ⊆ S. Proof. firstorder. Qed.
+Lemma NonZero_subset `{UnEq A} `{Zero A} (S:Subset A) : S ₀ ⊆ S. Proof. firstorder. Qed.
 Hint Extern 0 (@SubsetOf _ (@NonZero _ _ _ ?S) ?S) => eapply @NonZero_subset : typeclass_instances. 
 
-Lemma NonZero_element `{Equiv A} `{Zero A} S x `{!x ∊ S} `{PropHolds (x ≠ 0)} : x ∊ S ₀.
+Lemma NonZero_element `{UnEq A} `{Zero A} S x `{!x ∊ S} `{PropHolds (x ≠ 0)} : x ∊ S ₀.
 Proof. now split. Qed.
 Hint Extern 0 (@Element _ (@NonZero _ _ _ _) _) => eapply @NonZero_element : typeclass_instances.
+
+Lemma NonZero_subsetoid `{UnEqualitySetoid A} `{Zero A} R `{!SubSetoid R} : SubSetoid (R ₀).
+Proof. split; try apply _. intros ?? E [??]. split; now rewrite <-E. Qed.
+Hint Extern 0 (@SubSetoid _ _ (@NonZero _ _ _ _)) => eapply @NonZero_subsetoid : typeclass_instances. 
 
 Lemma ZeroProduct_proper : Find_Proper_Signature (@ZeroProduct) 0
   (∀ A Ae Amult Azero, Proper ((⊆)-->impl) (@ZeroProduct A Ae Amult Azero)).
@@ -93,22 +90,23 @@ Proof. intro. intros. intros ?? ES P x ? y ?. unfold flip in ES.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@ZeroProduct) 0 _) => eexact ZeroProduct_proper : typeclass_instances.
 
-Instance ZeroProduct_no_zero_divisors `{ZeroProduct (R:=R)} : NoZeroDivisors R.
-Proof. intros x [[? xn0][y[[? yn0][E|E]]]].
+Instance ZeroProduct_no_zero_divisors `{UnEqualitySetoid A} `{Mult A} `{Zero A} `{!ZeroProduct R} : NoZeroDivisors R.
+Proof. intros x [[? xn0][y[[? yn0][E|E]]]];
+  pose proof (uneq_ne _ _ xn0); pose proof (uneq_ne _ _ yn0).
   destruct (zero_product x y E); contradiction.
   destruct (zero_product y x E); contradiction.
 Qed.
 
 Lemma ZeroDivisor_proper: Find_Proper_Signature (@ZeroDivisor) 0
-  (∀ A Ae Azero Amult, Proper ((⊆)++>eq==>impl) (@ZeroDivisor A Ae Azero Amult)).
-Proof. intro. intros. intros ?? ES ?? Ex [?[y[??]]]. rewrite <-Ex.
+  (∀ A Aue Ae Azero Amult, Proper ((⊆)++>eq==>impl) (@ZeroDivisor A Aue Ae Azero Amult)).
+Proof. red. intros. intros ?? ES ?? Ex [?[y[??]]]. rewrite <-Ex.
   split. now rewrite <-ES. exists y. intuition; now rewrite <-ES.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@ZeroDivisor) 0 _) => eexact ZeroDivisor_proper : typeclass_instances.
 
 Lemma NoZeroDivisors_proper: Find_Proper_Signature (@NoZeroDivisors) 0
-  (∀ A Ae Azero Amult, Proper ((⊆)-->impl) (@NoZeroDivisors A Ae Azero Amult)).
-Proof. intro. intros. intros ?? E P x. pose proof (P x) as Px.
+  (∀ A Aue Ae Azero Amult, Proper ((⊆)-->impl) (@NoZeroDivisors A Aue Ae Azero Amult)).
+Proof. red. intros. intros ?? E P x. pose proof (P x) as Px.
   contradict Px. unfold flip in E. now rewrite <-E.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@NoZeroDivisors) 0 _) => eexact NoZeroDivisors_proper : typeclass_instances.

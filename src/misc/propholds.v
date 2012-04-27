@@ -1,5 +1,5 @@
 Require Import
-  canonical_names.
+  canonical_names find_proper.
 
 (*
   The following class is nice to parametrize instances by additional properties, for example:
@@ -15,6 +15,11 @@ Hint Extern 0 (PropHolds _) => assumption : typeclass_instances.
 
 Instance: Proper (iff ==> iff) PropHolds.
 Proof. now repeat intro. Qed.
+
+Lemma propholds_proper : Find_Proper_Signature (@PropHolds) 0
+  (Proper (impl ++> impl) PropHolds).
+Proof. intros ?? P. now unfold PropHolds. Qed.
+Hint Extern 0 (Find_Proper_Signature (@PropHolds) 0 _) => eexact propholds_proper : typeclass_instances.
 
 Ltac solve_propholds :=
   match goal with

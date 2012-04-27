@@ -1,14 +1,15 @@
 Require Import
-  abstract_algebra theory.subsetoids theory.common_props
-  theory.subgroups theory.subrings.
+  abstract_algebra theory.sub_strong_setoids theory.common_props
+  theory.subgroups theory.subrings
+  theory.strong_groups theory.strong_rings.
 
 Local Open Scope grp_scope. (* notation for inverse *)
 
 Existing Instance NonZero_subset.
 
 Lemma field_proper: Find_Proper_Signature (@Field) 0
-  (∀ A Ae Aplus Amult Azero Aone Anegate Ainv,
-   Proper ((=)==>impl) (@Field A Ae Aplus Amult Azero Aone Anegate Ainv)).
+  (∀ A Ae Aplus Amult Azero Aone Anegate Ainv Aue,
+   Proper ((=)==>impl) (@Field A Ae Aplus Amult Azero Aone Anegate Ainv Aue)).
 Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@Field) 0 _) => eexact field_proper : typeclass_instances.
 
@@ -19,32 +20,33 @@ Hint Extern 0 (@Element _ _ (@inv _ _ _)) => eapply @mult_inv_closed : typeclass
 Section props.
   Context `{Field (F:=F)}.
 
-  Global Instance field_multgroup : @AbGroup _ _ mult_is_sg_op one_is_mon_unit _ (F ₀).
-  Proof with try apply _.
-    split. split...
-    apply (submonoid F (F ₀)). split. split... change (PropHolds (1 ≠ 0))...
-    intros x ? y [? yn0]. change (x*y ∊ F ₀). split...
-    intro E. mc_contradict yn0.
-      rewrite <- (mult_1_l y).
-      rewrite_on F <- (field_inv_l x).
-      rewrite <- (associativity x⁻¹ x y).
-      rewrite_on F -> E.
-      exact (right_absorb x⁻¹).
-    intros x ?.
-    rewrite (commutativity x x⁻¹). exact (field_inv_l x).
-    rewrite (_:F ₀ ⊆ F)...
+  Lemma field_units : RingUnits F = F ₀.
+  Proof. intro x. split.
+  + intros [?[y[?[E ?]]]]. split. apply _.
+    red. apply (strong_extensionality (.* y) x 0). rewrite E.
+    rewrite (left_absorb y). solve_propholds.
+  + intros ?. split. apply _. exists x⁻¹. split. apply _.
+    split; [ rewrite (commutativity x x⁻¹) | ]; exact (field_inv_l x).
   Qed.
+
+  Global Instance field_multgroup : @AbGroup _ _ mult_is_sg_op one_is_mon_unit _ (F ₀).
+  Proof. rewrite <- field_units. apply RingUnits_abgroup; rewrite field_units; apply _. Qed.
+
+  Global Instance strong_mult_nonzero: SubStrongSetoid_Binary_Morphism (.*.) (F ₀) (F ₀) (F ₀).
+  Proof. split; try (split; apply _). apply _.
+    intros x₁ ? y₁ ? x₂ ? y₂ ?. exact (strong_binary_extensionality (.*.) x₁ y₁ x₂ y₂).
+  Qed.
+
+  Instance field_mult_nonzero: Closed (F ₀ ==> F ₀ ==> F ₀) (.*.) := _.
 
   Lemma mult_inv_l x `{!x ∊ F ₀} : x⁻¹ * x = 1. Proof field_inv_l x.
   Lemma mult_inv_r x `{!x ∊ F ₀} : x / x = 1. Proof inverse_r (G:=(F ₀)) x.
   Lemma mult_inv_involutive x `{!x ∊ F ₀} : (x⁻¹)⁻¹ = x. Proof involutive (S:=(F ₀)) x.
 
-  Lemma field_units : RingUnits F = F ₀.
-  Proof. split. intros [?[y[?[E ?]]]]. split. apply _. mc_contradict E.
-    rewrite_on F -> E. rewrite (left_absorb y). apply not_symmetry. solve_propholds.
-    intros ?. split. apply _. exists x⁻¹. split. apply _.
-    split. exact (mult_inv_r x). exact (mult_inv_l x).
-  Qed.
+  (* We have the following instances from strong_groups: *)
+  
+  Instance: StrongInjective (-) F F := _.
+  Instance: StrongInjective (⁻¹) (F ₀) (F ₀) := _.
 
   Global Instance : IntegralDomain F.
   Proof. split; try apply _.
@@ -55,6 +57,22 @@ Section props.
 
 End props.
 
+Hint Extern 0 (?x * ?y ∊ ?F ₀) => eapply @field_mult_nonzero : typeclass_instances.
+
+Section dec_field.
+  Context `{StandardUnEq A} `{∀ x y, Decision (x = y)} `{Inv A}.
+
+  Lemma dec_field (F:Subset A) `{CommutativeRing (A:=A) (Ae:=_) (R:=F)} `{PropHolds (1 ≠ 0)}
+    : SubSetoid_Morphism (⁻¹) (F ₀) (F ₀)
+    → LeftInverse (.*.) (⁻¹) 1 (F ₀)
+    → Field F.
+  Proof. pose proof dec_strong_setoid. split; try apply _.
+    exact (dec_strong_binary_morphism (+)   F F F).
+    exact (dec_strong_binary_morphism (.*.) F F F).
+  Qed.
+End dec_field.
+
+(*
 Section subfield_test.
 
   Context `{Field (F:=F)} `{∀ x y, Decision (x=y)}.
@@ -87,4 +105,4 @@ Section subfield_test.
   + intro. split. exists 1... split; intros; apply _.
   Qed.
 End subfield_test.
-
+*)

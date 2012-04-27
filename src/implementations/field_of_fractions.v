@@ -1,19 +1,20 @@
 Require Import
-  abstract_algebra theory.subsetoids theory.common_props theory.subrings theory.products.
+  abstract_algebra theory.subsetoids theory.common_props theory.subrings theory.products
+  theory.fields.
 Require Import Ring stdlib_ring.
 
 Local Open Scope grp_scope. (* notation for inverse *)
 
 Definition FracPair (A:Type) := (A*A)%type.
 
-Definition Frac {A} {Ae:Equiv A} {Azero:Zero A} D : Subset (FracPair _) 
+Definition Frac {A} {Aue:UnEq A} {Azero:Zero A} D : Subset (FracPair _) 
   := λ f, let (a,b) := f in a ∊ D ∧ b ∊ D ₀.
 
 Definition frac_equiv {A} {Ae:Equiv A} {Amult:Mult A} (f f' : FracPair _)
   := let (a,b) := f in let (c,d) := f' in a*d = b*c.
 
 Lemma frac_equiv_proper : Find_Proper_Signature (@frac_equiv) 0
-  (∀ `{CommutativeRing (R:=D)}, 
+  (∀ `{UnEq A} `{CommutativeRing (A:=A) (R:=D)}, 
     Proper ((Frac D,prod_equiv) ==> (Frac D,prod_equiv) ==> impl) frac_equiv).
 Proof. intro. intros. intros [a b] [c d] [[[??][??]][E1 E2]]
                              [e f] [g h] [[[??][??]][E3 E4]].
@@ -25,12 +26,22 @@ Hint Extern 0 (Find_Proper_Signature (@frac_equiv) 0 _) => eexact frac_equiv_pro
 Existing Instance NonZero_subset.
 
 Section contents.
-
-  Context `(D:Subset A) `{CommutativeRing (A:=A) (R:=D)} `{!IntegralDomain D} `{∀ x y, Stable (x = y)}.
+  Context `{StandardUnEq A} `{∀ x y, Decision (x = y)}.
+  Context `(D:Subset A) `{∀ x, Decision (x ∊ D)}.
+  Context `{CommutativeRing (A:=A) (Ae:=_) (R:=D)} `{!IntegralDomain D}.
 
   Instance: SubSetoid (Ae:=prod_equiv) (Frac D).
   Proof. split. apply _. intros [a b] [c d] [E1 E2] [??].
     simpl in E1, E2. split. now rewrite <-E1. now rewrite <-E2.
+  Qed.
+
+  Instance: ∀ x, Decision (x ∊ Frac D).
+  Proof. intros [a b].
+    apply (decision_proper (a ∊ D ∧ (b ∊ D ∧ ¬ b = 0))).
+    rewrite <- standard_uneq; reflexivity.
+    destruct (decide (a ∊ D)); [|right;tauto].
+    destruct (decide (b ∊ D)); [|right;tauto].
+    destruct (decide (b = 0)); [right|left]; tauto.
   Qed.
 
   Add Ring D1 : (stdlib_ring_theory D).
@@ -54,10 +65,15 @@ Section contents.
     subring D.
   Qed.
 
+  Instance: ∀ `{x ∊ Frac D} `{y ∊ Frac D}, Decision (frac_equiv x y).
+  Proof. intros [a b] ? [c d] ?. apply (decision_proper (a*d = b*c)). reflexivity. apply _. Qed.
+
   Instance frac_equiv_ext : Equiv (FracPair _) :=
     equiv_ext (Ae := prod_equiv) (Frac D) frac_equiv.
 
   Instance: SubSetoid (Frac D) := equiv_ext_subsetoid (Ae:=prod_equiv) (Frac D) frac_equiv.
+
+  Instance: ∀ x y : FracPair A, Decision (x = y) := equiv_ext_decision (Ae:=prod_equiv) (Frac D) frac_equiv.
 
   Instance frac_inject : Cast A (FracPair A) := λ x, pair x 1.
 
@@ -137,19 +153,24 @@ Section contents.
 
   Lemma frac_nonzero : (Frac D) ₀ = λ f, let (a,b) := f in a ∊ D ₀ ∧ b ∊ D ₀.
   Proof. intros [a b]. split.
-  + intros [[??]nz]. split. split. apply _. mc_contradict nz.
+  + intros [[??]nz]; rewrite standard_uneq in nz. split. split. apply _.
+    rewrite standard_uneq. mc_contradict nz.
     reduce. rewrite_on D -> nz. subring D. apply _.
-  + intros [[? anz]?]. split. split; apply _. intro E1.
+  + intros [[? anz]?]; rewrite standard_uneq in anz. split. split; apply _.
+    rewrite standard_uneq. intro E1.
     rewrite ext_correct in E1. simpl in E1.
     mc_contradict anz. rewrite (mult_1_r a) in E1. now rewrite (right_absorb b) in E1.
     split; apply _. apply _.
   Qed.
 
+  Instance: PropHolds (1 ≠ (0:FracPair A)).
+  Proof. red. rewrite standard_uneq. reduce.
+    rewrite (mult_1_l 1), (mult_1_l 0).
+    rewrite <- standard_uneq. solve_propholds.
+  Qed.
+
   Instance: Field (Frac D).
-  Proof. split. apply _.
-  + intro E1. rewrite ext_correct in E1; try apply _. simpl in E1.
-    rewrite (mult_1_l 1), (mult_1_l 0) in E1.
-    pose proof intdom_nontrivial. contradiction.
+  Proof. apply (dec_field (Frac D)).
   + change (SubSetoid_Morphism (⁻¹) (Frac D ₀) (Frac D ₀)).
     split; try apply _. intros [a1 b1] [a2 b2] E1. unfold_sigs.
     rewrite ext_correct in E1; try apply _. simpl in E1.

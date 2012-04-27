@@ -17,10 +17,14 @@ Infix "=" := equiv : type_scope.
 Notation "(=)" := equiv (only parsing) : mc_scope.
 Notation "( x =)" := (equiv x) (only parsing) : mc_scope.
 Notation "(= x )" := (λ y, equiv y x) (only parsing) : mc_scope.
-Notation "(≠)" := (λ x y, ¬x = y) (only parsing) : mc_scope.
-Notation "x ≠ y":= (¬x = y): type_scope.
-Notation "( x ≠)" := (λ y, x ≠ y) (only parsing) : mc_scope.
-Notation "(≠ x )" := (λ y, y ≠ x) (only parsing) : mc_scope.
+
+Class UnEq A := uneq : relation A.
+Notation "(≠)" := uneq (only parsing) : mc_scope.
+Infix "≠":= uneq : type_scope.
+Notation "( x ≠)" := (uneq x) (only parsing) : mc_scope.
+Notation "(≠ x )" := (λ y, uneq y x) (only parsing) : mc_scope.
+
+Class StandardUnEq A `{Equiv A} `{UnEq A} := standard_uneq x y : x ≠ y ↔ ¬ x = y.
 
 Delimit Scope mc_scope with mc. 
 Global Open Scope mc_scope.
