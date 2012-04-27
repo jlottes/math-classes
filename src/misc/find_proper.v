@@ -352,7 +352,7 @@ Ltac conv_join_apply p :=
       let with_c c :=
         (*let t := type of c in idtac "got conversion" t;*)
         let p' := constr:(c f f (conj p p) : Proper S f) in
-        (*let t := type of p' in idtac t;*)
+        (*let t := type of p' in idtac "found joined" t;*)
         eexact p'
       in build_chain_join_conv R S with_c
     | _ => (* idtac "conv_and_apply failure"; *) fail
@@ -376,40 +376,53 @@ Ltac compare_tails p :=
   | _ => conv_join_apply p
   end.
 
-Ltac compare_rel R S k :=
+Ltac compare_rel sym R S k :=
   (* idtac "compare_rel" R S; *)
   first [
-    is_evar S
+    is_evar S; first [ k sym | fail 2 ]
   | has_evar R;
     (* idtac "compare" R S; *)
     match constr:(pair R S) with
     | pair (?RS,?RR)%signature (?SS,?SR)%signature => first [
-        unify RS SS; compare_rel RR SR k
+        unify RS SS; compare_rel sym RR SR k
       | fail 2 ]
-    | pair _ (?SS,?SR)%signature => first [ compare_rel R SR k | fail 2 ]
-(*    | pair (?RS,?RR)%signature _ => first [
-        let A := match type of S with relation ?A => A end in idtac A;
-        unify RS (Every A); idtac "unified"; compare_rel RR S k
-      | fail 2 ]*)
-    | pair (@equiv _ ?eq1) (@equiv _ ?eq2) => unify eq1 eq2
-    | _ => idtac
+    | pair _ (?SS,?SR)%signature => first [ compare_rel sym R SR k | fail 2 ]
+    | pair (@equiv _ ?eq1) (@equiv _ ?eq2) => unify eq1 eq2; first [ k sym | fail 2 ]
     end
-  | idtac
-  ];
-  k tt.
+  | match sym with false => idtac end; first [ k false | fail 2 ]
+  | has_evar S; first [ k sym | fail 2 ]
+  | let fpsym := constr:(_:Find_Proper_Symmetric S) in first [ k true | fail 2 ]
+  | k false
+  ].
+
+Ltac compare_tail_rel sym R S k :=
+  first [
+    match sym with true => idtac end;
+    is_evar S; (* idtac "S is evar"; *)
+    first [ has_evar R; fail 1 
+    | let fpsym := constr:(_:Find_Proper_Symmetric R) in
+      unify S R; first [ k true | fail 3 ]
+    | let R' := match R with flip ?R' => R' | _ => R end in
+      let ppo := constr:(_:Find_Proper_PrePartialOrder _ R') in
+      let Rsym := match type of ppo with Find_Proper_PrePartialOrder ?Rsym _ => Rsym end in
+      (* idtac "ppo" Rsym; *)
+      unify S Rsym; first [ k true | fail 3 ]
+    ]
+  | compare_rel false S R k
+  ].
 
 Ltac compare_sigs n R R' k :=
   (* idtac "compare_sigs" n R R'; *)
-  let rec cmp R R' :=
+  let rec cmp sym R R' :=
     match constr:(pair R R') with
     | pair (?R1++>?R2)%signature (?R1'++>?R2')%signature => first [
-      let k' u := cmp R2 R2' in compare_rel R1 R1' k'
+      let k' sym := cmp sym R2 R2' in compare_rel sym R1 R1' k'
       | fail 2 ]
-    | _ => let k' u := k n in compare_rel R' R k'
+    | _ => let k' sym := k n in compare_tail_rel sym R R' k'
     end
   in let rec chop n R R' :=
     match n with
-    | O => cmp R R'
+    | O => cmp true R R'
     | S ?m => match R with (?R1++>?R2)%signature => chop m R2 R' end
     end
   in chop n R R' .

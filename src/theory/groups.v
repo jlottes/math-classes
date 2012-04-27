@@ -18,7 +18,7 @@ Instance sg_op_sm1 `{SemiGroup (S:=G)} `{g ∊ G} : SubSetoid_Morphism (g &) G G
 Instance sg_op_sm2 `{SemiGroup (S:=G)} `{g ∊ G} : SubSetoid_Morphism (& g) G G. Proof submorphism_binary_2 (&) g.
 
 Ltac structure_proper :=
-  intro; intros; intros ?? E ?; split; try apply _; rewrite <- E; apply _.
+  red; intros; intros ?? E ?; split; try apply _; rewrite <- E; apply _.
 
 Lemma semigroup_proper: Find_Proper_Signature (@SemiGroup) 0
   (∀ A Ae Sop, Proper ((=)==>impl) (@SemiGroup A Ae Sop)).
@@ -56,8 +56,7 @@ Lemma abgroup_proper: Find_Proper_Signature (@AbGroup) 0
 Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@AbGroup) 0 _) => eexact abgroup_proper : typeclass_instances.
 
-Instance abgroup_is_commonoid `{AbGroup (G:=G)} : CommutativeMonoid G.
-Proof. split; apply _. Qed.
+Instance abgroup_is_commonoid `{AbGroup (G:=G)} : CommutativeMonoid G := {}.
 
 Lemma inv_closed `{GroupG: Group (G:=G)} `{x ∊ G} : x⁻¹ ∊ G. Proof _.
 Hint Extern 1 (@Element _ _ (@inv _ _ _)) => eapply @inv_closed : typeclass_instances. 
@@ -130,6 +129,14 @@ Proof.
 Qed.
 
 End group_props.
+
+Lemma abgroup_from_commonoid `{CommutativeMonoid (A:=A) (M:=G)} `{Inv A}
+  : SubSetoid_Morphism (⁻¹) G G
+  → LeftInverse (&) (⁻¹) e G
+  → AbGroup G.
+Proof with try apply _. intros ??. split... split...
+  intros x ?. rewrite (commutativity (f:=(&)) x x⁻¹). exact (left_inverse x).
+Qed.
 
 Lemma abgroup_inv_distr `{AbGroup (G:=G)} x `{!x ∊ G} y `{!y ∊ G}: (x & y)⁻¹ = x⁻¹ & y⁻¹.
 Proof. rewrite (inv_sg_op_distr x y). apply commutativity; apply _. Qed.

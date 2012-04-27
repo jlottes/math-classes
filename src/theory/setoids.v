@@ -6,10 +6,31 @@ Instance: ∀ `{Setoid A}, Find_Proper_Reflexive (=).
 Proof. intros ??? x. red. reflexivity. Qed.
 
 Lemma equiv_proper : Find_Proper_Signature (@equiv) 0
-  (∀ A Ae `{!Setoid A}, Proper ((=)==>(=)==>impl) (@equiv A Ae)).
-Proof. intros ???. intros ?? E1 ?? E2 P. now rewrite <-E1, <-E2. Qed.
+  (∀ `{Setoid A}, Proper ((=)==>(=)==>impl) (=)).
+Proof. red. intros. intros ?? E1 ?? E2 P. now rewrite <-E1, <-E2. Qed.
 Hint Extern 0 (Find_Proper_Signature (@equiv) 0 _) => eexact equiv_proper : typeclass_instances.
 
+Lemma unequiv_proper : Find_Proper_Signature (@uneq) 0
+  (∀ `{UnEqualitySetoid A}, Proper ((=)==>(=)==>impl) (≠)).
+Proof. red. intros. exact uneq_proper. Qed.
+Hint Extern 0 (Find_Proper_Signature (@uneq) 0 _) => eexact unequiv_proper : typeclass_instances.
+
+Instance default_uneq `{Equiv A} : UnEq A | 20 := (λ x y, ¬ x = y).
+Typeclasses Opaque default_uneq.
+
+Instance default_uneq_standard `{Equiv A} : StandardUnEq A.
+Proof. red. reflexivity. Qed.
+
+Instance: ∀ `{Setoid A} `{UnEq A} `{!StandardUnEq A}, UnEqualitySetoid A.
+Proof. intros. split; try apply _; [ intros ?? E1 ?? E2; unfold impl | ..];
+  setoid_rewrite standard_uneq; [ idtac | tauto ..]. 
+  intro P. contradict P. now rewrite E1, E2.
+Qed.
+
+Instance: ∀ `{Setoid A} `{UnEq A} `{!StandardUnEq A} `{∀ x y, Decision (x=y)}, TightApart A.
+Proof. intros. intros x y. rewrite standard_uneq. split. apply stable. tauto. Qed.
+
+(*
 Lemma ext_equiv_refl `{Setoid_Morphism A B f} : f = f.
 Proof. intros ?? E. pose proof (setoidmor_b f). now rewrite E. Qed.
 
@@ -33,8 +54,9 @@ Proof.
 Qed.
 
 Lemma morphism_ne `{Equiv A} `{Equiv B} (f : A → B) `{!Setoid_Morphism f} x y :
-  f x ≠ f y → x ≠ y.
+  ¬ f x = f y → ¬ x = y.
 Proof. intros E1 E2. apply E1. now apply sm_proper. Qed.
+*)
 
 Instance: Equiv Prop := iff.
 Instance: Setoid Prop := {}.
@@ -48,6 +70,7 @@ Proof.
  transitivity (f y); now apply eq_correct.
 Qed.
 
+(*
 Instance id_morphism `{Setoid A} : Setoid_Morphism (@id A) := {}.
 
 Lemma compose_setoid_morphism `{Equiv A} `{Equiv B} `{Equiv C} (f : A → B) (g : B → C) :
@@ -75,3 +98,4 @@ Proof. intros f g [[??] E1] ?. pose proof (setoidmor_a f). pose proof (setoidmor
   split; try apply _. intros x y E2.
   now rewrite <-!(ext_equiv_applied E1 _), E2.
 Qed.
+*)

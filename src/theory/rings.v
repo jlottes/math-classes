@@ -31,7 +31,7 @@ Hint Extern 0 (Find_Proper_Signature (@mult) 0 _) => eexact mult_proper : typecl
 Lemma mult_closed {A Ae R} {Amult:Mult A} `{@SemiGroup A Ae mult_is_sg_op R}
   `{x ∊ R} `{y ∊ R} : x * y ∊ R.
 Proof _.
-Hint Extern 0 (@Element _ _ (@mult _ _ _ _)) => eapply @mult_closed : typeclass_instances. 
+Hint Extern 1 (@Element _ _ (@mult _ _ _ _)) => eapply @mult_closed : typeclass_instances. 
 
 Lemma semirng_proper: Find_Proper_Signature (@SemiRng) 0
   (∀ A Ae Aplus Amult Azero, Proper ((=)==>impl) (@SemiRng A Ae Aplus Amult Azero)).
@@ -91,8 +91,8 @@ Proof. split; try apply _.
 Qed.
 
 Lemma intdomain_proper: Find_Proper_Signature (@IntegralDomain) 0
-  (∀ A Ae Aplus Amult Azero Aone Anegate,
-   Proper ((=)==>impl) (@IntegralDomain A Ae Aplus Amult Azero Aone Anegate)).
+  (∀ A Ae Aplus Amult Azero Aone Anegate Aue,
+   Proper ((=)==>impl) (@IntegralDomain A Ae Aplus Amult Azero Aone Anegate Aue)).
 Proof. intro. intros. intros S T E [???]. split; try apply _; rewrite <- E; apply _. Qed.
 Hint Extern 0 (Find_Proper_Signature (@IntegralDomain) 0 _) => eexact intdomain_proper : typeclass_instances.
 
@@ -172,8 +172,10 @@ Section rng_props.
   Lemma flip_negate_0 x `{!x ∊ R} : -x = 0 ↔ x = 0.
   Proof. now rewrite (flip_negate x 0), negate_0. Qed.
 
+(*
   Lemma flip_negate_ne_0 x `{!x ∊ R} : -x ≠ 0 ↔ x ≠ 0.
   Proof. split; intros E ?; apply E; now apply flip_negate_0. Qed.
+*)
 
   Lemma negate_zero_prod_l x `{!x ∊ R} y `{!y ∊ R} : -x * y = 0 ↔ x * y = 0.
   Proof.
@@ -202,30 +204,26 @@ Section ring_props.
   Proof. rewrite <-(negate_mult_distr_l 1 x). now rewrite_on R ->(mult_1_l x). Qed.
 End ring_props.
 
-Lemma NonZero_subsetoid `{Equiv A} `{Zero A} R `{!SubSetoid R} : SubSetoid (R ₀).
-Proof. split; try apply _. intros ?? E [??]. split; now rewrite <-E. Qed.
-Hint Extern 0 (@SubSetoid _ ?Ae (@NonZero _ ?Ae _ _)) => eapply @NonZero_subsetoid : typeclass_instances. 
-
 Existing Instance NonZero_subset.
 
 Lemma ZeroDivisor_proper2: Find_Proper_Signature (@ZeroDivisor) 1
-  (∀ A Ae Azero Amult R `{!@SemiGroup A Ae mult_is_sg_op R},
-   Proper ((=)==>impl) (@ZeroDivisor A Ae Azero Amult R)).
+  (∀ `{UnEqualitySetoid A} Azero Amult R `{!@SemiGroup A _ mult_is_sg_op R},
+   Proper ((=)==>impl) (@ZeroDivisor A _ _ Azero Amult R)).
 Proof. intro. intros. intros x x' E [?[y[? Z]]].
   assert (x' ∊ R ₀) by now rewrite <-E. split. easy. exists y.
   split. apply _. destruct Z; [ left | right ]; now rewrite_on R <-E.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@ZeroDivisor) 1 _) => eexact ZeroDivisor_proper2 : typeclass_instances.
 
-Instance mult_nonzero `{Rng (R:=R)} `{!NoZeroDivisors R} : Closed (R ₀ ==> R ₀ ==> R ₀) (.*.).
+Instance mult_nonzero `{StandardUnEq A} `{Rng (A:=A) (Ae:=_) (R:=R)} `{!NoZeroDivisors R} : Closed (R ₀ ==> R ₀ ==> R ₀) (.*.).
 Proof. intros x ? y ?. split. apply _.
-  pose proof (no_zero_divisors x) as nzd. mc_contradict nzd.
+  pose proof (no_zero_divisors x) as nzd. rewrite standard_uneq. mc_contradict nzd.
   split. apply _. exists y. split. apply _. now left.
 Qed.
 Hint Extern 0 (?x * ?y ∊ ?R ₀) => eapply @mult_nonzero : typeclass_instances.
   
 Section cancellation.
-  Context `{Rng (R:=R)} `{!NoZeroDivisors R} `{∀ x y, Stable (x = y)}.
+  Context `{Rng (A:=A) (R:=R)} {Aue: UnEq A} `{!NoZeroDivisors R} `{!StandardUnEq A} `{∀ x y, Stable (x=y)}.
 
   Global Instance mult_left_cancellation z `{!z ∊ R ₀} : LeftCancellation (.*.) z R.
   Proof. intros x ? y ? E.
@@ -234,7 +232,7 @@ Section cancellation.
     pose proof (no_zero_divisors z) as nzd.
     apply stable. unfold DN. contradict nzd.
     split. apply _. exists (x-y). intuition. split. apply _.
-    now rewrite (equal_by_zero_sum x y).
+    rewrite standard_uneq. now rewrite (equal_by_zero_sum x y).
   Qed.
 
   Global Instance mult_right_cancellation z `{!z ∊ R ₀} : RightCancellation (.*.) z R.
@@ -244,7 +242,7 @@ Section cancellation.
     pose proof (no_zero_divisors z) as nzd.
     apply stable. unfold DN. contradict nzd.
     split. apply _. exists (x-y). intuition. split. apply _.
-    now rewrite (equal_by_zero_sum x y).
+    rewrite standard_uneq. now rewrite (equal_by_zero_sum x y).
   Qed.
 
 End cancellation.
@@ -259,8 +257,53 @@ Proof. split; try apply _. intros ? x' E [?[y[?[??]]]].
 Qed.
 Hint Extern 0 (@SubSetoid _ ?Ae (@RingUnits _ ?Ae _ _ _)) => eapply @RingUnits_subsetoid : typeclass_instances.
 
-Lemma RingUnit_not_zero_divisor `{Ring (R:=R)} x {ru:x ∊ U R} : ¬ZeroDivisor R x.
-Proof. destruct ru as [?[y[? [E1 E2]]]]. intros [[??][z[[? zn0][E|E]]]]; mc_contradict zn0.
+Lemma RingUnits_mult_closed `{Ring (R:=R)} : Closed (U R ==> U R ==> U R) (.*.).
+Proof with try apply _. intros x [?[xi [?[Rx Lx]]]] y [?[yi [?[Ry Ly]]]].
+  split... exists (yi * xi). split... split.
+  + rewrite         (associativity (f:=(.*.)) (x * y) yi xi).
+    rewrite_on R <- (associativity (f:=(.*.))  x   y  yi).
+    rewrite_on R -> Ry.
+    now rewrite_on R -> (mult_1_r x).
+  + rewrite         (associativity (f:=(.*.)) (yi * xi) x y).
+    rewrite_on R <- (associativity (f:=(.*.))  yi   xi  x).
+    rewrite_on R -> Lx.
+    now rewrite_on R -> (mult_1_r yi).
+Qed.
+
+Lemma RingUnits_monoid `{Ring (R:=R)}
+  : @Monoid _ _ mult_is_sg_op one_is_mon_unit (U R).
+Proof with try apply _. pose proof (_ : U R ⊆ R). split. split...
++ rewrite (_ : U R ⊆ R)...
++ split... change (SubProper ((U R,=) ==> (U R,=) ==> (U R,=)) (.*.)).
+  pose proof RingUnits_mult_closed.
+  intros ?? E1 ?? E2. unfold_sigs. split. split; apply (closed_binary (U R) (U R) (U R) (.*.)).
+  rewrite_on R -> E1. now rewrite_on R -> E2.
++ change (1 ∊ U R). split... exists 1. split... split; exact (mult_1_r 1).
++ rewrite (_ : U R ⊆ R)...
++ rewrite (_ : U R ⊆ R)...
+Qed.
+Hint Extern 0 (@Monoid _ ?Ae (@mult_is_sg_op _ ?Amult) (@one_is_mon_unit _ ?Aone)
+  (@RingUnits _ ?Ae ?Amult ?Aone _)) => eapply @RingUnits_monoid : typeclass_instances.
+
+Lemma RingUnits_group `{Ring (R:=R)} `{Inv A}
+ `{!SubSetoid_Morphism (⁻¹) (U R) (U R)}
+ `{!LeftInverse  (.*.) (⁻¹) 1 (U R)}
+ `{!RightInverse (.*.) (⁻¹) 1 (U R)}
+ : @Group _ _ mult_is_sg_op one_is_mon_unit _ (U R).
+Proof. split; apply _. Qed.
+
+Lemma RingUnits_abgroup `{CommutativeRing (R:=R)} `{Inv A}
+ : SubSetoid_Morphism (⁻¹) (U R) (U R)
+ → LeftInverse  (.*.) (⁻¹) 1 (U R)
+ → @AbGroup _ _ mult_is_sg_op one_is_mon_unit _ (U R).
+Proof with try apply _. intros. assert (@CommutativeMonoid _ _ mult_is_sg_op one_is_mon_unit (U R)).
+  split... rewrite (_ : U R ⊆ R)...
+  apply (abgroup_from_commonoid (G:=U R))...
+Qed.
+
+Lemma RingUnit_not_zero_divisor `{UnEqualitySetoid A} `{Ring (A:=A) (Ae:=_) (R:=R)} x {ru:x ∊ U R} : ¬ZeroDivisor R x.
+Proof. destruct ru as [?[y[? [E1 E2]]]]. intros [[??][z[[? zn0][E|E]]]];
+  red in zn0; apply uneq_ne in zn0; contradict zn0.
 + rewrite <- (mult_1_l z).
   rewrite_on R <- E2.
   rewrite <- (associativity y x z).

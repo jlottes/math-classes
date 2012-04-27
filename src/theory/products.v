@@ -14,11 +14,13 @@ Section product.
   Global Instance pair_proper: Proper ((=) ==> (=) ==> (=)) (@pair A B).
   Proof. firstorder. Qed.
 
+(*
   Global Instance: Setoid_Morphism (@fst A B).
   Proof. constructor; try apply _. firstorder. Qed.
 
   Global Instance: Setoid_Morphism (@snd A B).
   Proof. constructor; try apply _. firstorder. Qed.
+*)
 
   Context `(A_dec : ∀ x y : A, Decision (x = y)) `(B_dec : ∀ x y : B, Decision (x = y)).
   Global Program Instance prod_dec: ∀ x y : A * B, Decision (x = y) := λ x y,
@@ -53,6 +55,8 @@ Section dep_product.
    intros ? y ??? i. transitivity (y i); firstorder.
   Qed.
 
+  (*
   Global Instance dep_prod_morphism i : Setoid_Morphism (λ c: dep_prod, c i).
   Proof. firstorder auto. Qed.
+  *)
 End dep_product.
