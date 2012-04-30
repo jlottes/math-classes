@@ -1,4 +1,39 @@
-Require Import abstract_algebra theory.subsetoids.
+Require Import abstract_algebra theory.sub_strong_setoids.
+
+Local Ltac subproper := red; intros; intros ?? ? ? [??]; split; apply _.
+
+Lemma NonZero_proper : Find_Proper_Signature (@NonZero) 0 (∀ A Aue Azero, Proper ((⊆)++>(⊆)) (@NonZero A Aue Azero)). Proof. subproper. Qed.
+Lemma NonNeg_proper  : Find_Proper_Signature (@NonNeg ) 0 (∀ A Ale Azero, Proper ((⊆)++>(⊆)) (@NonNeg  A Ale Azero)). Proof. subproper. Qed.
+Lemma Pos_proper     : Find_Proper_Signature (@Pos    ) 0 (∀ A Alt Azero, Proper ((⊆)++>(⊆)) (@Pos     A Alt Azero)). Proof. subproper. Qed.
+Lemma NonPos_proper  : Find_Proper_Signature (@NonPos ) 0 (∀ A Ale Azero, Proper ((⊆)++>(⊆)) (@NonPos  A Ale Azero)). Proof. subproper. Qed.
+Lemma Neg_proper     : Find_Proper_Signature (@Neg    ) 0 (∀ A Alt Azero, Proper ((⊆)++>(⊆)) (@Neg     A Alt Azero)). Proof. subproper. Qed.
+
+Hint Extern 0 (Find_Proper_Signature (@NonZero) 0 _) => eexact NonZero_proper : typeclass_instances.
+Hint Extern 0 (Find_Proper_Signature (@NonNeg ) 0 _) => eexact NonNeg_proper  : typeclass_instances.
+Hint Extern 0 (Find_Proper_Signature (@Pos    ) 0 _) => eexact Pos_proper     : typeclass_instances.
+Hint Extern 0 (Find_Proper_Signature (@NonPos ) 0 _) => eexact NonPos_proper  : typeclass_instances.
+Hint Extern 0 (Find_Proper_Signature (@Neg    ) 0 _) => eexact Neg_proper     : typeclass_instances.
+
+Lemma NonZero_subset `{UnEq A} `{Zero A} (R:Subset A) : R ₀ ⊆ R. Proof. firstorder. Qed.
+Lemma NonNeg_subset  `{Le A}   `{Zero A} (R:Subset A) : R⁺  ⊆ R. Proof. firstorder. Qed.
+Lemma Pos_subset     `{Lt A}   `{Zero A} (R:Subset A) : R₊  ⊆ R. Proof. firstorder. Qed.
+Lemma NonPos_subset  `{Le A}   `{Zero A} (R:Subset A) : R⁻  ⊆ R. Proof. firstorder. Qed.
+Lemma Neg_subset     `{Lt A}   `{Zero A} (R:Subset A) : R₋  ⊆ R. Proof. firstorder. Qed.
+
+Hint Extern 0 (?R ₀ ⊆ ?R) => eapply @NonZero_subset : typeclass_instances. 
+
+Lemma NonZero_element `{UnEq A} `{Zero A} R `{x ∊ R} `{PropHolds (x ≠ 0)} : x ∊ R ₀. Proof. now split. Qed.
+Lemma NonNeg_element  `{Le A}   `{Zero A} R `{x ∊ R} `{PropHolds (0 ≤ x)} : x ∊ R⁺ . Proof. now split. Qed.
+Lemma Pos_element     `{Lt A}   `{Zero A} R `{x ∊ R} `{PropHolds (0 < x)} : x ∊ R₊ . Proof. now split. Qed.
+Lemma NonPos_element  `{Le A}   `{Zero A} R `{x ∊ R} `{PropHolds (x ≤ 0)} : x ∊ R⁻ . Proof. now split. Qed.
+Lemma Neg_element     `{Lt A}   `{Zero A} R `{x ∊ R} `{PropHolds (x < 0)} : x ∊ R₋ . Proof. now split. Qed.
+
+Hint Extern 0 (?x ∊ ?R ₀) => eapply @NonZero_element : typeclass_instances.
+
+Lemma NonZero_subsetoid `{UnEqualitySetoid A} `{Zero A} R `{!SubSetoid R} : SubSetoid (R ₀).
+Proof. split; try apply _. intros ?? E [??]. split; now rewrite <-E. Qed.
+Hint Extern 0 (@SubSetoid _ _ (@NonZero _ _ _ _)) => eapply @NonZero_subsetoid : typeclass_instances. 
+
 
 (* When the following properties hold, they hold also on subsets, and for any subrelations of (=). *)
 
@@ -48,6 +83,13 @@ Proof. intro. intros R1 R2 ER S1 S2 ES P x ? y ? z ? ??. unfold flip in *. apply
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@SubTransitive) 0 _) => eexact SubTransitive_proper : typeclass_instances.
 
+Lemma SubCoTransitive_proper : Find_Proper_Signature (@SubCoTransitive) 0
+  (∀ A, Proper (relation_equivalence==>(⊆)-->impl) (@SubCoTransitive A)).
+Proof. intro. intros R1 R2 ER S1 S2 ES ? x ? y ? E z ?. unfold flip in *.
+  apply ER in E. destruct (subcotransitivity E z); [left|right]; now apply ER.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@SubCoTransitive) 0 _) => eexact SubCoTransitive_proper : typeclass_instances.
+
 Lemma SubEquivalence_proper : Find_Proper_Signature (@SubEquivalence) 0
   (∀ A, Proper (relation_equivalence==>(⊆)-->impl) (@SubEquivalence A)).
 Proof. intro. intros R1 R2 ER S1 S2 ES ?. unfold flip in *. split; rewrite <- ER, ES; apply _. Qed.
@@ -67,21 +109,46 @@ Proof. intro. intros R1 R2 ER S1 S2 ES P x ? y ?. unfold flip in *.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@TotalRelation) 0 _) => eexact TotalRelation_proper : typeclass_instances.
 
-Lemma NonZero_proper : Find_Proper_Signature (@NonZero) 0
-  (∀ A Aue Azero, Proper ((⊆)++>(⊆)) (@NonZero A Aue Azero)).
-Proof. intro. intros. intros ?? ES x [??]. split. now rewrite <-ES. assumption. Qed.
-Hint Extern 0 (Find_Proper_Signature (@NonZero) 0 _) => eexact NonZero_proper : typeclass_instances.
+Lemma Trichotomy_proper : Find_Proper_Signature (@Trichotomy) 0
+  (∀ A Ae, Proper (subrelation++>(⊆)-->impl) (@Trichotomy A Ae)).
+Proof. red. intros. intros R1 R2 ER S1 S2 ES P x ? y ?. unfold flip in *.
+  destruct (trichotomy R1 x y) as [?|[?|?]]; [left|right;left|right;right];
+  trivial; now apply ER.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@Trichotomy) 0 _) => eexact Trichotomy_proper : typeclass_instances.
 
-Lemma NonZero_subset `{UnEq A} `{Zero A} (S:Subset A) : S ₀ ⊆ S. Proof. firstorder. Qed.
-Hint Extern 0 (@SubsetOf _ (@NonZero _ _ _ ?S) ?S) => eapply @NonZero_subset : typeclass_instances. 
+Section cancellation.
 
-Lemma NonZero_element `{UnEq A} `{Zero A} S x `{!x ∊ S} `{PropHolds (x ≠ 0)} : x ∊ S ₀.
-Proof. now split. Qed.
-Hint Extern 0 (@Element _ (@NonZero _ _ _ _) _) => eapply @NonZero_element : typeclass_instances.
+  Lemma right_cancel_from_left `{SubSetoid (S:=R)} `{!Closed (R ==> R ==> R) op} `{!Commutative op R}
+   `{z ∊ R} `{!LeftCancellation op z R} : RightCancellation op z R.
+  Proof. intros x ? y ? E.
+    apply (left_cancellation op z R); trivial.
+    rewrite_on R -> (commutativity z x).
+    now rewrite_on R -> (commutativity z y).
+  Qed.
 
-Lemma NonZero_subsetoid `{UnEqualitySetoid A} `{Zero A} R `{!SubSetoid R} : SubSetoid (R ₀).
-Proof. split; try apply _. intros ?? E [??]. split; now rewrite <-E. Qed.
-Hint Extern 0 (@SubSetoid _ _ (@NonZero _ _ _ _)) => eapply @NonZero_subsetoid : typeclass_instances. 
+  Context `{SubStrongSetoid (S:=R)}.
+
+  Lemma strong_right_cancel_from_left `{!Closed (R ==> R ==> R) op} `{!Commutative op R}
+    `{z ∊ R} `{!StrongLeftCancellation op z R} : StrongRightCancellation op z R.
+  Proof. intros x ? y ? E.
+    rewrite 2!(commutativity _ z).
+    now apply (strong_left_cancellation op _ R).
+  Qed.
+
+  Global Instance strong_left_cancellation_cancel `{!StrongLeftCancellation op z R} : LeftCancellation op z R | 20.
+  Proof.
+    intros x ? y ?. rewrite <-!tight_apart. intro E. contradict E.
+    now apply (strong_left_cancellation op _ R).
+  Qed.
+
+  Global Instance strong_right_cancellation_cancel `{!StrongRightCancellation op z R} : RightCancellation op z R | 20.
+  Proof.
+    intros x ? y ?. rewrite <-!tight_apart. intros E. contradict E.
+    now apply (strong_right_cancellation op _ R).
+  Qed.
+
+End cancellation.
 
 Lemma ZeroProduct_proper : Find_Proper_Signature (@ZeroProduct) 0
   (∀ A Ae Amult Azero, Proper ((⊆)-->impl) (@ZeroProduct A Ae Amult Azero)).

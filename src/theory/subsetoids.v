@@ -32,29 +32,17 @@ Proof. intros ?? ?? E ?. split; try apply _. rewrite <-E. apply _. Qed.
 Hint Extern 0 (Find_Proper_Signature (@SubSetoid) 0 _) => eexact subsetoid_proper : typeclass_instances.
 
 
-Lemma propersubset_refl_eq `{ProperSubset (S:=X)} : Proper (ProperSubset,=) X.
-Proof. apply restrict_rel_refl; apply _. Qed.
+Lemma propersubset_refl_eq  `{ProperSubset (S:=X)} : Proper (ProperSubset,=) X. Proof. apply restrict_rel_refl; apply _. Qed.
+Lemma propersubset_refl_sub `{ProperSubset (S:=X)} : Proper (ProperSubset,⊆) X. Proof. apply restrict_rel_refl; apply _. Qed.
 
-Lemma propersubset_refl_sub `{ProperSubset (S:=X)} : Proper (ProperSubset,⊆) X.
-Proof. apply restrict_rel_refl; apply _. Qed.
+Hint Extern 0 (@Proper _ (@restrict_rel _ (@ProperSubset _ _) (@equiv _ (subset_equiv _))) _)  => eapply @propersubset_refl_eq  : typeclass_instances.
+Hint Extern 0 (@Proper _ (@restrict_rel _ (@ProperSubset _ _) (@SubsetOf _)) _)                => eapply @propersubset_refl_sub : typeclass_instances.
 
-Hint Extern 0 (@Proper _ (@restrict_rel _ (@ProperSubset _ _) (@equiv _ (subset_equiv _))) _)
-  => eapply @propersubset_refl_eq : typeclass_instances.
+Lemma propersubset_refl_eq_fp  `{ProperSubset (S:=X)} : Find_Proper_Proper (ProperSubset,=) X. Proof. apply restrict_rel_refl; apply _. Qed.
+Lemma propersubset_refl_sub_fp `{ProperSubset (S:=X)} : Find_Proper_Proper (ProperSubset,⊆) X. Proof. apply restrict_rel_refl; apply _. Qed.
 
-Hint Extern 0 (@Proper _ (@restrict_rel _ (@ProperSubset _ _) (@SubsetOf _)) _)
-  => eapply @propersubset_refl_sub : typeclass_instances.
-
-Lemma propersubset_refl_eq_fp `{ProperSubset (S:=X)} : Find_Proper_Proper (ProperSubset,=) X.
-Proof. apply restrict_rel_refl; apply _. Qed.
-
-Lemma propersubset_refl_sub_fp `{ProperSubset (S:=X)} : Find_Proper_Proper (ProperSubset,⊆) X.
-Proof. apply restrict_rel_refl; apply _. Qed.
-
-Hint Extern 0 (@Find_Proper_Proper _ (@restrict_rel _ (@ProperSubset _ _) (@equiv _ (subset_equiv _))) _)
-  => eapply @propersubset_refl_eq_fp : typeclass_instances.
-
-Hint Extern 0 (@Find_Proper_Proper _ (@restrict_rel _ (@ProperSubset _ _) (@SubsetOf _)) _)
-  => eapply @propersubset_refl_sub_fp : typeclass_instances.
+Hint Extern 0 (@Find_Proper_Proper _ (@restrict_rel _ (@ProperSubset _ _) (@equiv _ (subset_equiv _))) _) => eapply @propersubset_refl_eq_fp  : typeclass_instances.
+Hint Extern 0 (@Find_Proper_Proper _ (@restrict_rel _ (@ProperSubset _ _) (@SubsetOf _)) _)               => eapply @propersubset_refl_sub_fp : typeclass_instances.
 
 Lemma id_submorphism `{Equiv A} (S T:Subset A) `{!S ⊆ T} `{!SubSetoid S} `{!SubSetoid T}
   : SubSetoid_Morphism id S T.
@@ -129,7 +117,7 @@ Proof. intros [???] [???].
   intros ?? E. unfold_sigs. unfold compose. red_sig.
   now rewrite_on S <- E.
 Qed.
-Hint Extern 4 (SubSetoid_Morphism (_ ∘ _)) => class_apply @compose_subsetoid_morphism : typeclass_instances.
+Hint Extern 4 (SubSetoid_Morphism (_ ∘ _) _ _) => class_apply @compose_subsetoid_morphism : typeclass_instances.
 
 Lemma to_propersubset_rel `{ProperSubset (S:=X)} `{!ProperSubset Y} {R:relation _} (E:R X Y)
   : (ProperSubset,R)%signature X Y.
@@ -188,10 +176,10 @@ Section binary_morphisms.
 
   (* making these global causes loops *)
  
-  Instance submorphism_binary_1 x `{!x ∊ S} : SubSetoid_Morphism (f x) T U.
+  Instance submorphism_binary_1 x `{x ∊ S} : SubSetoid_Morphism (f x) T U.
   Proof. split; try apply _. red. apply _. Qed.
 
-  Instance submorphism_binary_2 y `{!y ∊ T} : SubSetoid_Morphism (λ x, f x y) S U.
+  Instance submorphism_binary_2 y `{y ∊ T} : SubSetoid_Morphism (λ x, f x y) S U.
   Proof. split; try apply _.
     intros ?? E. unfold_sigs. red_sig. now rewrite_on S -> E.
   Qed.
@@ -209,7 +197,7 @@ Section relation_extension.
 
   Context `{!SubSetoid S} `{!SubEquivalence R S} `{!Proper ((S,=)==>(S,=)==>impl) R}.
 
-  Lemma equiv_ext_correct x `{!x ∊ S} y `{!y ∊ S} : equiv_ext x y ↔ R x y.
+  Lemma equiv_ext_correct x `{x ∊ S} y `{y ∊ S} : equiv_ext x y ↔ R x y.
   Proof. unfold equiv_ext. split. intros [[??]|E]. tauto. rewrite_on S ->E.
     apply (subreflexivity y). unfold restrict_rel. tauto. Qed.
 
@@ -227,13 +215,22 @@ Section relation_extension.
   Instance equiv_ext_subsetoid : SubSetoid (Ae:=equiv_ext) S.
   Proof. split. red. apply _. intros ?? [?|E] ?. now unfold_sigs. now rewrite <-E. Qed.
 
+  Program Instance equiv_ext_subdecision `{!SubDecision R S S} : SubDecision equiv_ext S S
+      := λ x xs y ys,
+    match decide_sub R x y with
+    | left _ => left _
+    | right _ => right _
+    end.
+  Next Obligation. now apply (equiv_ext_correct x y). Qed.
+  Next Obligation. now rewrite (equiv_ext_correct x y). Qed.
+
   Instance equiv_ext_decision `{∀ x, Decision (x ∊ S)} `{∀ x y, Decision (x = y)}
-    `{∀ `{x ∊ S} `{y ∊ S}, Decision (R x y)} : ∀ x y, Decision (equiv_ext x y).
+    `{!SubDecision R S S} : ∀ x y, Decision (equiv_ext x y).
   Proof. intros x y. change (Decision (((x ∊ S) ∧ (y ∊ S)) ∧ R x y ∨ x = y)).
     destruct (decide (x=y)). left. now right.
     destruct (decide (x ∊ S)); [| right; tauto].
     destruct (decide (y ∊ S)); [| right; tauto].
-    destruct (decide (R x y)); [left | right]; tauto.
+    destruct (decide_sub R x y); [left | right]; tauto.
   Qed.
 
 End relation_extension.

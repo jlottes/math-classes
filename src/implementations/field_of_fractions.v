@@ -65,7 +65,7 @@ Section contents.
     subring D.
   Qed.
 
-  Instance: ∀ `{x ∊ Frac D} `{y ∊ Frac D}, Decision (frac_equiv x y).
+  Instance: SubDecision frac_equiv (Frac D) (Frac D).
   Proof. intros [a b] ? [c d] ?. apply (decision_proper (a*d = b*c)). reflexivity. apply _. Qed.
 
   Instance frac_equiv_ext : Equiv (FracPair _) :=
@@ -84,7 +84,7 @@ Section contents.
   Instance frac_negate : Negate (FracPair _) := λ f, let (a,b) := f in pair (- a) b.
   Instance frac_inv    : Inv    (FracPair A) := λ f, let (a,b) := f in pair b a.
 
-  Let ext_correct x `{!x ∊ Frac D} y `{!y ∊ Frac D} : x = y ↔ frac_equiv x y
+  Let ext_correct `{x ∊ Frac D} `{y ∊ Frac D} : x = y ↔ frac_equiv x y
     := equiv_ext_correct (Ae:=prod_equiv) (Frac D) frac_equiv x y.
 
   Local Ltac reduce :=

@@ -6,15 +6,15 @@ Class Ideal {A Ae Aplus Amult Azero Anegate} R I :=
   { ideal_rng_r : @Rng A Ae Aplus Amult Azero Anegate R
   ; ideal_rng_i : Rng I
   ; ideal_sub : I ⊆ R
-  ; ideal_l r `{!r ∊ R} x `{!x ∊ I} : x * r ∊ I
-  ; ideal_r r `{!r ∊ R} x `{!x ∊ I} : r * x ∊ I
+  ; ideal_l r `{r ∊ R} x `{x ∊ I} : x * r ∊ I
+  ; ideal_r r `{r ∊ R} x `{x ∊ I} : r * x ∊ I
   }.
 
 Section subrng_test.
   Context `{Rng (R:=R)}.
 
   Lemma subrng_test {S:Subset A} `{!SubSetoid S} {sub: S ⊆ R} : 
-   (∃ x, x ∊ S) ∧ (∀ a `{!a ∊ S} b `{!b ∊ S}, a - b ∊ S ∧ a * b ∊ S ) ↔ Rng S.
+   (∃ x, x ∊ S) ∧ (∀ `{a ∊ S} `{b ∊ S}, a - b ∊ S ∧ a * b ∊ S ) ↔ Rng S.
   Proof with try apply _. split.
   + intros [? C]. split. split. apply (subgroup_test_alt R S).
     split. assumption. intros a ? b ?. apply (C a _ b _).

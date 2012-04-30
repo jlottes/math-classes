@@ -22,6 +22,8 @@ Proof. intros. destruct sbm as [???? ext].
   intro E. destruct (ext x₁ _ y₁ _ x₂ _ y₂ _ E); contradiction.
 Qed.
 
+(* If a morphism satisfies the binary strong extensionality property, it is
+  strongly extensional in both coordinates. *)
 Instance strong_setoid_morphism_1 :
   ∀ `{sbm: SubStrongSetoid_Binary_Morphism (f:=f) (S:=X) (T:=Y) (U:=Z)} `{x ∊ X},
     SubStrongSetoid_Morphism (f x) Y Z.
@@ -41,6 +43,36 @@ Proof. intros. destruct sbm as [???? ext].
   destruct (ext x₁ _ y _ x₂ _ y _ E); trivial.
   now destruct (irreflexivity (≠) y).
 Qed.
+
+(* Conversely, if a morphism is strongly extensional in both coordinates, it
+  satisfies the binary strong extensionality property. We don't make this an
+  instance in order to avoid loops. *)
+Lemma strong_binary_setoid_morphism_both_coordinates
+  `{SubStrongSetoid (S:=X)} `{SubStrongSetoid (S:=Y)} `{SubStrongSetoid (S:=Z)}
+  `{sm1: ∀ `{z ∊ X}, SubStrongSetoid_Morphism (f z) Y Z}
+  `{sm2: ∀ `{z ∊ Y}, SubStrongSetoid_Morphism (λ x, f x z) X Z}
+  : SubStrongSetoid_Binary_Morphism f X Y Z.
+Proof.
+  split; try apply _.
+  intros x ?. now destruct (sm1 x _).
+  intros x₁ ? y₁ ? x₂ ? y₂ ? E.
+  destruct (cotransitive E (f x₂ y₁)).
+   left. now apply (strong_extensionality (λ x, f x y₁)).
+  right. now apply (strong_extensionality (f x₂)).
+Qed.
+
+Lemma strong_binary_setoid_morphism_commutative
+  `{SubStrongSetoid A (S:=X)} `{SubStrongSetoid B (S:=Y)} {f : A → A → B}
+  `{!Commutative f X} `{sm1: ∀ `{z ∊ X}, SubStrongSetoid_Morphism (f z) X Y}
+  : SubStrongSetoid_Binary_Morphism f X X Y.
+Proof.
+  assert (∀ z, z ∊ X → SubStrongSetoid_Morphism (λ x, f x z) X Y).
+    split; try apply _.
+    intros x ?. destruct (sm1 x _). apply _.
+    intros x ? y ?. rewrite !(commutativity _ z). now apply (strong_extensionality (f z)).
+  apply strong_binary_setoid_morphism_both_coordinates.
+Qed.
+
 
 Lemma strong_submorphism_proper: Find_Proper_Signature (@SubStrongSetoid_Morphism) 0
   (∀ A Ae B Be Aue Bue f,

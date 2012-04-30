@@ -13,7 +13,7 @@ Lemma field_proper: Find_Proper_Signature (@Field) 0
 Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@Field) 0 _) => eexact field_proper : typeclass_instances.
 
-Lemma mult_inv_closed `{Field (F:=F)} x `{!x ∊ F ₀} : x⁻¹ ∊ F ₀.
+Lemma mult_inv_closed `{Field (F:=F)} x `{x ∊ F ₀} : x⁻¹ ∊ F ₀.
 Proof closed_range (F ₀) (F ₀) (⁻¹) (x:=x).
 Hint Extern 0 (@Element _ _ (@inv _ _ _)) => eapply @mult_inv_closed : typeclass_instances. 
 
@@ -39,9 +39,9 @@ Section props.
 
   Instance field_mult_nonzero: Closed (F ₀ ==> F ₀ ==> F ₀) (.*.) := _.
 
-  Lemma mult_inv_l x `{!x ∊ F ₀} : x⁻¹ * x = 1. Proof field_inv_l x.
-  Lemma mult_inv_r x `{!x ∊ F ₀} : x / x = 1. Proof inverse_r (G:=(F ₀)) x.
-  Lemma mult_inv_involutive x `{!x ∊ F ₀} : (x⁻¹)⁻¹ = x. Proof involutive (S:=(F ₀)) x.
+  Lemma mult_inv_l x `{x ∊ F ₀} : x⁻¹ * x = 1. Proof field_inv_l x.
+  Lemma mult_inv_r x `{x ∊ F ₀} : x / x = 1. Proof inverse_r (G:=(F ₀)) x.
+  Lemma mult_inv_involutive x `{x ∊ F ₀} : (x⁻¹)⁻¹ = x. Proof involutive (S:=(F ₀)) x.
 
   (* We have the following instances from strong_groups: *)
   
