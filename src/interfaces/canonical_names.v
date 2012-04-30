@@ -24,7 +24,7 @@ Infix "≠":= uneq : type_scope.
 Notation "( x ≠)" := (uneq x) (only parsing) : mc_scope.
 Notation "(≠ x )" := (λ y, uneq y x) (only parsing) : mc_scope.
 
-Class StandardUnEq A `{Equiv A} `{UnEq A} := standard_uneq x y : x ≠ y ↔ ¬ x = y.
+Class StandardUnEq A {Ae:Equiv A} {Aue:UnEq A} := standard_uneq x y : x ≠ y ↔ ¬ x = y.
 
 Delimit Scope mc_scope with mc. 
 Global Open Scope mc_scope.

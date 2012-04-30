@@ -6,12 +6,12 @@ Require Import
 Local Open Scope grp_scope. (* notation for inverse *)
 Local Notation e := mon_unit.
 
-Lemma sg_op_closed `{GroupG: Group (G:=G)} `{x ∊ G} `{y ∊ G} : x & y ∊ G. Proof _.
-Hint Extern 0 (@Element _ _ (@sg_op _ _ _ _)) => eapply @sg_op_closed : typeclass_instances. 
+Lemma sg_op_closed `{SemiGroup (S:=G)} : Closed (G ==> G ==> G) (&). Proof _.
+Hint Extern 0 (_ & _ ∊ _) => eapply @sg_op_closed : typeclass_instances. 
 
 Lemma sg_op_proper_fp : Find_Proper_Signature (@sg_op) 0
   (∀ A Ae Sop S `{!@SemiGroup A Ae Sop S}, Proper ((S,=)==>(S,=)==>(S,=)) (&)).
-Proof. intros ?? ???. apply _. Qed.
+Proof. red. intros. apply _. Qed.
 Hint Extern 0 (Find_Proper_Signature (@sg_op) 0 _) => eexact sg_op_proper_fp : typeclass_instances.
 
 Instance sg_op_sm1 `{SemiGroup (S:=G)} `{g ∊ G} : SubSetoid_Morphism (g &) G G. Proof submorphism_binary_1 (&) g.
@@ -38,10 +38,10 @@ Hint Extern 0 (Find_Proper_Signature (@CommutativeMonoid) 0 _) => eexact commono
 Section monoid_props.
 Context `{Monoid (M:=M)}.
 
-Lemma monoid_unit_unique_l x `{!x ∊ M} `{!LeftIdentity (&) x M} : x = e.
+Lemma monoid_unit_unique_l x `{x ∊ M} `{!LeftIdentity (&) x M} : x = e.
 Proof. now rewrite <- (right_identity x), (left_identity e). Qed.
 
-Lemma monoid_unit_unique_r x `{!x ∊ M} `{!RightIdentity (&) x M} : x = e.
+Lemma monoid_unit_unique_r x `{x ∊ M} `{!RightIdentity (&) x M} : x = e.
 Proof. now rewrite <- (left_identity x), (right_identity e). Qed.
 
 End monoid_props.
@@ -58,8 +58,8 @@ Hint Extern 0 (Find_Proper_Signature (@AbGroup) 0 _) => eexact abgroup_proper : 
 
 Instance abgroup_is_commonoid `{AbGroup (G:=G)} : CommutativeMonoid G := {}.
 
-Lemma inv_closed `{GroupG: Group (G:=G)} `{x ∊ G} : x⁻¹ ∊ G. Proof _.
-Hint Extern 1 (@Element _ _ (@inv _ _ _)) => eapply @inv_closed : typeclass_instances. 
+Lemma inv_closed `{Group (G:=G)} : Closed (G ==> G) (⁻¹). Proof _.
+Hint Extern 1 (_⁻¹ ∊ _) => eapply @inv_closed : typeclass_instances. 
 
 Lemma inv_proper_fp : Find_Proper_Signature (@inv) 0
   (∀ A Ginv Ae Gop Gunit G `{@Group A Ae Gop Gunit Ginv G}, Proper ((G,=)==>(G,=)) (⁻¹)).
@@ -91,7 +91,7 @@ Qed.
 Lemma inv_mon_unit : e⁻¹ = e.
 Proof. rewrite <-(left_inverse e) at 2. now rewrite (right_identity e⁻¹). Qed.
 
-Global Instance group_left_cancellation z `{!z ∊ G} : LeftCancellation (&) z G.
+Global Instance group_left_cancellation z `{z ∊ G} : LeftCancellation (&) z G.
 Proof.
   intros x ? y ? E.
   rewrite <-(left_identity x).
@@ -103,7 +103,7 @@ Proof.
   now rewrite (left_identity y).
 Qed.
 
-Global Instance group_right_cancellation z `{!z ∊ G} : RightCancellation (&) z G.
+Global Instance group_right_cancellation z `{z ∊ G} : RightCancellation (&) z G.
 Proof.
   intros x ? y ? E.
   rewrite <-(right_identity x).
@@ -115,7 +115,7 @@ Proof.
   now rewrite (right_identity y).
 Qed.
 
-Lemma inv_sg_op_distr x `{!x ∊ G} y `{!y ∊ G}: (x & y)⁻¹ = y⁻¹ & x⁻¹.
+Lemma inv_sg_op_distr x `{x ∊ G} y `{y ∊ G}: (x & y)⁻¹ = y⁻¹ & x⁻¹.
 Proof.
   rewrite <-(left_identity (y⁻¹ & x⁻¹)).
   rewrite_on G <-(left_inverse (x & y)).
@@ -138,7 +138,7 @@ Proof with try apply _. intros ??. split... split...
   intros x ?. rewrite (commutativity (f:=(&)) x x⁻¹). exact (left_inverse x).
 Qed.
 
-Lemma abgroup_inv_distr `{AbGroup (G:=G)} x `{!x ∊ G} y `{!y ∊ G}: (x & y)⁻¹ = x⁻¹ & y⁻¹.
+Lemma abgroup_inv_distr `{AbGroup (G:=G)} x `{x ∊ G} y `{y ∊ G}: (x & y)⁻¹ = x⁻¹ & y⁻¹.
 Proof. rewrite (inv_sg_op_distr x y). apply commutativity; apply _. Qed.
 
 Section groupmor_props.
@@ -153,7 +153,7 @@ Section groupmor_props.
     reflexivity.
   Qed.
 
-  Lemma preserves_inverse x `{!x ∊ G}: f x⁻¹ = (f x)⁻¹.
+  Lemma preserves_inverse x `{x ∊ G}: f x⁻¹ = (f x)⁻¹.
   Proof with try apply _.
     eapply (left_cancellation (&) (f x))...
     rewrite <-preserves_sg_op...
@@ -185,7 +185,7 @@ Hint Extern 0 (Find_Proper_Signature (@Monoid_Morphism) 0 _) => eexact monoid_mo
 Section from_another_sg.
   Context {A} {Ae:Equiv A} {S:Subset A} {Sop:SgOp A} `{!SemiGroup S}.
   Context `{SubSetoid (A:=B) (S:=T)} {Top:SgOp B} `{!SubSetoid_Binary_Morphism (&) T T T}.
-  Context (f : B → A) `{!Injective f T S} (op_correct : ∀ x `{!x ∊ T} y `{!y ∊ T}, f (x & y) = f x & f y).
+  Context (f : B → A) `{!Injective f T S} (op_correct : ∀ `{x ∊ T} `{y ∊ T}, f (x & y) = f x & f y).
 
   Existing Instance injective_mor.
   Lemma projected_sg: SemiGroup T.

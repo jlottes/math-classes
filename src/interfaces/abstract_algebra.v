@@ -173,10 +173,10 @@ Section upper_classes.
   Class SemiRng (R:Subset A): Prop :=
     { semiplus_monoid    :>> @CommutativeMonoid plus_is_sg_op zero_is_mon_unit R
     ; semimult_semigroup :>> @SemiGroup mult_is_sg_op R
-    ; semirng_distr_l :> LeftDistribute (.*.) (+) R
-    ; semirng_distr_r :> RightDistribute (.*.) (+) R
-    ; semirng_left_absorb :> LeftAbsorb (.*.) 0 R
-    ; semirng_right_absorb :> RightAbsorb (.*.) 0 R
+    ; plus_mult_distr_l :> LeftDistribute (.*.) (+) R
+    ; plus_mult_distr_r :> RightDistribute (.*.) (+) R
+    ; mult_0_l :> LeftAbsorb (.*.) 0 R
+    ; mult_0_r :> RightAbsorb (.*.) 0 R
     }.
 
   Class SemiRing (R:Subset A): Prop :=
@@ -232,6 +232,10 @@ End upper_classes.
 
 Arguments inverse_l {A Ae Gop Gunit Ginv G Group} _ {_}.
 Arguments inverse_r {A Ae Gop Gunit Ginv G Group} _ {_}.
+Arguments plus_mult_distr_l {A Ae Aplus Amult Azero R SemiRng} _ {_} _ {_} _ {_}.
+Arguments plus_mult_distr_r {A Ae Aplus Amult Azero R SemiRng} _ {_} _ {_} _ {_}.
+Arguments mult_0_l {A Ae Aplus Amult Azero R SemiRng} _ {_}.
+Arguments mult_0_r {A Ae Aplus Amult Azero R SemiRng} _ {_}.
 Arguments mult_1_l {A Ae Aplus Amult Azero Aone R SemiRing} _ {_}.
 Arguments mult_1_r {A Ae Aplus Amult Azero Aone R SemiRing} _ {_}.
 Arguments field_inv_l {A Ae Aplus Amult Azero Aone Anegate Aue Ainv F Field} _ {_}.
@@ -246,7 +250,7 @@ Section morphism_classes.
     { sgmor_a : @SemiGroup _ _ Sop S
     ; sgmor_b : @SemiGroup _ _ Top T
     ; sgmor_subsetmor :>> SubSetoid_Morphism f S T
-    ; preserves_sg_op x `{!x ∊ S} y `{!y ∊ S} : f (x & y) = f x & f y
+    ; preserves_sg_op x `{x ∊ S} y `{y ∊ S} : f (x & y) = f x & f y
     }.
 
   Class Monoid_Morphism {Munit Nunit Mop Nop} (f : A → B) (M:Subset A) (N:Subset B) :=
@@ -298,12 +302,12 @@ Section jections.
   Context `{Ae : Equiv A} {Aue: UnEq A} `{Be : Equiv B} {Bue: UnEq B} (f : A → B).
 
   Class StrongInjective (S:Subset A) (T:Subset B) : Prop :=
-    { strong_injective  x `{!x ∊ S} y `{!y ∊ S} : x ≠ y → f x ≠ f y
+    { strong_injective  x `{x ∊ S} y `{y ∊ S} : x ≠ y → f x ≠ f y
     ; strong_injective_mor : SubStrongSetoid_Morphism f S T
     }.
 
   Class Injective (S:Subset A) (T:Subset B) : Prop :=
-    { injective x `{!x ∊ S} y `{!y ∊ S} : f x = f y → x = y
+    { injective x `{x ∊ S} y `{y ∊ S} : f x = f y → x = y
     ; injective_mor : SubSetoid_Morphism f S T
     }.
 

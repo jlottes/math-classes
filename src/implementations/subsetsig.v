@@ -66,7 +66,7 @@ Section quoting.
   Local Ltac solve  E     := unfold Quote in *; rewrite_on S -> E; reflexivity.
   Local Ltac solve2 E1 E2 := unfold Quote in *; rewrite_on S -> E1; rewrite_on S -> E2; reflexivity.
 
-  Lemma subsetsig_quote_base x `{!x ∊ S} : Quote S x (to_sig S x). Proof. red. reflexivity. Qed.
+  Lemma subsetsig_quote_base x `{x ∊ S} : Quote S x (to_sig S x). Proof. red. reflexivity. Qed.
   Lemma subsetsig_quote_zero : Quote S 0 0. Proof. red. reflexivity. Qed.
   Lemma subsetsig_quote_one  : Quote S 1 1. Proof. red. reflexivity. Qed.
   Lemma subsetsig_quote_plus `{!SubProper ((S,=) ==> (S,=) ==> (S,=)) (+)  } `{x ∊ S} `{y ∊ S} {sx sy} (E1:Quote S x sx) (E2:Quote S y sy) : Quote S (x+y) (sx+sy). Proof. solve2 E1 E2. Qed.

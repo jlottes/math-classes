@@ -157,3 +157,10 @@ Proof. intros x ? y ?.
                               y y (restrict_rel_subset_refl S2 y)).
 Qed.
 
+Class SubDecision `(R : A → B → Prop) (S:Subset A) (T:Subset B)
+  := decide_sub `{x ∊ S} `{y ∊ T} : Decision (R x y).
+Arguments decide_sub {A B} R {S T _} x {_} y {_}.
+
+Instance: ∀ `(R : A → B → Prop) `{∀ x y, Decision (R x y)} (S:Subset A) (T:Subset B),
+  SubDecision R S T.
+Proof. intros. exact (λ x _ y _, decide_rel R x y). Defined.

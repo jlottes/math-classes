@@ -43,7 +43,7 @@ Section subgroup_test.
   Qed.
 
   Lemma subgroup_test_alt (H:Subset A) `{!SubSetoid H} `{!H ⊆ G} : 
-   (∃ x, x ∊ H) ∧ (∀ a `{!a ∊ H} b `{!b ∊ H}, a & b⁻¹ ∊ H) ↔ Group H.
+   (∃ x, x ∊ H) ∧ (∀ `{a ∊ H} `{b ∊ H}, a & b⁻¹ ∊ H) ↔ Group H.
   Proof. split.
   + intros [[x ?] C]. apply (subgroup_test H). split. exists x. apply _.
     assert (e ∊ H). rewrite <-(right_inverse x). apply (C x _ x _).
@@ -308,7 +308,7 @@ Proof _ : subrelation (=) (equiv_ext G (coset_equiv_r H)).
 Hint Extern 0 (@subrelation _ (@equiv _ ?Ae) (@grp_quotient_equiv _ ?Ae _ _ _ _)) => eapply @grp_quotient_equiv_sub : typeclass_instances.
 
 Lemma grp_quotient_equiv_correct {A} (G H: Subset A) `{!H ⊆ G} `{Group (A:=A) (G:=G)} `{!Group H}
-  a `{!a ∊ G} b `{!b ∊ G} : (grp_quotient_equiv G H) a b ↔ a & b⁻¹ ∊ H.
+  a `{a ∊ G} b `{b ∊ G} : (grp_quotient_equiv G H) a b ↔ a & b⁻¹ ∊ H.
 Proof. setoid_rewrite (equiv_ext_correct G (coset_equiv_r H) a b). reflexivity. Qed.
 
 Section quotient_group.

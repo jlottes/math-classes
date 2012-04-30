@@ -5,7 +5,7 @@ Section plus.
   Context {A Ae} {Aplus: Plus A} {Azero: Zero A} {R:Subset A}
          `{@CommutativeMonoid A Ae plus_is_sg_op zero_is_mon_unit R}.
 
-  Lemma plus_closed `{x ∊ R} `{y ∊ R} : x + y ∊ R. Proof _.
+  Lemma plus_closed : Closed (R ==> R ==> R) (+). Proof _.
 
   Lemma plus_0_l: LeftIdentity (+) 0 R. Proof _.
   Lemma plus_0_r: RightIdentity (+) 0 R. Proof _.
@@ -13,7 +13,7 @@ End plus.
 Arguments plus_0_l {A Ae Aplus Azero R _} _ {_}.
 Arguments plus_0_r {A Ae Aplus Azero R _} _ {_}.
 
-Hint Extern 0 (@Element _ _ (@plus _ _ _ _)) => eapply @plus_closed : typeclass_instances. 
+Hint Extern 1 (_ + _ ∊ _) => eapply @plus_closed : typeclass_instances. 
 
 Lemma plus_proper: Find_Proper_Signature (@plus) 0
   (∀ A Ae (Aplus:Plus A) (Azero:Zero A) R
@@ -29,9 +29,10 @@ Proof. intro. intros. apply _. Qed.
 Hint Extern 0 (Find_Proper_Signature (@mult) 0 _) => eexact mult_proper : typeclass_instances.
 
 Lemma mult_closed {A Ae R} {Amult:Mult A} `{@SemiGroup A Ae mult_is_sg_op R}
-  `{x ∊ R} `{y ∊ R} : x * y ∊ R.
+  : Closed (R ==> R ==> R) (.*.).
 Proof _.
-Hint Extern 1 (@Element _ _ (@mult _ _ _ _)) => eapply @mult_closed : typeclass_instances. 
+
+Hint Extern 1 (_ * _ ∊ _) => eapply @mult_closed : typeclass_instances. 
 
 Lemma semirng_proper: Find_Proper_Signature (@SemiRng) 0
   (∀ A Ae Aplus Amult Azero, Proper ((=)==>impl) (@SemiRng A Ae Aplus Amult Azero)).
@@ -49,9 +50,9 @@ Instance semiring_mult_monoid `{SemiRing (R:=R)}
 
 Lemma negate_closed A Ae (Aplus:Plus A) (Azero:Zero A) (Anegate:Negate A) {R}
      `{@AbGroup A Ae plus_is_sg_op zero_is_mon_unit negate_is_inv R}
-  `{x ∊ R} : -x ∊ R.
+  : Closed (R ==> R) (-).
 Proof _.
-Hint Extern 0 (@Element _ _ (@negate _ _ _)) => eapply @negate_closed : typeclass_instances. 
+Hint Extern 0 (- _ ∊ _) => eapply @negate_closed : typeclass_instances.
 
 Lemma negate_proper: Find_Proper_Signature (@negate) 0
   (∀ A Ae (Aplus:Plus A) (Azero:Zero A) (Anegate:Negate A) R
@@ -120,28 +121,28 @@ Section rng_props.
 
   Global Instance rng_is_semirng : SemiRng R := {}.
 
-  Definition negate_involutive x `{!x ∊ R} : - - x = x := inverse_involutive x _.
-  Lemma plus_negate_r x `{!x ∊ R} : x + -x = 0. Proof right_inverse x.
-  Lemma plus_negate_l x `{!x ∊ R} : -x + x = 0. Proof left_inverse x.
-  Lemma negate_swap_r x `{!x ∊ R} y `{!y ∊ R} : x - y = -(y - x).
+  Definition negate_involutive x `{x ∊ R} : - - x = x := inverse_involutive x _.
+  Lemma plus_negate_r x `{x ∊ R} : x + -x = 0. Proof right_inverse x.
+  Lemma plus_negate_l x `{x ∊ R} : -x + x = 0. Proof left_inverse x.
+  Lemma negate_swap_r x `{x ∊ R} y `{y ∊ R} : x - y = -(y - x).
   Proof. rewrite inv_sg_op_distr; try apply _. rewrite_on R ->(negate_involutive x). reflexivity. Qed.
-  Lemma negate_swap_l x `{!x ∊ R} y `{!y ∊ R} : -x + y = -(x - y).
+  Lemma negate_swap_l x `{x ∊ R} y `{y ∊ R} : -x + y = -(x - y).
   Proof. rewrite abgroup_inv_distr; try apply _. rewrite_on R ->(negate_involutive y). reflexivity. Qed.
-  Lemma negate_plus_distr x `{!x ∊ R} y `{!y ∊ R} : -(x + y) = -x + -y. Proof abgroup_inv_distr x y.
+  Lemma negate_plus_distr x `{x ∊ R} y `{y ∊ R} : -(x + y) = -x + -y. Proof abgroup_inv_distr x y.
 
-  Lemma negate_mult_distr_l x `{!x ∊ R} y `{!y ∊ R} : -(x * y) = -x * y.
+  Lemma negate_mult_distr_l x `{x ∊ R} y `{y ∊ R} : -(x * y) = -x * y.
   Proof. apply (left_cancellation (+) (x*y) R); try apply _.
     rewrite (plus_negate_r (x*y)). rewrite <-(distribute_r x (-x) y).
     rewrite_on R ->(plus_negate_r x). now rewrite (left_absorb y).
   Qed.
 
-  Lemma negate_mult_distr_r x `{!x ∊ R} y `{!y ∊ R} : -(x * y) = x * -y.
+  Lemma negate_mult_distr_r x `{x ∊ R} y `{y ∊ R} : -(x * y) = x * -y.
   Proof. apply (left_cancellation (+) (x*y) R); try apply _.
     rewrite (plus_negate_r (x*y)). rewrite <-(distribute_l x y (-y)).
     rewrite_on R ->(plus_negate_r y). now rewrite (right_absorb x).
   Qed.
 
-  Lemma negate_mult_negate x `{!x ∊ R} y `{!y ∊ R} : -x * -y = x * y.
+  Lemma negate_mult_negate x `{x ∊ R} y `{y ∊ R} : -x * -y = x * y.
   Proof. rewrite <-(negate_mult_distr_l x (-y)).
     rewrite_on R <-(negate_mult_distr_r x y).
     now rewrite (negate_involutive (x*y)).
@@ -149,14 +150,14 @@ Section rng_props.
 
   Lemma negate_0: -0 = 0. Proof inv_mon_unit.
 
-  Lemma mult_minus_distr_l x `{!x ∊ R} y `{!y ∊ R} z `{!z ∊ R} : x * (y - z) = x*y - x*z.
+  Lemma mult_minus_distr_l x `{x ∊ R} y `{y ∊ R} z `{z ∊ R} : x * (y - z) = x*y - x*z.
   Proof. rewrite_on R ->(negate_mult_distr_r x z). exact (distribute_l x y (-z)). Qed.
 
-  Lemma mult_minus_distr_r x `{!x ∊ R} y `{!y ∊ R} z `{!z ∊ R} : (x - y) * z = x*z - y*z.
+  Lemma mult_minus_distr_r x `{x ∊ R} y `{y ∊ R} z `{z ∊ R} : (x - y) * z = x*z - y*z.
   Proof. rewrite_on R ->(negate_mult_distr_l y z). exact (distribute_r x (-y) z). Qed.
 
 
-  Lemma equal_by_zero_sum x `{!x ∊ R} y `{!y ∊ R} : x - y = 0 ↔ x = y.
+  Lemma equal_by_zero_sum x `{x ∊ R} y `{y ∊ R} : x - y = 0 ↔ x = y.
   Proof.
     split; intros E.
      rewrite <- (plus_0_l y). rewrite_on R <- E.
@@ -165,19 +166,19 @@ Section rng_props.
     rewrite_on R ->E. exact (plus_negate_r y).
   Qed.
 
-  Lemma flip_negate x `{!x ∊ R} y `{!y ∊ R} : -x = y ↔ x = -y.
+  Lemma flip_negate x `{x ∊ R} y `{y ∊ R} : -x = y ↔ x = -y.
   Proof. split; intros E. rewrite_on R <-E. now rewrite involutive.
                           rewrite_on R ->E. now rewrite involutive. Qed.
 
-  Lemma flip_negate_0 x `{!x ∊ R} : -x = 0 ↔ x = 0.
+  Lemma flip_negate_0 x `{x ∊ R} : -x = 0 ↔ x = 0.
   Proof. now rewrite (flip_negate x 0), negate_0. Qed.
 
 (*
-  Lemma flip_negate_ne_0 x `{!x ∊ R} : -x ≠ 0 ↔ x ≠ 0.
+  Lemma flip_negate_ne_0 x `{x ∊ R} : -x ≠ 0 ↔ x ≠ 0.
   Proof. split; intros E ?; apply E; now apply flip_negate_0. Qed.
 *)
 
-  Lemma negate_zero_prod_l x `{!x ∊ R} y `{!y ∊ R} : -x * y = 0 ↔ x * y = 0.
+  Lemma negate_zero_prod_l x `{x ∊ R} y `{y ∊ R} : -x * y = 0 ↔ x * y = 0.
   Proof.
     split; intros E.
      apply (injective (-) (x*y) 0). now rewrite negate_mult_distr_l, negate_0.
@@ -185,7 +186,7 @@ Section rng_props.
     now rewrite_on R ->(negate_involutive x).
   Qed.
 
-  Lemma negate_zero_prod_r x `{!x ∊ R} y `{!y ∊ R} : x * -y = 0 ↔ x * y = 0.
+  Lemma negate_zero_prod_r x `{x ∊ R} y `{y ∊ R} : x * -y = 0 ↔ x * y = 0.
   Proof.
     split; intros E.
      apply (injective (-) (x*y) 0). now rewrite negate_mult_distr_r, negate_0.
@@ -215,17 +216,24 @@ Proof. intro. intros. intros x x' E [?[y[? Z]]].
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@ZeroDivisor) 1 _) => eexact ZeroDivisor_proper2 : typeclass_instances.
 
-Instance mult_nonzero `{StandardUnEq A} `{Rng (A:=A) (Ae:=_) (R:=R)} `{!NoZeroDivisors R} : Closed (R ₀ ==> R ₀ ==> R ₀) (.*.).
+Instance mult_nonzero `{StandardUnEq A} `{SemiRng A (Ae:=_) (R:=R)} `{!NoZeroDivisors R} : Closed (R ₀ ==> R ₀ ==> R ₀) (.*.).
 Proof. intros x ? y ?. split. apply _.
   pose proof (no_zero_divisors x) as nzd. rewrite standard_uneq. mc_contradict nzd.
   split. apply _. exists y. split. apply _. now left.
 Qed.
 Hint Extern 0 (?x * ?y ∊ ?R ₀) => eapply @mult_nonzero : typeclass_instances.
-  
+
+Instance: ∀ `{StandardUnEq A} `{SemiRng A (Ae:=_) (R:=R)}, NonZeroProduct R.
+Proof. intros. intros x ? y ? [_ E]. rewrite standard_uneq in E.
+  split; (split; [ apply _ |]); rewrite standard_uneq;
+  mc_contradict E; rewrite_on R -> E.
+  exact (mult_0_l _). exact (mult_0_r _).
+Qed.
+
 Section cancellation.
   Context `{Rng (A:=A) (R:=R)} {Aue: UnEq A} `{!NoZeroDivisors R} `{!StandardUnEq A} `{∀ x y, Stable (x=y)}.
 
-  Global Instance mult_left_cancellation z `{!z ∊ R ₀} : LeftCancellation (.*.) z R.
+  Global Instance mult_left_cancellation z `{z ∊ R ₀} : LeftCancellation (.*.) z R.
   Proof. intros x ? y ? E.
     rewrite <-(equal_by_zero_sum (z*x) (z*y)) in E.
     rewrite <-(mult_minus_distr_l z x y) in E.
@@ -235,7 +243,7 @@ Section cancellation.
     rewrite standard_uneq. now rewrite (equal_by_zero_sum x y).
   Qed.
 
-  Global Instance mult_right_cancellation z `{!z ∊ R ₀} : RightCancellation (.*.) z R.
+  Global Instance mult_right_cancellation z `{z ∊ R ₀} : RightCancellation (.*.) z R.
   Proof. intros x ? y ? E.
     rewrite <-(equal_by_zero_sum (x*z) (y*z)) in E.
     rewrite <-(mult_minus_distr_r x y z) in E.
@@ -361,8 +369,8 @@ Section semirng_morphisms.
   Existing Instance srngmor_a.
   Existing Instance srngmor_b.
 
-  Lemma preserves_plus x `{!x ∊ R} y `{!y ∊ R} : f (x+y) = f x + f y. Proof preserves_sg_op x y.
-  Lemma preserves_mult x `{!x ∊ R} y `{!y ∊ R} : f (x*y) = f x * f y. Proof preserves_sg_op x y.
+  Lemma preserves_plus x `{x ∊ R} y `{y ∊ R} : f (x+y) = f x + f y. Proof preserves_sg_op x y.
+  Lemma preserves_mult x `{x ∊ R} y `{y ∊ R} : f (x*y) = f x * f y. Proof preserves_sg_op x y.
   Lemma preserves_0: f 0 = 0. Proof preserves_mon_unit.
 
 End semirng_morphisms.
@@ -373,7 +381,7 @@ Section rng_morphisms.
   Existing Instance rngmor_a.
   Existing Instance rngmor_b.
 
-  Lemma preserves_negate x `{!x ∊ R} : f (-x) = - f x. Proof preserves_inverse x.
+  Lemma preserves_negate x `{x ∊ R} : f (-x) = - f x. Proof preserves_inverse x.
 End rng_morphisms.
 
 Instance ring_morphism_is_sring_morphism `{Ring_Morphism (f:=f) (R:=R) (S:=R')}
