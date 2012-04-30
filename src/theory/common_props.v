@@ -133,19 +133,19 @@ Section cancellation.
     `{z ∊ R} `{!StrongLeftCancellation op z R} : StrongRightCancellation op z R.
   Proof. intros x ? y ? E.
     rewrite 2!(commutativity _ z).
-    now eapply (strong_left_cancellation op).
+    now apply (strong_left_cancellation op _ R).
   Qed.
 
   Global Instance strong_left_cancellation_cancel `{!StrongLeftCancellation op z R} : LeftCancellation op z R | 20.
   Proof.
     intros x ? y ?. rewrite <-!tight_apart. intro E. contradict E.
-    now eapply (strong_left_cancellation op).
+    now apply (strong_left_cancellation op _ R).
   Qed.
 
   Global Instance strong_right_cancellation_cancel `{!StrongRightCancellation op z R} : RightCancellation op z R | 20.
   Proof.
     intros x ? y ?. rewrite <-!tight_apart. intros E. contradict E.
-    now eapply (strong_right_cancellation op).
+    now apply (strong_right_cancellation op _ R).
   Qed.
 
 End cancellation.
