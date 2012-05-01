@@ -81,10 +81,10 @@ Class Le A := le: relation A.
 Class Lt A := lt: relation A.
 Typeclasses Transparent Le Lt.
 
-Instance: Params (@inv) 1.
+Instance: Params (@inv) 2.
 Instance: Params (@mult) 2.
 Instance: Params (@plus) 2.
-Instance: Params (@negate) 1.
+Instance: Params (@negate) 2.
 Instance: Params (@equiv) 2.
 Instance: Params (@le) 2.
 Instance: Params (@lt) 2.
@@ -156,6 +156,11 @@ Notation "(∘)" := compose (only parsing) : mc_scope.
 Hint Extern 2 (?x ≤ ?y) => reflexivity.
 Hint Extern 4 (?x ≤ ?z) => auto_trans.
 Hint Extern 4 (?x < ?z) => auto_trans.
+
+Class Inverse `(A → B) : Type := inverse: B → A.
+Arguments inverse {A B} _ {Inverse} _.
+Typeclasses Transparent Inverse.
+Notation "f ⁻¹" := (inverse f) (at level 1, format "f ⁻¹") : mc_fun_scope. (* to co-exist with group inverse *)
 
 Class AntiSymmetric {A} (eq le: relation A) : Prop := antisymmetry: ∀ x y, le x y → le y x → eq x y.
 Arguments antisymmetry {A eq} le {AntiSymmetric} _ _ _ _.

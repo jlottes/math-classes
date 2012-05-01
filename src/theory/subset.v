@@ -164,3 +164,8 @@ Arguments decide_sub {A B} R {S T _} x {_} y {_}.
 Instance: ∀ `(R : A → B → Prop) `{∀ x y, Decision (R x y)} (S:Subset A) (T:Subset B),
   SubDecision R S T.
 Proof. intros. exact (λ x _ y _, decide_rel R x y). Defined.
+
+Ltac exists_sub x :=
+  let S := match goal with |- ex (fun x => ex (fun (y:x ∊ ?S) => _)) => S end
+  in exists x; exists (_:x ∊ S).
+

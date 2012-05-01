@@ -1,4 +1,4 @@
-Require Import canonical_names interfaces.subset propholds.
+Require Import canonical_names interfaces.subset restrict_rel propholds.
 
 Section common_subsets.
   Context `{Aue : UnEq A} {Ale : Le A} {Alt : Lt A} {Azero:Zero A} (R:Subset A).
@@ -103,3 +103,6 @@ Class NoZeroDivisors {A} `{UnEq A} `{Equiv A} `{Zero A} `{Mult A} (R:Subset A) :
 
 Definition RingUnits {A} `{Equiv A} `{Mult A} `{One A} (R:Subset A) : Subset A
   := λ x, x ∊ R ∧ ∃ y, y ∊ R ∧ x * y = 1 ∧ y * x = 1.
+
+Class Biinduction `{Equiv A} `{Zero A} `{One A} `{Plus A} (R:Subset A) : Prop
+  := biinduction P `{!Proper ((R,=) ==> iff) P} : P 0 → (∀ `{n ∊ R}, P n ↔ P (1 + n)) → ∀ `{n ∊ R}, P n.
