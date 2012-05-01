@@ -185,76 +185,80 @@ Section order_preserving_ops.
 
 End order_preserving_ops.
 
-(*
-Lemma projected_partial_order `{Equiv A} `{Ale : Le A} `{Equiv B} `{Ble : Le B}
-  (f : A → B) `{!Injective f} `{!PartialOrder Ble} : (∀ x y, x ≤ y ↔ f x ≤ f y) → PartialOrder Ale.
+Lemma projected_partial_order `{Equiv A} `{Le A} `{Equiv B} `{Le B}
+  (f:A → B) `{!Injective f P1 P2} `{!PartialOrder P2}
+  : (∀ `{x ∊ P1} `{y ∊ P1}, x ≤ y ↔ f x ≤ f y) → PartialOrder P1.
 Proof.
   pose proof (injective_mor f).
-  pose proof (setoidmor_a f).
-  pose proof (setoidmor_b f).
-  intros P. split; try apply _.
-    intros ? ? E1 ? ? E2. now rewrite 2!P, E1, E2.
-   split.
-    intros x. now apply P.
-   intros x y z E1 E2. apply P.
-   transitivity (f y); now apply P.
-  intros x y E1 E2. apply (injective f).
-  apply (antisymmetry (≤)); now apply P.
+  pose proof (subsetoidmor_s f).
+  pose proof (subsetoidmor_t f).
+  intros P. split. apply _.
+  + intros ?? E1 ?? E2. unfold_sigs. rewrite 2!P; trivial.
+    rewrite_on P1 -> E1. rewrite_on P1 -> E2. red. tauto.
+  + intros x ?. apply P; trivial. subreflexivity; apply _.
+  + intros x ? y ? z ? E1 E2. apply P; trivial.
+    subtransitivity (f y); now apply P.
+  + intros x ? y ? E1 E2. apply (injective f _ _).
+    apply (subantisymmetry (≤) _ _); now apply P.
 Qed.
 
-Lemma projected_total_order `{Equiv A} `{Ale : Le A} `{Equiv B} `{Ble : Le B}
-  (f : A → B) `{!TotalRelation Ble} : (∀ x y, x ≤ y ↔ f x ≤ f y) → TotalRelation Ale.
+Lemma projected_total_order `{Equiv A} `{Le A} `{Equiv B} `{Le B}
+  (f:A → B) `{!Closed (S1 ==> S2) f} `{!TotalRelation (≤) S2}
+  : (∀ `{x ∊ S1} `{y ∊ S1}, x ≤ y ↔ f x ≤ f y) → TotalRelation (≤) S1.
 Proof.
-  intros P x y.
+  intros P x ? y ?.
   destruct (total (≤) (f x) (f y)); [left | right]; now apply P.
 Qed.
 
-Lemma projected_strict_order `{Equiv A} `{Alt : Lt A} `{Equiv B} `{Blt : Lt B}
-  (f : A → B) `{!StrictOrder Blt} : (∀ x y, x < y ↔ f x < f y) → StrictOrder Alt.
-Proof.
-  intros P. split.
-   intros x E. destruct (irreflexivity (<) (f x)). now apply P.
-  intros x y z E1 E2. apply P. transitivity (f y); now apply P.
+Lemma projected_sub_strict_order `{Equiv A} `{Lt A} `{Equiv B} `{Lt B}
+  (f : A → B) `{!SubSetoid_Morphism f S1 S2} `{!SubStrictOrder S2}
+  : (∀ `{x ∊ S1} `{y ∊ S1}, x < y ↔ f x < f y) → SubStrictOrder S1.
+Proof. pose proof (subsetoidmor_s f).
+  intros P. split. apply _.
+  + intros ?? E1 ?? E2. unfold_sigs. rewrite 2!P; trivial.
+    rewrite_on S1 -> E1. rewrite_on S1 -> E2. red. tauto.
+  + intros x ? E. destruct (subirreflexivity (<) (f x)). now apply P.
+  + intros x ? y ? z ? E1 E2. apply (P _ _ _ _).
+    subtransitivity (f y); now apply P.
 Qed.
 
-Lemma projected_strict_setoid_order `{Equiv A} `{Alt : Lt A} `{Equiv B} `{Blt : Lt B}
-  (f : A → B) `{!Setoid_Morphism f} `{!StrictSetoidOrder Blt} : (∀ x y, x < y ↔ f x < f y) → StrictSetoidOrder Alt.
-Proof.
-  pose proof (setoidmor_a f).
-  intros P. split; try apply _.
-   intros ? ? E1 ? ? E2. now rewrite 2!P, E1, E2.
-  now apply (projected_strict_order f).
-Qed.
-
-Lemma projected_pseudo_order `{Equiv A} `{Apart A} `{Alt : Lt A} `{Equiv B} `{Apart B} `{Blt : Lt B}
-  (f : A → B) `{!StrongInjective f} `{!PseudoOrder Blt} : (∀ x y, x < y ↔ f x < f y) → PseudoOrder Alt.
+Lemma projected_pseudo_order `{Equiv A} `{UnEq A} `{Lt A} `{Equiv B} `{UnEq B} `{Lt B}
+  (f : A → B) `{!StrongInjective f S1 S2} `{!PseudoOrder S2}
+  : (∀ `{x ∊ S1} `{y ∊ S1}, x < y ↔ f x < f y) → PseudoOrder S1.
 Proof.
   pose proof (strong_injective_mor f).
-  pose proof (strong_setoidmor_a f).
-  pose proof (strong_setoidmor_b f).
-  intros P. split; try apply _.
-    intros x y E. destruct (pseudo_order_antisym (f x) (f y)). split; now apply P.
-   intros x y E z. apply P in E.
-   destruct (cotransitive E (f z)); [left | right]; now apply P.
-  intros x y; split; intros E.
-   apply (strong_injective f) in E.
-   apply apart_iff_total_lt in E. destruct E; [left | right]; now apply P.
-  apply (strong_extensionality f).
-  apply apart_iff_total_lt. destruct E; [left | right]; now apply P.
+  pose proof (strong_subsetoidmor_s f).
+  pose proof (strong_subsetoidmor_t f).
+  intro P. split. apply _.
+  + intros x ? y ? [??]. destruct (pseudo_order_antisym (f x) (f y)). split; now apply P.
+  + intros x ? y ? E z ?. apply (P _ _ _ _) in E.
+    destruct (subcotransitivity E (f z)); [left | right]; now apply P.
+  + intros x ? y ?. split; intro E.
+    * apply (strong_injective f _ _) in E.
+      apply (apart_iff_total_lt _ _) in E. destruct E; [left | right]; now apply P.
+    * apply (strong_extensionality f _ _).
+      apply (apart_iff_total_lt _ _). destruct E; [left | right]; now apply P.
 Qed.
 
-Lemma projected_full_pseudo_order `{Equiv A} `{Apart A} `{Ale : Le A} `{Alt : Lt A}
-  `{Equiv B} `{Apart B} `{Ble : Le B} `{Blt : Lt B}
-  (f : A → B) `{!StrongInjective f} `{!FullPseudoOrder Ble Blt} : (∀ x y, x ≤ y ↔ f x ≤ f y) → (∀ x y, x < y ↔ f x < f y) → FullPseudoOrder Ale Alt.
+Lemma projected_full_pseudo_order 
+  `{Equiv A} `{UnEq A} `{Le A} `{Lt A}
+  `{Equiv B} `{UnEq B} `{Le B} `{Lt B}
+  (f : A → B) `{!StrongInjective f S1 S2} `{!FullPseudoOrder S2}
+  : (∀ `{x ∊ S1} `{y ∊ S1}, x ≤ y ↔ f x ≤ f y)
+  → (∀ `{x ∊ S1} `{y ∊ S1}, x < y ↔ f x < f y)
+  → FullPseudoOrder S1.
 Proof.
+  pose proof (strong_injective_mor f).
+  pose proof (strong_subsetoidmor_s f).
+  pose proof (strong_subsetoidmor_t f).
   intros P1 P2. split.
    now apply (projected_pseudo_order f).
-  intros x y; split; intros E.
-   intros F. destruct (le_not_lt_flip (f y) (f x)); firstorder.
-  apply P1. apply not_lt_le_flip.
-  intros F. destruct E. now apply P2.
+  intros x ? y ?; split; intros E.
+   intros F. destruct (le_not_lt_flip (f y) (f x)); [apply P1 | apply P2]; trivial.
+  apply P1; trivial. apply (not_lt_le_flip _ _). contradict E. now apply P2.
 Qed.
 
+(*
 Instance id_order_morphism `{PartialOrder A} : Order_Morphism (@id A).
 Proof. pose proof po_setoid. repeat (split; try apply _). Qed.
 

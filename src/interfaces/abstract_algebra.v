@@ -186,6 +186,13 @@ Section upper_classes.
     ; mult_1_r :> RightIdentity (.*.) 1 R
     }.
 
+  Class CommutativeSemiRing (R:Subset A): Prop :=
+    { comsemiplus_monoid :>> @CommutativeMonoid plus_is_sg_op zero_is_mon_unit R
+    ; comsemimult_monoid :>> @CommutativeMonoid mult_is_sg_op one_is_mon_unit R
+    ; comsemi_distr_l  :> LeftDistribute (.*.) (+) R
+    ; comsemi_asborb_l :> LeftAbsorb (.*.) 0 R
+    }.
+
   Context {Anegate: Negate A}.
 
   Class Rng (R:Subset A): Prop :=
@@ -299,7 +306,8 @@ Section morphism_classes.
 End morphism_classes.
 
 Section jections.
-  Context `{Ae : Equiv A} {Aue: UnEq A} `{Be : Equiv B} {Bue: UnEq B} (f : A → B).
+  Context `{Ae : Equiv A} {Aue: UnEq A} `{Be : Equiv B} {Bue: UnEq B} (f : A → B) {inv : Inverse f}.
+  Open Scope mc_fun_scope.
 
   Class StrongInjective (S:Subset A) (T:Subset B) : Prop :=
     { strong_injective  x `{x ∊ S} y `{y ∊ S} : x ≠ y → f x ≠ f y
@@ -311,5 +319,14 @@ Section jections.
     ; injective_mor : SubSetoid_Morphism f S T
     }.
 
-End jections.
+  Class Surjective (S:Subset A) (T:Subset B) : Prop :=
+    { surjective : ((T,=)==>(=))%signature (f ∘ f⁻¹) id (* a.k.a. "split-epi" *)
+    ; surjective_mor : SubSetoid_Morphism f S T
+    ; surjective_closed : Closed (T ==> S) (f⁻¹)
+    }.
 
+  Class Bijective (S:Subset A) (T:Subset B) : Prop :=
+    { bijective_injective :> Injective S T
+    ; bijective_surjective :> Surjective S T
+    }.
+End jections.

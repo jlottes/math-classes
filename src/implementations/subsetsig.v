@@ -1,20 +1,11 @@
-Require Import
-  canonical_names restrict_rel interfaces.subset theory.subset.
+Require Import abstract_algebra theory.subsetoids.
 
 Class SubsetSig_Closed {A} (R:Subset A) (f:A) := subsetsig_closed : Closed R f.
 Arguments SubsetSig_Closed {A}%type_scope R%closed_sig_scope f.
 
 Section defs.
 
-  Context {A} {Ae : Equiv A} {Azero:Zero A} {Aone: One A} {Aplus:Plus A} {Amult:Mult A} {Anegate:Negate A}.
-
-  Context (S:Subset A).
-
-  Context {zero_closed  :SubsetSig_Closed S 0}.
-  Context {one_closed   :SubsetSig_Closed S 1}.
-  Context {plus_closed  :SubsetSig_Closed (S==>S==>S) (+)}.
-  Context {mult_closed  :SubsetSig_Closed (S==>S==>S) (.*.)}.
-  Context {negate_closed:SubsetSig_Closed (S==>S) (-)}.
+  Context `(S:Subset A).
 
   Definition SubsetSig := {x:A | x ∊ S}.
 
@@ -24,12 +15,13 @@ Section defs.
 
   Existing Instance subsetsig_closed.
 
-  Instance subsetsig_equiv : Equiv SubsetSig := λ x y, ` x = ` y.
-  Program Instance subsetsig_zero  : Zero SubsetSig := exist _ 0 _.
-  Program Instance subsetsig_one   : One  SubsetSig := exist _ 1 _.
-  Program Instance subsetsig_plus  : Plus SubsetSig := λ x y, exist _ (`x + `y) _.  Next Obligation. apply _. Qed.
-  Program Instance subsetsig_mult  : Mult SubsetSig := λ x y, exist _ (`x * `y) _.  Next Obligation. apply _. Qed.
-  Program Instance subsetsig_negate: Negate SubsetSig := λ x, exist _ (- `x) _.
+  Instance subsetsig_equiv `{Equiv A} : Equiv SubsetSig := λ x y, ` x = ` y.
+  Program Instance subsetsig_zero `{Zero A} `{!SubsetSig_Closed S 0} : Zero SubsetSig := exist _ 0 _.
+  Program Instance subsetsig_one  `{One  A} `{!SubsetSig_Closed S 1} : One  SubsetSig := exist _ 1 _.
+  Program Instance subsetsig_plus `{Plus A} `{!SubsetSig_Closed (S==>S==>S) (+)} : Plus SubsetSig := λ x y, exist _ (`x + `y) _.
+  Program Instance subsetsig_mult `{Mult A} `{!SubsetSig_Closed (S==>S==>S) (.*.)}:Mult SubsetSig := λ x y, exist _ (`x * `y) _.
+  Program Instance subsetsig_negate `{Negate A} `{!SubsetSig_Closed (S==>S) (-)} : Negate SubsetSig := λ x, exist _ (- `x) _.
+  Solve All Obligations with (apply _).
 
 End defs.
 
@@ -41,14 +33,14 @@ Hint Extern 0 (@Mult   (@SubsetSig _ ?S)) => eapply (subsetsig_mult   S) : typec
 Hint Extern 0 (@Negate (@SubsetSig _ ?S)) => eapply (subsetsig_negate S) : typeclass_instances.
 
 
-Class SubsetSig_Quote `{Ae:Equiv A} (S:Subset A) x (sx : SubsetSig S) := subsetsig_quote_eq : x = ` sx.
+Definition SubsetSig_Quote `{Ae:Equiv A} (S:Subset A) x (sx : SubsetSig S) := x = ` sx.
 Local Notation Quote := SubsetSig_Quote.
 
 Section quoting.
 
   Context {A} {Ae : Equiv A} {Azero:Zero A} {Aone: One A} {Aplus:Plus A} {Amult:Mult A} {Anegate:Negate A}.
 
-  Context (S:Subset A).
+  Context (S:Subset A) `{!SubSetoid S}.
 
   Context {zero_closed  :SubsetSig_Closed S 0}.
   Context {one_closed   :SubsetSig_Closed S 1}.
@@ -56,22 +48,23 @@ Section quoting.
   Context {mult_closed  :SubsetSig_Closed (S==>S==>S) (.*.)}.
   Context {negate_closed:SubsetSig_Closed (S==>S) (-)}.
 
-  Context `{!Equivalence (=)}.
+  Existing Instance subsetsig_element.
 
   Lemma subsetsig_quote_equiv_correct {x sx y sy} (E1:Quote S x sx) (E2:Quote S y sy) : sx = sy ↔ x = y.
   Proof. unfold Quote in *. destruct sx as [x' ?], sy as [y' ?]. simpl in E1,E2.
     change (x' = y' ↔ x = y). now rewrite E1, E2.
   Qed.
 
-  Local Ltac solve  E     := unfold Quote in *; rewrite_on S -> E; reflexivity.
-  Local Ltac solve2 E1 E2 := unfold Quote in *; rewrite_on S -> E1; rewrite_on S -> E2; reflexivity.
+  Local Ltac add_subset E := match type of E with ?x = _ => assert (x ∊ S) by (rewrite E; apply _) end.
+  Local Ltac solve  E     := unfold Quote in *; add_subset E; rewrite_on S -> E; reflexivity.
+  Local Ltac solve2 E1 E2 := unfold Quote in *; add_subset E1; add_subset E2; rewrite_on S -> E1; rewrite_on S -> E2; reflexivity.
 
   Lemma subsetsig_quote_base x `{x ∊ S} : Quote S x (to_sig S x). Proof. red. reflexivity. Qed.
   Lemma subsetsig_quote_zero : Quote S 0 0. Proof. red. reflexivity. Qed.
   Lemma subsetsig_quote_one  : Quote S 1 1. Proof. red. reflexivity. Qed.
-  Lemma subsetsig_quote_plus `{!SubProper ((S,=) ==> (S,=) ==> (S,=)) (+)  } `{x ∊ S} `{y ∊ S} {sx sy} (E1:Quote S x sx) (E2:Quote S y sy) : Quote S (x+y) (sx+sy). Proof. solve2 E1 E2. Qed.
-  Lemma subsetsig_quote_mult `{!SubProper ((S,=) ==> (S,=) ==> (S,=)) (.*.)} `{x ∊ S} `{y ∊ S} {sx sy} (E1:Quote S x sx) (E2:Quote S y sy) : Quote S (x*y) (sx*sy). Proof. solve2 E1 E2. Qed.
-  Lemma subsetsig_quote_negate `{!SubProper ((S,=) ==> (S,=)) (-) } `{x ∊ S} {sx} (E:Quote S x sx) : Quote S (-x) (-sx). Proof. solve E. Qed.
+  Lemma subsetsig_quote_plus `{!SubSetoid_Binary_Morphism (+)   S S S} `(E1:Quote S x sx) `(E2:Quote S y sy) : Quote S (x+y) (sx+sy). Proof. solve2 E1 E2. Qed.
+  Lemma subsetsig_quote_mult `{!SubSetoid_Binary_Morphism (.*.) S S S} `(E1:Quote S x sx) `(E2:Quote S y sy) : Quote S (x*y) (sx*sy). Proof. solve2 E1 E2. Qed.
+  Lemma subsetsig_quote_negate `{!SubSetoid_Morphism (-) S S} `(E:Quote S x sx) : Quote S (-x) (-sx). Proof. solve E. Qed.
 
 End quoting.
 
@@ -94,7 +87,7 @@ Ltac subsetsig_quote_equiv S :=
     apply (proj1 (subsetsig_quote_equiv_correct S qx qy))
   end.
 
-Require Import abstract_algebra theory.subsetoids theory.groups.
+Require Import theory.groups.
 
 Lemma subsetsig_setoid `{Setoid A} (S:Subset A) : Setoid (SubsetSig S).
 Proof. split.
@@ -228,6 +221,9 @@ Section transference.
   Qed.
 
   Instance subsetsig_semiring `{!SemiRing S} : SemiRing S' := {}.
+
+  Instance subsetsig_comsemiring `{!CommutativeSemiRing S} : CommutativeSemiRing S' := {}.
+  Proof. intros [x ?] ?. pose proof (left_absorb x) as E. exact E. Qed.
 
   Instance subsetsig_rng `{!Rng S} : Rng S' := {}.
 

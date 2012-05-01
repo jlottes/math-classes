@@ -47,6 +47,29 @@ Hint Extern 0 (Find_Proper_Signature (@SemiRing) 0 _) => eexact semiring_proper 
 Instance semiring_mult_monoid `{SemiRing (R:=R)}
   : @Monoid _ _ mult_is_sg_op one_is_mon_unit R := {}.
 
+Lemma comsemiring_proper: Find_Proper_Signature (@CommutativeSemiRing) 0
+  (∀ A Ae Aplus Amult Azero Aone, Proper ((=)==>impl) (@CommutativeSemiRing A Ae Aplus Amult Azero Aone)).
+Proof. structure_proper. Qed.
+Hint Extern 0 (Find_Proper_Signature (@CommutativeSemiRing) 0 _) => eexact comsemiring_proper : typeclass_instances.
+
+Lemma right_distribute_from_left {A Ae R} `{Plus A} `{Mult A} `{Zero A} `{One A}
+  `{@CommutativeMonoid A Ae plus_is_sg_op zero_is_mon_unit R}
+  `{@CommutativeMonoid A Ae mult_is_sg_op one_is_mon_unit R}
+  `{!LeftDistribute (.*.) (+) R}
+  : RightDistribute (.*.) (+) R.
+Proof.
+  intros x ? y ? z ?.
+  rewrite (commutativity (x+y) z).
+  rewrite_on R -> (commutativity (f:=(.*.)) x z).
+  rewrite_on R -> (commutativity (f:=(.*.)) y z).
+  exact (distribute_l z x y).
+Qed.
+
+Instance comsemiring_semiring `{CommutativeSemiRing (R:=R)} : SemiRing R.
+Proof. repeat (split; try apply _).
++ exact right_distribute_from_left.
++ intros x ?. rewrite (commutativity _ _). exact (left_absorb _).
+Qed.
 
 Lemma negate_closed A Ae (Aplus:Plus A) (Azero:Zero A) (Anegate:Negate A) {R}
      `{@AbGroup A Ae plus_is_sg_op zero_is_mon_unit negate_is_inv R}
@@ -83,13 +106,7 @@ Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@CommutativeRing) 0 _) => eexact comring_proper : typeclass_instances.
 
 Instance comring_is_ring `{CommutativeRing (R:=R)} : Ring R.
-Proof. split; try apply _.
-  intros x ? y ? z ?.
-  rewrite (commutativity (x+y) z).
-  rewrite_on R -> (commutativity x z).
-  rewrite_on R -> (commutativity y z).
-  exact (distribute_l z x y).
-Qed.
+Proof. split; try apply _. exact right_distribute_from_left. Qed.
 
 Lemma intdomain_proper: Find_Proper_Signature (@IntegralDomain) 0
   (∀ A Ae Aplus Amult Azero Aone Anegate Aue,
@@ -197,7 +214,9 @@ Section rng_props.
 
 End rng_props.
 
-Global Instance ring_is_semiring `{Ring (R:=R)} : SemiRing R := {}.
+Instance ring_is_semiring `{Ring (R:=R)} : SemiRing R := {}.
+
+Instance comring_is_comsemiring `{CommutativeRing (R:=R)} : CommutativeSemiRing R := {}.
 
 Section ring_props.
   Context `{Ring (R:=R)}.
@@ -322,6 +341,7 @@ Proof. destruct ru as [?[y[? [E1 E2]]]]. intros [[??][z[[? zn0][E|E]]]];
   rewrite_on R -> E. apply (left_absorb y).
 Qed.
 
+
 Lemma semirng_morphism_proper: Find_Proper_Signature (@SemiRng_Morphism) 0
   (∀ A Ae B Be Aplus Amult Azero Bplus Bmult Bzero f,
     Proper ((=) ==> (=) ==> impl)
@@ -393,4 +413,44 @@ Proof. pose proof ringmor_a. pose proof ringmor_b. split; try apply _.
   now rewrite_on R -> (mult_1_l x).
 Qed.
 
+(* The identity morphism; covers also the injection from a sub semirng *)
+Lemma id_semirng_mor `(R:Subset A) S `{R ⊆ S} `{SemiRng A (R:=R)} `{!SemiRng S} : SemiRng_Morphism id R S.
+Proof. split; apply _. Qed.
+Hint Extern 0 (SemiRng_Morphism id _ _) => class_apply @id_semirng_mor : typeclass_instances.
+
+Lemma id_semiring_mor `(R:Subset A) S `{R ⊆ S} `{SemiRing A (R:=R)} `{!SemiRing S} : SemiRing_Morphism id R S.
+Proof. split; try apply _. reflexivity. Qed.
+Hint Extern 0 (SemiRing_Morphism id _ _) => class_apply @id_semiring_mor : typeclass_instances.
+
+Lemma id_rng_mor `(R:Subset A) S `{R ⊆ S} `{Rng A (R:=R)} `{!Rng S} : Rng_Morphism id R S.
+Proof. split; apply _. Qed.
+Hint Extern 0 (Rng_Morphism id _ _) => class_apply @id_rng_mor : typeclass_instances.
+
+Lemma id_ring_mor `(R:Subset A) S `{R ⊆ S} `{Ring A (R:=R)} `{!Ring S} : Ring_Morphism id R S.
+Proof. split; try apply _. exists_sub 1. reflexivity. Qed.
+Hint Extern 0 (Ring_Morphism id _ _) => class_apply @id_ring_mor : typeclass_instances.
+
+Lemma compose_semirng_morphism `{SemiRng (R:=R)} `{S:Subset B} `{SemiRng B (R:=S)} `{SemiRng (R:=T)}
+  f g `{!SemiRng_Morphism f R S} `{!SemiRng_Morphism g S T}: SemiRng_Morphism (g ∘ f) R T.
+Proof. split; try apply _. Qed.
+Hint Extern 4 (SemiRng_Morphism (_ ∘ _) _ _) => class_apply @compose_semirng_morphism : typeclass_instances.
+
+Lemma compose_semiring_morphism `{SemiRing (R:=R)} `{S:Subset B} `{SemiRing B (R:=S)} `{SemiRing (R:=T)}
+  f g `{!SemiRing_Morphism f R S} `{!SemiRing_Morphism g S T}: SemiRing_Morphism (g ∘ f) R T.
+Proof. split; try apply _.
+  unfold compose. rewrite_on S -> (preserves_1 (f:=f)). exact preserves_1.
+Qed.
+Hint Extern 4 (SemiRing_Morphism (_ ∘ _) _ _) => class_apply @compose_semiring_morphism : typeclass_instances.
+
+Lemma compose_rng_morphism `{Rng (R:=R)} `{S:Subset B} `{Rng B (R:=S)} `{Rng (R:=T)}
+  f g `{!Rng_Morphism f R S} `{!Rng_Morphism g S T}: Rng_Morphism (g ∘ f) R T.
+Proof. split; try apply _. Qed.
+Hint Extern 4 (Rng_Morphism (_ ∘ _) _ _) => class_apply @compose_rng_morphism : typeclass_instances.
+
+Lemma compose_ring_morphism `{Ring (R:=R)} `{S:Subset B} `{Ring B (R:=S)} `{Ring (R:=T)}
+  f g `{!Ring_Morphism f R S} `{!Ring_Morphism g S T}: Ring_Morphism (g ∘ f) R T.
+Proof. split; try apply _. exists_sub 1.
+  unfold compose. rewrite_on S -> (preserves_1 (f:=f)). exact preserves_1.
+Qed.
+Hint Extern 4 (Ring_Morphism (_ ∘ _) _ _) => class_apply @compose_ring_morphism : typeclass_instances.
 

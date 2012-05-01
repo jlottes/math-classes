@@ -34,6 +34,23 @@ Lemma NonZero_subsetoid `{UnEqualitySetoid A} `{Zero A} R `{!SubSetoid R} : SubS
 Proof. split; try apply _. intros ?? E [??]. split; now rewrite <-E. Qed.
 Hint Extern 0 (@SubSetoid _ _ (@NonZero _ _ _ _)) => eapply @NonZero_subsetoid : typeclass_instances. 
 
+Lemma Every_SubReflexive     `(R:relation A) `{!Reflexive R}    : SubReflexive    R (Every A). Proof. firstorder. Qed.
+Lemma Every_SubIrreflexive   `(R:relation A) `{!Irreflexive R}  : SubIrreflexive  R (Every A). Proof. firstorder. Qed.
+Lemma Every_SubSymmetric     `(R:relation A) `{!Symmetric R}    : SubSymmetric    R (Every A). Proof. firstorder. Qed.
+Lemma Every_SubTransitive    `(R:relation A) `{!Transitive R}   : SubTransitive   R (Every A). Proof. firstorder. Qed.
+Lemma Every_SubCoTransitive  `(R:relation A) `{!CoTransitive R} : SubCoTransitive R (Every A). Proof. firstorder. Qed.
+Lemma Every_SubAntiSymmetric `(R:relation A) `{Equiv A} `{!AntiSymmetric (=) R} : SubAntiSymmetric R (Every A). Proof. firstorder. Qed.
+
+Hint Extern 2 (SubReflexive     ?R (Every _)) => eexact (Every_SubReflexive     R) : typeclass_instances.
+Hint Extern 2 (SubIrreflexive   ?R (Every _)) => eexact (Every_SubIrreflexive   R) : typeclass_instances.
+Hint Extern 2 (SubSymmetric     ?R (Every _)) => eexact (Every_SubSymmetric     R) : typeclass_instances.
+Hint Extern 2 (SubTransitive    ?R (Every _)) => eexact (Every_SubTransitive    R) : typeclass_instances.
+Hint Extern 2 (SubCoTransitive  ?R (Every _)) => eexact (Every_SubCoTransitive  R) : typeclass_instances.
+Hint Extern 2 (SubAntiSymmetric ?R (Every _)) => eexact (Every_SubAntiSymmetric R) : typeclass_instances.
+
+Lemma Every_SubEquivalence   `(R:relation A) `{!Equivalence R}   : SubEquivalence   R (Every A). Proof. split; apply _. Qed.
+Hint Extern 2 (SubEquivalence ?R (Every _)) => eexact (Every_SubEquivalence R) : typeclass_instances.
+
 
 (* When the following properties hold, they hold also on subsets, and for any subrelations of (=). *)
 

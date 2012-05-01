@@ -141,6 +141,32 @@ Qed.
 Lemma abgroup_inv_distr `{AbGroup (G:=G)} x `{x ∊ G} y `{y ∊ G}: (x & y)⁻¹ = x⁻¹ & y⁻¹.
 Proof. rewrite (inv_sg_op_distr x y). apply commutativity; apply _. Qed.
 
+(* The identity morphism; covers also the injection from a sub semigroup *)
+Lemma id_semigroup_mor `(S:Subset A) T `{S ⊆ T} `{SemiGroup A (S:=S)} `{!SemiGroup T} : SemiGroup_Morphism id S T.
+Proof. split; try apply _. intros. reflexivity. Qed.
+Hint Extern 0 (SemiGroup_Morphism id _ _) => class_apply @id_semigroup_mor : typeclass_instances.
+
+Lemma id_monoid_mor `(M:Subset A) `{M ⊆ N} `{Monoid A (M:=M)} `{!Monoid N} : Monoid_Morphism id M N.
+Proof. split; try apply _. reflexivity. Qed.
+Hint Extern 0 (Monoid_Morphism id _ _) => class_apply @id_monoid_mor : typeclass_instances.
+
+Lemma compose_semigroup_morphism `(S:Subset A) `{SemiGroup A (S:=S)} `{SemiGroup (S:=T)} `{SemiGroup (S:=U)}
+  f g `{!SemiGroup_Morphism f S T} `{!SemiGroup_Morphism g T U}: SemiGroup_Morphism (g ∘ f) S U.
+Proof. split; try apply _.
+  intros x ? y ?. unfold compose.
+  rewrite_on T -> (preserves_sg_op (f:=f) x y).
+  exact (preserves_sg_op (f:=g) _ _).
+Qed.
+Hint Extern 4 (SemiGroup_Morphism (_ ∘ _) _ _) => class_apply @compose_semigroup_morphism : typeclass_instances.
+
+Lemma compose_monoid_morphism `{Monoid (M:=M)} `{Monoid (M:=N)} `{Monoid (M:=P)}
+  f g `{!Monoid_Morphism f M N} `{!Monoid_Morphism g N P}: Monoid_Morphism (g ∘ f) M P.
+Proof. split; try apply _.
+  unfold compose. rewrite_on N -> (preserves_mon_unit (f:=f)).
+  exact preserves_mon_unit.
+Qed.
+Hint Extern 4 (Monoid_Morphism (_ ∘ _) _ _) => class_apply @compose_monoid_morphism : typeclass_instances.
+
 Section groupmor_props.
   Context `{G:Subset A} `{H:Subset B} `{Group (A:=A) (G:=G)} `{Group (A:=B) (G:=H)} {f : A → B} `{!SemiGroup_Morphism f G H}.
 

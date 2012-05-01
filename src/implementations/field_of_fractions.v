@@ -140,7 +140,7 @@ Section contents.
     reduce. subring D.
   + split... intros x ? y ?. change ( ' (x*y) = 'x * 'y ). unfold cast, frac_inject.
     reduce. subring D.
-  + exists (1:A). exists (_:1 ∊ D). reflexivity.
+  + exists_sub (1:A). reflexivity.
   Qed.
 
   Instance: Injective (cast A (FracPair A)) D (Frac D).
