@@ -1,194 +1,182 @@
 Require Import
-  abstract_algebra theory.subsetoids theory.common_props theory.groups.
+  abstract_algebra theory.setoids theory.common_props theory.groups.
+
+(* Operations are closed and proper *)
 
 Section plus.
-  Context {A Ae} {Aplus: Plus A} {Azero: Zero A} {R:Subset A}
-         `{@CommutativeMonoid A Ae plus_is_sg_op zero_is_mon_unit R}.
+  Context `{Aplus: Plus A} {Azero: Zero A} {Ae:Equiv A} {R:Subset A}.
+  Context `{!AdditiveMonoid R}.
 
-  Lemma plus_closed : Closed (R ==> R ==> R) (+). Proof _.
+  Lemma plus_closed : Closed (R ==> R ==> R) (+). Proof sg_op_closed.
 
   Lemma plus_0_l: LeftIdentity (+) 0 R. Proof _.
   Lemma plus_0_r: RightIdentity (+) 0 R. Proof _.
 End plus.
-Arguments plus_0_l {A Ae Aplus Azero R _} _ {_}.
-Arguments plus_0_r {A Ae Aplus Azero R _} _ {_}.
+Arguments plus_0_l {A Aplus Azero Ae R _} _ {_}.
+Arguments plus_0_r {A Aplus Azero Ae R _} _ {_}.
 
-Hint Extern 1 (_ + _ ∊ _) => eapply @plus_closed : typeclass_instances. 
+Hint Extern 20 (Closed (_==>_==>_) (+)) => eapply @plus_closed : typeclass_instances.
+Hint Extern 5 (_ + _ ∊ _) => eapply @plus_closed : typeclass_instances. 
 
 Lemma plus_proper: Find_Proper_Signature (@plus) 0
-  (∀ A Ae (Aplus:Plus A) (Azero:Zero A) R
-     `{@CommutativeMonoid A Ae plus_is_sg_op zero_is_mon_unit  R},
+  (∀ A (Aplus:Plus A) (Azero:Zero A) (Ae:Equiv A) R `{!AdditiveMonoid R},
    Proper ((R,=)==>(R,=)==>(R,=)) (+)).
-Proof. intro. intros. apply _. Qed.
+Proof. red. intros. apply _. Qed.
 Hint Extern 0 (Find_Proper_Signature (@plus) 0 _) => eexact plus_proper : typeclass_instances.
 
 Lemma mult_proper: Find_Proper_Signature (@mult) 0
-  (∀ A Ae (Amult:Mult A) R `{@SemiGroup A Ae mult_is_sg_op R},
+  (∀ A (Amult:Mult A) (Ae:Equiv A) R `{!MultiplicativeSemiGroup R},
    Proper ((R,=)==>(R,=)==>(R,=)) (.*.)).
-Proof. intro. intros. apply _. Qed.
+Proof. red. intros. apply _. Qed.
 Hint Extern 0 (Find_Proper_Signature (@mult) 0 _) => eexact mult_proper : typeclass_instances.
 
-Lemma mult_closed {A Ae R} {Amult:Mult A} `{@SemiGroup A Ae mult_is_sg_op R}
+Lemma mult_closed `{Mult A} `{Equiv A} {R} `{!MultiplicativeSemiGroup R}
   : Closed (R ==> R ==> R) (.*.).
+Proof sg_op_closed.
+
+Hint Extern 20 (Closed (_==>_==>_) (.*.)) => eapply @mult_closed : typeclass_instances.
+Hint Extern 5 (_ * _ ∊ _) => eapply @mult_closed : typeclass_instances. 
+
+Lemma negate_closed `{Plus A} `{Zero A} `{Negate A} `{Equiv A} {R} `{!AdditiveGroup R}
+  : Closed (R ==> R) (-).
 Proof _.
 
-Hint Extern 1 (_ * _ ∊ _) => eapply @mult_closed : typeclass_instances. 
+Hint Extern 5 (- _ ∊ _) => eapply @negate_closed : typeclass_instances. 
+
+Lemma negate_proper: Find_Proper_Signature (@negate) 0
+  (∀ `{Plus A} `{Zero A} `{Negate A} `{Equiv A} R `{!AdditiveGroup R},
+   Proper ((R,=)==>(R,=)) (-)).
+Proof. red. intros. apply _. Qed.
+Hint Extern 0 (Find_Proper_Signature (@negate) 0 _) => eexact negate_proper : typeclass_instances.
+
+
+(* Deducible structure instances *)
+
+Instance semiring_mult_monoid `{sr: SemiRing (R:=R)} : MultiplicativeMonoid R.
+Proof. destruct sr. split; apply _. Qed.
+
+Instance comsemiring_semiring `{csr: CommutativeSemiRing (R:=R)} : SemiRing R.
+Proof. destruct csr. destruct (_:MultiplicativeMonoid R). do 2 (split; try apply _).
+  exact right_distr_from_left. exact right_absorb_from_left.
+Qed.
+
+Instance rng_semirng `{r: Rng (R:=R)} : SemiRng R.
+Proof. destruct r. split; try apply _.
++ intros y ?. apply (right_cancellation (+) (0*y) R _ _).
+  now rewrite_on R <-(distribute_r 0 0 y), (plus_0_r 0), (plus_0_l (0*y)).
++ intros y ?. apply (left_cancellation (+) (y*0) R _ _).
+  now rewrite_on R <-(distribute_l y 0 0), (plus_0_l 0), (plus_0_r (y*0)).
+Qed.
+
+Instance ring_semiring `{r: Ring (R:=R)} : SemiRing R.
+Proof. destruct r. split; apply _. Qed.
+
+Instance comring_ring `{r: CommutativeRing (R:=R)} : Ring R.
+Proof. destruct r. destruct (_:MultiplicativeMonoid R). do 2 (split; try apply _).
+  exact right_distr_from_left.
+Qed.
+
+Instance comring_comsemiring `{r: CommutativeRing (R:=R)} : CommutativeSemiRing R := {}.
+
+
+(* Properness of structure predicates *)
 
 Lemma semirng_proper: Find_Proper_Signature (@SemiRng) 0
-  (∀ A Ae Aplus Amult Azero, Proper ((=)==>impl) (@SemiRng A Ae Aplus Amult Azero)).
+  (∀ A Aplus Amult Azero Ae, Proper ((=)==>impl) (@SemiRng A Aplus Amult Azero Ae)).
 Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@SemiRng) 0 _) => eexact semirng_proper : typeclass_instances.
 
 Lemma semiring_proper: Find_Proper_Signature (@SemiRing) 0
-  (∀ A Ae Aplus Amult Azero Aone, Proper ((=)==>impl) (@SemiRing A Ae Aplus Amult Azero Aone)).
+  (∀ A Aplus Amult Azero Aone Ae, Proper ((=)==>impl) (@SemiRing A Aplus Amult Azero Aone Ae)).
 Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@SemiRing) 0 _) => eexact semiring_proper : typeclass_instances.
 
-Instance semiring_mult_monoid `{SemiRing (R:=R)}
-  : @Monoid _ _ mult_is_sg_op one_is_mon_unit R := {}.
-
 Lemma comsemiring_proper: Find_Proper_Signature (@CommutativeSemiRing) 0
-  (∀ A Ae Aplus Amult Azero Aone, Proper ((=)==>impl) (@CommutativeSemiRing A Ae Aplus Amult Azero Aone)).
+  (∀ A Aplus Amult Azero Aone Ae, Proper ((=)==>impl) (@CommutativeSemiRing A Aplus Amult Azero Aone Ae)).
 Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@CommutativeSemiRing) 0 _) => eexact comsemiring_proper : typeclass_instances.
 
-Lemma right_distribute_from_left {A Ae R} `{Plus A} `{Mult A} `{Zero A} `{One A}
-  `{@CommutativeMonoid A Ae plus_is_sg_op zero_is_mon_unit R}
-  `{@CommutativeMonoid A Ae mult_is_sg_op one_is_mon_unit R}
-  `{!LeftDistribute (.*.) (+) R}
-  : RightDistribute (.*.) (+) R.
-Proof.
-  intros x ? y ? z ?.
-  rewrite (commutativity (x+y) z).
-  rewrite_on R -> (commutativity (f:=(.*.)) x z).
-  rewrite_on R -> (commutativity (f:=(.*.)) y z).
-  exact (distribute_l z x y).
-Qed.
-
-Instance comsemiring_semiring `{CommutativeSemiRing (R:=R)} : SemiRing R.
-Proof. repeat (split; try apply _).
-+ exact right_distribute_from_left.
-+ intros x ?. rewrite (commutativity _ _). exact (left_absorb _).
-Qed.
-
-Lemma negate_closed A Ae (Aplus:Plus A) (Azero:Zero A) (Anegate:Negate A) {R}
-     `{@AbGroup A Ae plus_is_sg_op zero_is_mon_unit negate_is_inv R}
-  : Closed (R ==> R) (-).
-Proof _.
-Hint Extern 0 (- _ ∊ _) => eapply @negate_closed : typeclass_instances.
-
-Lemma negate_proper: Find_Proper_Signature (@negate) 0
-  (∀ A Ae (Aplus:Plus A) (Azero:Zero A) (Anegate:Negate A) R
-     `{@AbGroup A Ae plus_is_sg_op zero_is_mon_unit negate_is_inv R},
-   Proper ((R,=)==>(R,=)) (-)).
-Proof. intro. intros. apply _. Qed.
-Hint Extern 0 (Find_Proper_Signature (@negate) 0 _) => eexact negate_proper : typeclass_instances.
-
-
 Lemma rng_proper: Find_Proper_Signature (@Rng) 0
-  (∀ A Ae Aplus Amult Azero Anegate,
-   Proper ((=)==>impl) (@Rng A Ae Aplus Amult Azero Anegate)).
+  (∀ A Aplus Amult Azero Anegate Ae,
+   Proper ((=)==>impl) (@Rng A Aplus Amult Azero Anegate Ae)).
 Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@Rng) 0 _) => eexact rng_proper : typeclass_instances.
 
 Lemma ring_proper: Find_Proper_Signature (@Ring) 0
-  (∀ A Ae Aplus Amult Azero Aone Anegate,
-   Proper ((=)==>impl) (@Ring A Ae Aplus Amult Azero Aone Anegate)).
+  (∀ A Aplus Amult Azero Aone Anegate Ae,
+   Proper ((=)==>impl) (@Ring A Aplus Amult Azero Aone Anegate Ae)).
 Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@Ring) 0 _) => eexact ring_proper : typeclass_instances.
 
-Instance ring_is_rng `{Ring (R:=R)} : Rng R := {}.
-
 Lemma comring_proper: Find_Proper_Signature (@CommutativeRing) 0
-  (∀ A Ae Aplus Amult Azero Aone Anegate,
-   Proper ((=)==>impl) (@CommutativeRing A Ae Aplus Amult Azero Aone Anegate)).
+  (∀ A Aplus Amult Azero Aone Anegate Ae,
+   Proper ((=)==>impl) (@CommutativeRing A Aplus Amult Azero Aone Anegate Ae)).
 Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@CommutativeRing) 0 _) => eexact comring_proper : typeclass_instances.
 
-Instance comring_is_ring `{CommutativeRing (R:=R)} : Ring R.
-Proof. split; try apply _. exact right_distribute_from_left. Qed.
-
 Lemma intdomain_proper: Find_Proper_Signature (@IntegralDomain) 0
-  (∀ A Ae Aplus Amult Azero Aone Anegate Aue,
-   Proper ((=)==>impl) (@IntegralDomain A Ae Aplus Amult Azero Aone Anegate Aue)).
-Proof. intro. intros. intros S T E [???]. split; try apply _; rewrite <- E; apply _. Qed.
+  (∀ A Aplus Amult Azero Aone Anegate Ae Aue,
+   Proper ((=)==>impl) (@IntegralDomain A Aplus Amult Azero Aone Anegate Ae Aue)).
+Proof with try apply _. red. intros. intros S T E. destruct 1. split...
+  rewrite <- E... rewrite <- E...
+  intros ? el ? el2. rewrite <- E in el, el2 |- *...
+  intros ? el. rewrite <- E in el |- *...
+Qed.
 Hint Extern 0 (Find_Proper_Signature (@IntegralDomain) 0 _) => eexact intdomain_proper : typeclass_instances.
 
-Lemma rng_is_ring `{Rng (A:=A) (R:=R)} {Aone: One A} `{!1 ∊ R} :
-    LeftIdentity (.*.) 1 R → RightIdentity (.*.) 1 R → Ring R.
-Proof. intros ??. repeat (split; try apply _). Qed.
-Arguments rng_is_ring {A Ae Aplus Amult Azero Anegate} R {_} Aone {_} _ _.
-
 Section rng_props.
-  Context `{Rng (R:=R)}.
-
-  Global Instance rng_left_absorb : LeftAbsorb (.*.) 0 R.
-  Proof. intros y ?. apply (right_cancellation (+) (0*y) R); try apply _.
-    rewrite <-(distribute_r 0 0 y).
-    rewrite_on R ->(plus_0_r 0).
-    now rewrite (plus_0_l (0*y)).
-  Qed.
-
-  Global Instance rng_right_absorb : RightAbsorb (.*.) 0 R.
-  Proof. intros y ?. apply (left_cancellation (+) (y*0) R); try apply _.
-    rewrite <-(distribute_l y 0 0).
-    rewrite_on R ->(plus_0_l 0).
-    now rewrite (plus_0_r (y*0)).
-  Qed.
-
-  Global Instance rng_is_semirng : SemiRng R := {}.
+  Context `{rng: Rng A (R:=R)}.
 
   Definition negate_involutive x `{x ∊ R} : - - x = x := inverse_involutive x _.
-  Lemma plus_negate_r x `{x ∊ R} : x + -x = 0. Proof right_inverse x.
-  Lemma plus_negate_l x `{x ∊ R} : -x + x = 0. Proof left_inverse x.
+  Lemma plus_negate_r x `{x ∊ R} : x + -x = 0. Proof right_inverse (&) x.
+  Lemma plus_negate_l x `{x ∊ R} : -x + x = 0. Proof left_inverse (&) x.
   Lemma negate_swap_r x `{x ∊ R} y `{y ∊ R} : x - y = -(y - x).
-  Proof. rewrite inv_sg_op_distr; try apply _. rewrite_on R ->(negate_involutive x). reflexivity. Qed.
+  Proof. now rewrite_on R -> (inv_sg_op_distr y (-x) : -(y-x) = --x -y), (negate_involutive x). Qed.
   Lemma negate_swap_l x `{x ∊ R} y `{y ∊ R} : -x + y = -(x - y).
-  Proof. rewrite abgroup_inv_distr; try apply _. rewrite_on R ->(negate_involutive y). reflexivity. Qed.
+  Proof. now rewrite_on R -> (abgroup_inv_distr x (-y) : -(x-y) = -x --y), (negate_involutive y). Qed.
   Lemma negate_plus_distr x `{x ∊ R} y `{y ∊ R} : -(x + y) = -x + -y. Proof abgroup_inv_distr x y.
 
   Lemma negate_mult_distr_l x `{x ∊ R} y `{y ∊ R} : -(x * y) = -x * y.
-  Proof. apply (left_cancellation (+) (x*y) R); try apply _.
-    rewrite (plus_negate_r (x*y)). rewrite <-(distribute_r x (-x) y).
-    rewrite_on R ->(plus_negate_r x). now rewrite (left_absorb y).
+  Proof. apply (left_cancellation (+) (x*y) R _ _).
+    rewrite_on R -> (plus_negate_r (x*y)), <-(plus_mult_distr_r x (-x) y).
+    now rewrite_on R ->(plus_negate_r x), (mult_0_l y).
   Qed.
 
   Lemma negate_mult_distr_r x `{x ∊ R} y `{y ∊ R} : -(x * y) = x * -y.
-  Proof. apply (left_cancellation (+) (x*y) R); try apply _.
-    rewrite (plus_negate_r (x*y)). rewrite <-(distribute_l x y (-y)).
-    rewrite_on R ->(plus_negate_r y). now rewrite (right_absorb x).
+  Proof. apply (left_cancellation (+) (x*y) R _ _).
+    rewrite_on R -> (plus_negate_r (x*y)), <-(plus_mult_distr_l x y (-y)).
+    now rewrite_on R ->(plus_negate_r y), (mult_0_r x).
   Qed.
 
   Lemma negate_mult_negate x `{x ∊ R} y `{y ∊ R} : -x * -y = x * y.
-  Proof. rewrite <-(negate_mult_distr_l x (-y)).
-    rewrite_on R <-(negate_mult_distr_r x y).
-    now rewrite (negate_involutive (x*y)).
+  Proof. now rewrite_on R <-(negate_mult_distr_l x (-y)), <-(negate_mult_distr_r x y),
+                            (negate_involutive (x*y)).
   Qed.
 
   Lemma negate_0: -0 = 0. Proof inv_mon_unit.
 
   Lemma mult_minus_distr_l x `{x ∊ R} y `{y ∊ R} z `{z ∊ R} : x * (y - z) = x*y - x*z.
-  Proof. rewrite_on R ->(negate_mult_distr_r x z). exact (distribute_l x y (-z)). Qed.
+  Proof. rewrite_on R ->(negate_mult_distr_r x z). exact (plus_mult_distr_l x y (-z)). Qed.
 
   Lemma mult_minus_distr_r x `{x ∊ R} y `{y ∊ R} z `{z ∊ R} : (x - y) * z = x*z - y*z.
-  Proof. rewrite_on R ->(negate_mult_distr_l y z). exact (distribute_r x (-y) z). Qed.
-
+  Proof. rewrite_on R ->(negate_mult_distr_l y z). exact (plus_mult_distr_r x (-y) z). Qed.
 
   Lemma equal_by_zero_sum x `{x ∊ R} y `{y ∊ R} : x - y = 0 ↔ x = y.
   Proof.
     split; intros E.
-     rewrite <- (plus_0_l y). rewrite_on R <- E.
-     rewrite <-(associativity x (-y) y). rewrite_on R ->(plus_negate_l y).
-     now rewrite (plus_0_r x).
+     rewrite_on R <- (plus_0_l y), <- E, <- (associativity (+) x (-y) y).
+     now rewrite_on R ->(plus_negate_l y), (plus_0_r x).
     rewrite_on R ->E. exact (plus_negate_r y).
   Qed.
 
   Lemma flip_negate x `{x ∊ R} y `{y ∊ R} : -x = y ↔ x = -y.
-  Proof. split; intros E. rewrite_on R <-E. now rewrite involutive.
-                          rewrite_on R ->E. now rewrite involutive. Qed.
+  Proof. split; intros E. rewrite_on R <-E. subsymmetry. exact (negate_involutive x).
+                          rewrite_on R ->E. exact (negate_involutive y). Qed.
 
   Lemma flip_negate_0 x `{x ∊ R} : -x = 0 ↔ x = 0.
-  Proof. now rewrite (flip_negate x 0), negate_0. Qed.
+  Proof. rewrite (flip_negate x 0).
+    split; intros. now rewrite_on R <- negate_0. now rewrite_on R -> negate_0.
+  Qed.
 
 (*
   Lemma flip_negate_ne_0 x `{x ∊ R} : -x ≠ 0 ↔ x ≠ 0.
@@ -198,196 +186,188 @@ Section rng_props.
   Lemma negate_zero_prod_l x `{x ∊ R} y `{y ∊ R} : -x * y = 0 ↔ x * y = 0.
   Proof.
     split; intros E.
-     apply (injective (-) (x*y) 0). now rewrite negate_mult_distr_l, negate_0.
-    apply (injective (-) (-x * y) 0). rewrite (negate_mult_distr_l (- x) y), negate_0.
+     apply (injective (-) (x*y) 0). now rewrite_on R -> (negate_mult_distr_l x y), negate_0.
+    apply (injective (-) (-x * y) 0). rewrite_on R -> (negate_mult_distr_l (- x) y), negate_0.
     now rewrite_on R ->(negate_involutive x).
   Qed.
 
   Lemma negate_zero_prod_r x `{x ∊ R} y `{y ∊ R} : x * -y = 0 ↔ x * y = 0.
   Proof.
     split; intros E.
-     apply (injective (-) (x*y) 0). now rewrite negate_mult_distr_r, negate_0.
-    apply (injective (-) (x * -y) 0). rewrite (negate_mult_distr_r x (- y)), negate_0.
+     apply (injective (-) (x*y) 0). now rewrite_on R -> (negate_mult_distr_r x y), negate_0.
+    apply (injective (-) (x * -y) 0). rewrite_on R -> (negate_mult_distr_r x (- y)), negate_0.
     now rewrite_on R ->(negate_involutive y).
   Qed.
 
-
 End rng_props.
 
-Instance ring_is_semiring `{Ring (R:=R)} : SemiRing R := {}.
-
-Instance comring_is_comsemiring `{CommutativeRing (R:=R)} : CommutativeSemiRing R := {}.
+Lemma negate_nonzero `{Rng A (R:=R)} `{UnEq A} `{!StandardUnEq R} x `{x ∊ R ₀} : -x ∊ R ₀.
+Proof. destruct (_ : x ∊ R ₀) as [_ E]. rewrite (standard_uneq _ _) in E.
+  split. apply _. rewrite (standard_uneq _ _). mc_contradict E. now apply (flip_negate_0 x).
+Qed.
+Hint Extern 4 (-_ ∊ _ ₀) => eapply @negate_nonzero : typeclass_instances.
 
 Section ring_props.
   Context `{Ring (R:=R)}.
-  Lemma negate_mult x `{!x ∊ R} : -x = -1 * x.
-  Proof. rewrite <-(negate_mult_distr_l 1 x). now rewrite_on R ->(mult_1_l x). Qed.
+  Lemma negate_mult x `{x ∊ R} : -x = -1 * x.
+  Proof. now rewrite_on R <-(negate_mult_distr_l 1 x), (mult_1_l x). Qed.
 End ring_props.
 
-Existing Instance NonZero_subset.
-
 Lemma ZeroDivisor_proper2: Find_Proper_Signature (@ZeroDivisor) 1
-  (∀ `{UnEqualitySetoid A} Azero Amult R `{!@SemiGroup A _ mult_is_sg_op R},
-   Proper ((=)==>impl) (@ZeroDivisor A _ _ Azero Amult R)).
-Proof. intro. intros. intros x x' E [?[y[? Z]]].
-  assert (x' ∊ R ₀) by now rewrite <-E. split. easy. exists y.
-  split. apply _. destruct Z; [ left | right ]; now rewrite_on R <-E.
+  (∀ `{UnEq A} `{Equiv A} `{Zero A} `{Mult A} R `{!UnEqualitySetoid R}
+     `{0 ∊ R} `{!MultiplicativeSemiGroup R},
+   Proper ((R,=)==>impl) (ZeroDivisor R)).
+Proof. red. intros. intros x x' E [?[y[? Z]]]. unfold_sigs.
+  assert (x' ∊ R ₀) by now rewrite_on R <-E. split. trivial. exists_sub y.
+  destruct Z; [ left | right ]; now rewrite_on R <-E.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@ZeroDivisor) 1 _) => eexact ZeroDivisor_proper2 : typeclass_instances.
 
-Instance mult_nonzero `{StandardUnEq A} `{SemiRng A (Ae:=_) (R:=R)} `{!NoZeroDivisors R} : Closed (R ₀ ==> R ₀ ==> R ₀) (.*.).
+Lemma mult_nonzero `{SemiRng A (R:=R)} `{UnEq A} `{!StandardUnEq R} `{!NoZeroDivisors R}
+  : Closed (R ₀ ==> R ₀ ==> R ₀) (.*.).
 Proof. intros x ? y ?. split. apply _.
-  pose proof (no_zero_divisors x) as nzd. rewrite standard_uneq. mc_contradict nzd.
-  split. apply _. exists y. split. apply _. now left.
+  pose proof (no_zero_divisors x) as nzd. rewrite (standard_uneq _ _). mc_contradict nzd.
+  split. apply _. exists_sub y. now left.
 Qed.
-Hint Extern 0 (?x * ?y ∊ ?R ₀) => eapply @mult_nonzero : typeclass_instances.
+Hint Extern 20 (Closed (?R ₀ ==> ?R ₀ ==> ?R ₀) (.*.)) => eapply @mult_nonzero : typeclass_instances.
+Hint Extern 4 (?x * ?y ∊ ?R ₀) => eapply @mult_nonzero: typeclass_instances.
 
-Instance: ∀ `{StandardUnEq A} `{SemiRng A (Ae:=_) (R:=R)}, NonZeroProduct R.
-Proof. intros. intros x ? y ? [_ E]. rewrite standard_uneq in E.
-  split; (split; [ apply _ |]); rewrite standard_uneq;
+Instance: ∀ `{SemiRng A (R:=R)} `{UnEq A} `{!StandardUnEq R}, NonZeroProduct R.
+Proof. intros. intros x ? y ? [_ E]. rewrite (standard_uneq _ _) in E.
+  split; (split; [ apply _ |]); rewrite (standard_uneq _ _);
   mc_contradict E; rewrite_on R -> E.
   exact (mult_0_l _). exact (mult_0_r _).
 Qed.
 
 Section cancellation.
-  Context `{Rng (A:=A) (R:=R)} {Aue: UnEq A} `{!NoZeroDivisors R} `{!StandardUnEq A} `{∀ x y, Stable (x=y)}.
+  Context `{Rng A (R:=R)} `{UnEq A} `{!StandardUnEq R} `{!NoZeroDivisors R}
+          `{∀ `{x ∊ R} `{y ∊ R}, Stable (x=y)}.
 
   Global Instance mult_left_cancellation z `{z ∊ R ₀} : LeftCancellation (.*.) z R.
   Proof. intros x ? y ? E.
     rewrite <-(equal_by_zero_sum (z*x) (z*y)) in E.
-    rewrite <-(mult_minus_distr_l z x y) in E.
+    rewrite_on R <-(mult_minus_distr_l z x y) in E.
     pose proof (no_zero_divisors z) as nzd.
     apply stable. unfold DN. contradict nzd.
-    split. apply _. exists (x-y). intuition. split. apply _.
-    rewrite standard_uneq. now rewrite (equal_by_zero_sum x y).
+    split. apply _. assert (x-y ∊ R ₀). split. apply _.
+      now rewrite -> (standard_uneq _ _), (equal_by_zero_sum _ _).
+    exists_sub (x-y). tauto.
   Qed.
 
   Global Instance mult_right_cancellation z `{z ∊ R ₀} : RightCancellation (.*.) z R.
   Proof. intros x ? y ? E.
     rewrite <-(equal_by_zero_sum (x*z) (y*z)) in E.
-    rewrite <-(mult_minus_distr_r x y z) in E.
+    rewrite_on R <-(mult_minus_distr_r x y z) in E.
     pose proof (no_zero_divisors z) as nzd.
     apply stable. unfold DN. contradict nzd.
-    split. apply _. exists (x-y). intuition. split. apply _.
-    rewrite standard_uneq. now rewrite (equal_by_zero_sum x y).
+    split. apply _. assert (x-y ∊ R ₀). split. apply _.
+      now rewrite -> (standard_uneq _ _), (equal_by_zero_sum _ _).
+    exists_sub (x-y). tauto.
   Qed.
 
 End cancellation.
 
+Hint Extern 10 (Closed (?R ₀ ==> ?R ₀ ==> ?R ₀) (.*.)) => eapply @intdom_nozeroes.
+Hint Extern 4 (?x * ?y ∊ ?R ₀) => eapply @intdom_nozeroes : typeclass_instances.
+
+Lemma intdom_nozerodivs `{IntegralDomain (R:=R)} : NoZeroDivisors R.
+Proof. intros x [?[y[?[E|E]]]]; contradict E; apply (uneq_ne _ _).
+  now destruct (_ : x * y ∊ R ₀). now destruct (_ : y * x ∊ R ₀).
+Qed.
+
+Lemma dec_intdom `{CommutativeRing A (R:=R)} `{UnEq A} `{!StandardUnEq R}
+  `{PropHolds (1 ≠ 0)} `{!NoZeroDivisors R} `{∀ `{x ∊ R} `{y ∊ R}, Stable (x=y)}
+  : IntegralDomain R.
+Proof. split; apply _. Qed.
+
 Local Notation U := RingUnits.
 
-Lemma RingUnits_subsetoid {A Ae} `{Mult A} `{One A} R 
-  `{!@SemiGroup A Ae mult_is_sg_op R} : SubSetoid (U R).
-Proof. split; try apply _. intros ? x' E [?[y[?[??]]]].
-  assert (x' ∊ R) by now rewrite <-E.
-  split. assumption. exists y. split. assumption. split; now rewrite_on R <-E.
+Lemma RingUnits_subsetoid `{Mult A} `{One A} `{Equiv A} R `{!MultiplicativeMonoid R}
+  : SubSetoid (U R) R.
+Proof. split. apply _. split. apply _. intros ? x' E [?[y[??]]]. unfold_sigs.
+  split. assumption. exists_sub y. now rewrite_on R <- E.
 Qed.
-Hint Extern 0 (@SubSetoid _ ?Ae (@RingUnits _ ?Ae _ _ _)) => eapply @RingUnits_subsetoid : typeclass_instances.
+Hint Extern 5 (SubSetoid (U _) _) => eapply @RingUnits_subsetoid : typeclass_instances.
+
+Lemma RingUnits_setoid `{Mult A} `{One A} `{Equiv A} R `{!MultiplicativeMonoid R}
+  : Setoid (U R).
+Proof subsetoid_a.
+Hint Extern 5 (Setoid (U _)) => eapply @RingUnits_setoid : typeclass_instances.
 
 Lemma RingUnits_mult_closed `{Ring (R:=R)} : Closed (U R ==> U R ==> U R) (.*.).
 Proof with try apply _. intros x [?[xi [?[Rx Lx]]]] y [?[yi [?[Ry Ly]]]].
-  split... exists (yi * xi). split... split.
-  + rewrite         (associativity (f:=(.*.)) (x * y) yi xi).
-    rewrite_on R <- (associativity (f:=(.*.))  x   y  yi).
-    rewrite_on R -> Ry.
-    now rewrite_on R -> (mult_1_r x).
-  + rewrite         (associativity (f:=(.*.)) (yi * xi) x y).
-    rewrite_on R <- (associativity (f:=(.*.))  yi   xi  x).
-    rewrite_on R -> Lx.
-    now rewrite_on R -> (mult_1_r yi).
+  split... exists_sub (yi * xi). split.
+  + rewrite (R $ associativity (.*.) _ _ _), <- (R $ associativity (.*.) x _ _).
+    now rewrite_on R -> Ry, (mult_1_r x).
+  + rewrite (R $ associativity (.*.) _ _ _), <- (R $ associativity (.*.) yi _ _).
+    now rewrite_on R -> Lx, (mult_1_r yi).
 Qed.
 
-Lemma RingUnits_monoid `{Ring (R:=R)}
-  : @Monoid _ _ mult_is_sg_op one_is_mon_unit (U R).
-Proof with try apply _. pose proof (_ : U R ⊆ R). split. split...
+Lemma RingUnits_monoid `{Ring (R:=R)} : MultiplicativeMonoid (U R).
+Proof with try apply _. split. split...
 + rewrite (_ : U R ⊆ R)...
-+ split... change (SubProper ((U R,=) ==> (U R,=) ==> (U R,=)) (.*.)).
-  pose proof RingUnits_mult_closed.
-  intros ?? E1 ?? E2. unfold_sigs. split. split; apply (closed_binary (U R) (U R) (U R) (.*.)).
-  rewrite_on R -> E1. now rewrite_on R -> E2.
-+ change (1 ∊ U R). split... exists 1. split... split; exact (mult_1_r 1).
++ split... change (Proper ((U R,=) ==> (U R,=) ==> (U R,=)) (.*.)).
+  pose proof RingUnits_mult_closed. pose proof _ : U R ⊆ R.
+  intros ?? E1 ?? E2. unfold_sigs. red_sig.
+  now rewrite_on R -> E1, E2.
++ change (1 ∊ U R). split... exists_sub 1. split; exact (mult_1_r 1).
 + rewrite (_ : U R ⊆ R)...
 + rewrite (_ : U R ⊆ R)...
 Qed.
-Hint Extern 0 (@Monoid _ ?Ae (@mult_is_sg_op _ ?Amult) (@one_is_mon_unit _ ?Aone)
-  (@RingUnits _ ?Ae ?Amult ?Aone _)) => eapply @RingUnits_monoid : typeclass_instances.
+Hint Extern 5 (MultiplicativeMonoid (U _)) => eapply @RingUnits_monoid : typeclass_instances.
 
 Lemma RingUnits_group `{Ring (R:=R)} `{Inv A}
- `{!SubSetoid_Morphism (⁻¹) (U R) (U R)}
+ `{!Setoid_Morphism (U R) (U R) (⁻¹)}
  `{!LeftInverse  (.*.) (⁻¹) 1 (U R)}
  `{!RightInverse (.*.) (⁻¹) 1 (U R)}
- : @Group _ _ mult_is_sg_op one_is_mon_unit _ (U R).
+ : MultiplicativeGroup (U R).
 Proof. split; apply _. Qed.
 
 Lemma RingUnits_abgroup `{CommutativeRing (R:=R)} `{Inv A}
- : SubSetoid_Morphism (⁻¹) (U R) (U R)
+ : Setoid_Morphism (U R) (U R) (⁻¹)
  → LeftInverse  (.*.) (⁻¹) 1 (U R)
- → @AbGroup _ _ mult_is_sg_op one_is_mon_unit _ (U R).
-Proof with try apply _. intros. assert (@CommutativeMonoid _ _ mult_is_sg_op one_is_mon_unit (U R)).
-  split... rewrite (_ : U R ⊆ R)...
-  apply (abgroup_from_commonoid (G:=U R))...
+ → MultiplicativeAbGroup (U R).
+Proof with try apply _. intros.
+  assert (Commutative (.*.) (U R)). rewrite (_ : U R ⊆ R)...
+  pose proof commonoid_from_monoid : MultiplicativeComMonoid (U R).
+  split...
 Qed.
 
-Lemma RingUnit_not_zero_divisor `{UnEqualitySetoid A} `{Ring (A:=A) (Ae:=_) (R:=R)} x {ru:x ∊ U R} : ¬ZeroDivisor R x.
+Lemma RingUnit_not_zero_divisor `{Ring A (R:=R)} `{UnEq A} `{!UnEqualitySetoid R} x {ru:x ∊ U R} : ¬ZeroDivisor R x.
 Proof. destruct ru as [?[y[? [E1 E2]]]]. intros [[??][z[[? zn0][E|E]]]];
-  red in zn0; apply uneq_ne in zn0; contradict zn0.
-+ rewrite <- (mult_1_l z).
-  rewrite_on R <- E2.
-  rewrite <- (associativity y x z).
-  rewrite_on R -> E. apply (right_absorb y).
-+ rewrite <- (mult_1_r z).
-  rewrite_on R <- E1.
-  rewrite -> (associativity z x y).
-  rewrite_on R -> E. apply (left_absorb y).
+  red in zn0; apply (uneq_ne _ _) in zn0; contradict zn0.
++ rewrite_on R <- (mult_1_l z), <- E2.
+  rewrite_on R <- (associativity (.*.) y x z), E. exact (mult_0_r y).
++ rewrite_on R <- (mult_1_r z), <- E1.
+  rewrite_on R -> (associativity (.*.) z x y), E. exact (mult_0_l y).
+Qed.
+
+Lemma RingUnit_left_cancellation `{Ring (R:=R)} z `{z ∊ U R} : LeftCancellation (.*.) z R.
+Proof. destruct (_ : z ∊ U R) as [?[y[? [E1 E2]]]]. intros a ? b ? E.
+  rewrite_on R <- (mult_1_l a), <- (mult_1_l b), <- E2.
+  now rewrite <- !(R $ associativity (.*.) _ _ _), (R $ E).
+Qed.
+
+Lemma RingUnit_right_cancellation `{Ring (R:=R)} z `{z ∊ U R} : RightCancellation (.*.) z R.
+Proof. destruct (_ : z ∊ U R) as [?[y[? [E1 E2]]]]. intros a ? b ? E.
+  rewrite_on R <- (mult_1_r a), <- (mult_1_r b), <- E1.
+  now rewrite !(R $ associativity (.*.) _ _ _), (R $ E).
 Qed.
 
 
-Lemma semirng_morphism_proper: Find_Proper_Signature (@SemiRng_Morphism) 0
-  (∀ A Ae B Be Aplus Amult Azero Bplus Bmult Bzero f,
-    Proper ((=) ==> (=) ==> impl)
-   (@SemiRng_Morphism A Ae B Be Aplus Amult Azero Bplus Bmult Bzero f)).
-Proof. structure_mor_proper ltac:(pose proof srngmor_a) ltac:(pose proof srngmor_b).
-  rewrite <-ES, <-ET. apply _.
-Qed.
-Hint Extern 0 (Find_Proper_Signature (@SemiRng_Morphism) 0 _) => eexact semirng_morphism_proper : typeclass_instances.
 
-Lemma semiring_morphism_proper: Find_Proper_Signature (@SemiRing_Morphism) 0
-  (∀ A Ae B Be Aplus Amult Azero Aone Bplus Bmult Bzero Bone f,
-    Proper ((=) ==> (=) ==> impl)
-   (@SemiRing_Morphism A Ae B Be Aplus Amult Azero Aone Bplus Bmult Bzero Bone f)).
-Proof. structure_mor_proper ltac:(pose proof sringmor_a) ltac:(pose proof sringmor_b).
-  apply preserves_1.
-Qed.
-Hint Extern 0 (Find_Proper_Signature (@SemiRing_Morphism) 0 _) => eexact semiring_morphism_proper : typeclass_instances.
 
-Lemma rng_morphism_proper: Find_Proper_Signature (@Rng_Morphism) 0
-  (∀ A Ae B Be Aplus Amult Azero Anegate Bplus Bmult Bzero Bnegate f,
-    Proper ((=) ==> (=) ==> impl)
-   (@Rng_Morphism A Ae B Be Aplus Amult Azero Anegate Bplus Bmult Bzero Bnegate f)).
-Proof. structure_mor_proper ltac:(pose proof rngmor_a) ltac:(pose proof rngmor_b).
-  rewrite <-ES, <-ET. apply _.
-Qed.
-Hint Extern 0 (Find_Proper_Signature (@Rng_Morphism) 0 _) => eexact rng_morphism_proper : typeclass_instances.
-
-Lemma ring_morphism_proper: Find_Proper_Signature (@Ring_Morphism) 0
-  (∀ A Ae B Be Aplus Amult Azero Aone Anegate Bplus Bmult Bzero Bone Bnegate f,
-    Proper ((=) ==> (=) ==> impl)
-   (@Ring_Morphism A Ae B Be Aplus Amult Azero Aone Anegate Bplus Bmult Bzero Bone Bnegate f)).
-Proof. structure_mor_proper ltac:(pose proof ringmor_a) ltac:(pose proof ringmor_b).
-  destruct ringmor_image_has_1 as [x [el ?]]. exists x. rewrite ES in el. exists el. assumption.
-Qed.
-Hint Extern 0 (Find_Proper_Signature (@Ring_Morphism) 0 _) => eexact ring_morphism_proper : typeclass_instances.
-
-Instance rng_morphism_is_srng_morphism `{Rng_Morphism (f:=f) (R:=R) (S:=R')}
-  : SemiRng_Morphism f R R'.
-Proof. pose proof rngmor_a. pose proof rngmor_b. split; apply _. Qed.
-
+Local Existing Instance srngmor_a.
+Local Existing Instance srngmor_b.
+Local Existing Instance sringmor_a.
+Local Existing Instance sringmor_b.
+Local Existing Instance rngmor_a.
+Local Existing Instance rngmor_b.
+Local Existing Instance ringmor_a.
+Local Existing Instance ringmor_b.
 
 Section semirng_morphisms.
   Context `{SemiRng_Morphism (f:=f) (R:=R) (S:=R')}.
-
-  Existing Instance srngmor_a.
-  Existing Instance srngmor_b.
 
   Lemma preserves_plus x `{x ∊ R} y `{y ∊ R} : f (x+y) = f x + f y. Proof preserves_sg_op x y.
   Lemma preserves_mult x `{x ∊ R} y `{y ∊ R} : f (x*y) = f x * f y. Proof preserves_sg_op x y.
@@ -398,59 +378,88 @@ End semirng_morphisms.
 Section rng_morphisms.
   Context `{Rng_Morphism (f:=f) (R:=R) (S:=R')}.
 
-  Existing Instance rngmor_a.
-  Existing Instance rngmor_b.
+  Global Instance rng_morphism_is_srng_morphism : SemiRng_Morphism R R' f := {}.
 
   Lemma preserves_negate x `{x ∊ R} : f (-x) = - f x. Proof preserves_inverse x.
+
 End rng_morphisms.
 
-Instance ring_morphism_is_sring_morphism `{Ring_Morphism (f:=f) (R:=R) (S:=R')}
-  : SemiRing_Morphism f R R'.
-Proof. pose proof ringmor_a. pose proof ringmor_b. split; try apply _.
-  rewrite <- (mult_1_r (f 1)).
-  destruct ringmor_image_has_1 as [x [? E]].
-  rewrite_on R' <- E. rewrite <- (preserves_mult 1 x).
+Instance ring_morphism_is_sring_morphism `{Ring_Morphism (R:=R) (S:=R') (f:=f)} 
+ : SemiRing_Morphism R R' f.
+Proof. split; try apply _.
+  destruct ringmor_1 as [x [? E]].
+  rewrite_on R' <- (mult_1_r (f 1)), <- E, <- (preserves_mult 1 x).
   now rewrite_on R -> (mult_1_l x).
 Qed.
 
+Lemma semirng_morphism_proper: Find_Proper_Signature (@SemiRng_Morphism) 0
+  (∀ A Ae B Be Aplus Amult Azero Bplus Bmult Bzero,
+    Proper ((=) ==> (=) ==> eq ==> impl)
+   (@SemiRng_Morphism A Ae B Be Aplus Amult Azero Bplus Bmult Bzero)).
+Proof. structure_mor_proper. rewrite <-ES, <-ET. apply _. Qed.
+Hint Extern 0 (Find_Proper_Signature (@SemiRng_Morphism) 0 _) => eexact semirng_morphism_proper : typeclass_instances.
+
+Lemma semiring_morphism_proper: Find_Proper_Signature (@SemiRing_Morphism) 0
+  (∀ A Ae B Be Aplus Amult Azero Aone Bplus Bmult Bzero Bone,
+    Proper ((=) ==> (=) ==> eq ==> impl)
+   (@SemiRing_Morphism A Ae B Be Aplus Amult Azero Aone Bplus Bmult Bzero Bone)).
+Proof. structure_mor_proper. exact preserves_1. Qed.
+Hint Extern 0 (Find_Proper_Signature (@SemiRing_Morphism) 0 _) => eexact semiring_morphism_proper : typeclass_instances.
+
+Lemma rng_morphism_proper: Find_Proper_Signature (@Rng_Morphism) 0
+  (∀ A Ae B Be Aplus Amult Azero Anegate Bplus Bmult Bzero Bnegate,
+    Proper ((=) ==> (=) ==> eq ==> impl)
+   (@Rng_Morphism A Ae B Be Aplus Amult Azero Anegate Bplus Bmult Bzero Bnegate)).
+Proof. structure_mor_proper. rewrite <-ES, <-ET. apply _. Qed.
+Hint Extern 0 (Find_Proper_Signature (@Rng_Morphism) 0 _) => eexact rng_morphism_proper : typeclass_instances.
+
+Lemma ring_morphism_proper: Find_Proper_Signature (@Ring_Morphism) 0
+  (∀ A Ae B Be Aplus Amult Azero Aone Anegate Bplus Bmult Bzero Bone Bnegate,
+    Proper ((=) ==> (=) ==> eq ==> impl)
+   (@Ring_Morphism A Ae B Be Aplus Amult Azero Aone Anegate Bplus Bmult Bzero Bone Bnegate)).
+Proof. structure_mor_proper.
+  destruct ringmor_1 as [x [el ?]]. rewrite ES in el. now exists_sub x.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@Ring_Morphism) 0 _) => eexact ring_morphism_proper : typeclass_instances.
+
 (* The identity morphism; covers also the injection from a sub semirng *)
-Lemma id_semirng_mor `(R:Subset A) S `{R ⊆ S} `{SemiRng A (R:=R)} `{!SemiRng S} : SemiRng_Morphism id R S.
+Lemma id_semirng_mor `(R:Subset A) S `{R ⊆ S} `{SemiRng A (R:=R)} `{!SemiRng S} : SemiRng_Morphism R S id.
 Proof. split; apply _. Qed.
-Hint Extern 0 (SemiRng_Morphism id _ _) => class_apply @id_semirng_mor : typeclass_instances.
+Hint Extern 4 (SemiRng_Morphism _ _ id) => class_apply @id_semirng_mor : typeclass_instances.
 
-Lemma id_semiring_mor `(R:Subset A) S `{R ⊆ S} `{SemiRing A (R:=R)} `{!SemiRing S} : SemiRing_Morphism id R S.
-Proof. split; try apply _. reflexivity. Qed.
-Hint Extern 0 (SemiRing_Morphism id _ _) => class_apply @id_semiring_mor : typeclass_instances.
+Lemma id_semiring_mor `(R:Subset A) S `{R ⊆ S} `{SemiRing A (R:=R)} `{!SemiRing S} : SemiRing_Morphism R S id.
+Proof. split; try apply _. subreflexivity. Qed.
+Hint Extern 4 (SemiRing_Morphism _ _ id) => class_apply @id_semiring_mor : typeclass_instances.
 
-Lemma id_rng_mor `(R:Subset A) S `{R ⊆ S} `{Rng A (R:=R)} `{!Rng S} : Rng_Morphism id R S.
+Lemma id_rng_mor `(R:Subset A) S `{R ⊆ S} `{Rng A (R:=R)} `{!Rng S} : Rng_Morphism R S id.
 Proof. split; apply _. Qed.
-Hint Extern 0 (Rng_Morphism id _ _) => class_apply @id_rng_mor : typeclass_instances.
+Hint Extern 4 (Rng_Morphism _ _ id) => class_apply @id_rng_mor : typeclass_instances.
 
-Lemma id_ring_mor `(R:Subset A) S `{R ⊆ S} `{Ring A (R:=R)} `{!Ring S} : Ring_Morphism id R S.
-Proof. split; try apply _. exists_sub 1. reflexivity. Qed.
-Hint Extern 0 (Ring_Morphism id _ _) => class_apply @id_ring_mor : typeclass_instances.
+Lemma id_ring_mor `(R:Subset A) S `{R ⊆ S} `{Ring A (R:=R)} `{!Ring S} : Ring_Morphism R S id.
+Proof. split; try apply _. now exists_sub 1. Qed.
+Hint Extern 4 (Ring_Morphism _ _ id) => class_apply @id_ring_mor : typeclass_instances.
 
 Lemma compose_semirng_morphism `{SemiRng (R:=R)} `{S:Subset B} `{SemiRng B (R:=S)} `{SemiRng (R:=T)}
-  f g `{!SemiRng_Morphism f R S} `{!SemiRng_Morphism g S T}: SemiRng_Morphism (g ∘ f) R T.
+  f g `{!SemiRng_Morphism R S f} `{!SemiRng_Morphism S T g}: SemiRng_Morphism R T (g ∘ f).
 Proof. split; try apply _. Qed.
-Hint Extern 4 (SemiRng_Morphism (_ ∘ _) _ _) => class_apply @compose_semirng_morphism : typeclass_instances.
+Hint Extern 4 (SemiRng_Morphism _ _ (_ ∘ _)) => class_apply @compose_semirng_morphism : typeclass_instances.
 
 Lemma compose_semiring_morphism `{SemiRing (R:=R)} `{S:Subset B} `{SemiRing B (R:=S)} `{SemiRing (R:=T)}
-  f g `{!SemiRing_Morphism f R S} `{!SemiRing_Morphism g S T}: SemiRing_Morphism (g ∘ f) R T.
+  f g `{!SemiRing_Morphism R S f} `{!SemiRing_Morphism S T g}: SemiRing_Morphism R T (g ∘ f).
 Proof. split; try apply _.
-  unfold compose. rewrite_on S -> (preserves_1 (f:=f)). exact preserves_1.
+  unfold compose. rewrite_on S -> preserves_1. exact preserves_1.
 Qed.
-Hint Extern 4 (SemiRing_Morphism (_ ∘ _) _ _) => class_apply @compose_semiring_morphism : typeclass_instances.
+Hint Extern 4 (SemiRing_Morphism _ _ (_ ∘ _)) => class_apply @compose_semiring_morphism : typeclass_instances.
 
 Lemma compose_rng_morphism `{Rng (R:=R)} `{S:Subset B} `{Rng B (R:=S)} `{Rng (R:=T)}
-  f g `{!Rng_Morphism f R S} `{!Rng_Morphism g S T}: Rng_Morphism (g ∘ f) R T.
+  f g `{!Rng_Morphism R S f} `{!Rng_Morphism S T g}: Rng_Morphism R T (g ∘ f).
 Proof. split; try apply _. Qed.
-Hint Extern 4 (Rng_Morphism (_ ∘ _) _ _) => class_apply @compose_rng_morphism : typeclass_instances.
+Hint Extern 4 (Rng_Morphism _ _ (_ ∘ _)) => class_apply @compose_rng_morphism : typeclass_instances.
 
 Lemma compose_ring_morphism `{Ring (R:=R)} `{S:Subset B} `{Ring B (R:=S)} `{Ring (R:=T)}
-  f g `{!Ring_Morphism f R S} `{!Ring_Morphism g S T}: Ring_Morphism (g ∘ f) R T.
+  f g `{!Ring_Morphism R S f} `{!Ring_Morphism S T g}: Ring_Morphism R T (g ∘ f).
 Proof. split; try apply _. exists_sub 1.
-  unfold compose. rewrite_on S -> (preserves_1 (f:=f)). exact preserves_1.
+  unfold compose. rewrite_on S -> preserves_1. exact preserves_1.
 Qed.
-Hint Extern 4 (Ring_Morphism (_ ∘ _) _ _) => class_apply @compose_ring_morphism : typeclass_instances.
+Hint Extern 4 (Ring_Morphism _ _ (_ ∘ _)) => class_apply @compose_ring_morphism : typeclass_instances.
 

@@ -2,15 +2,14 @@ Require Import
   abstract_algebra.
 
 Class IntegersToRing `(Z:Subset A)
-  := integers_to_ring: ∀ `(R:Subset B) `{Mult B} `{Plus B} `{One B} `{Zero B} `{Negate B}, A → B.
+  := integers_to_ring: ∀ `(R:Subset B) `{Mult B} `{Plus B} `{One B} `{Zero B} `{Negate B}, Z ⇀ R.
 Arguments integers_to_ring {A} Z {IntegersToRing B} R {_ _ _ _ _} _.
 Instance: Params (@integers_to_ring) 10.
 
-Class Integers {A e plus mult zero one negate} (Z:Subset A) {U: IntegersToRing Z} :=
-  { integers_ring:> @CommutativeRing A e plus mult zero one negate Z
-  ; integers_to_ring_mor:> ∀ `{CommutativeRing (R:=R)}, Ring_Morphism (integers_to_ring Z R) Z R
-  ; integers_initial `{CommutativeRing (R:=R)} h `{!Ring_Morphism h Z R} :
-      ((Z,=)==>(=))%signature h (integers_to_ring Z R)
+Class Integers {A plus mult zero one negate e} (Z:Subset A) {U: IntegersToRing Z} :=
+  { integers_ring :> @CommutativeRing A plus mult zero one negate e Z
+  ; integers_to_ring_mor :> ∀ `{CommutativeRing (R:=R)}, Ring_Morphism Z R (integers_to_ring Z R)
+  ; integers_initial `{CommutativeRing (R:=R)} (h: Z ⇀ R) `{!Ring_Morphism Z R h} : h = integers_to_ring Z R
   }.
 
 (*

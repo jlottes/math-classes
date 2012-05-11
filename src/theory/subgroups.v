@@ -1,82 +1,87 @@
-Require Import abstract_algebra theory.subsetoids.
+Require Import abstract_algebra substructures theory.setoids.
 Require Export theory.groups.
 
 Local Open Scope grp_scope. (* notation for inverse *)
 Local Notation e := mon_unit.
 
-Section subsemigroup.
-Context `(S:Subset) `{SemiGroup (A:=_) (S:=S)}.
+Local Existing Instance subsetoid_a.
+Local Existing Instance subsetoid_b.
+Local Existing Instance subsemigroup_a.
+Local Existing Instance subsemigroup_b.
+Local Existing Instance submon_a.
+Local Existing Instance submon_b.
+Local Existing Instance subgroup_a.
+Local Existing Instance subgroup_b.
 
-Lemma subsemigroup (T:Subset _) `{!SubSetoid T} {sub:T ⊆ S} :
-  Closed (T ==> T ==> T) (&) ↔ SemiGroup T.
-Proof with try apply _. split... intro. split... rewrite sub...
-  split; try apply _. intros ?? E1 ?? E2. unfold_sigs. red_sig.
-  rewrite_on S ->E1. now rewrite_on S ->E2.
+Section substructure_tests.
+  Context `{Equiv A} `{op: SgOp A}.
+
+  Lemma subsemigroup {T S} `{!SubSetoid T S} `{!SemiGroup S} 
+    `{!Closed (T ==> T ==> T) (&)} : SubSemiGroup T S.
+  Proof with try apply _. split... split... rewrite (_:T ⊆ S)... split...
+    intros ?? E1 ?? E2. unfold_sigs. red_sig. now rewrite_on S -> E1, E2.
+  Qed.
+
+  Context `{MonUnit A}.
+
+  Lemma submonoid {N M} `{!SubSetoid N M} `{!Monoid M}
+    `{e ∊ N} `{!Closed (N ==> N ==> N) (&)} : SubMonoid N M.
+  Proof with try apply _. pose proof subsemigroup. split... split...
+    rewrite (_:N ⊆ M)... rewrite (_:N ⊆ M)...
+  Qed.
+
+  Context `{Inv A}.
+
+  Lemma subgroup {G' G} `{!SubSetoid G' G} `{!Group G}
+    x `{x ∊ G'} `{!Closed (G' ==> G' ==> G') (&)} `{!Closed (G' ==> G') (⁻¹)} : SubGroup G' G.
+  Proof with try apply _. assert (e ∊ G') by (rewrite_on G <- (left_inverse (&) x); apply _).
+    pose proof submonoid. split... split...
+    + split... intros ?? E1. unfold_sigs. red_sig. now rewrite_on G -> E1.
+    + rewrite (_:G' ⊆ G)...
+    + rewrite (_:G' ⊆ G)...
+  Qed.
+
+  Lemma subgroup_alt {G' G} `{!SubSetoid G' G} `{!Group G}
+    x `{x ∊ G'} : (∀ `{a ∊ G'} `{b ∊ G'}, a & b⁻¹ ∊ G') → SubGroup G' G.
+  Proof with try apply _. intro P.
+    assert (e ∊ G') by (rewrite_on G <- (right_inverse (&) x); apply _).
+    assert (Closed (G' ==> G') (⁻¹)). intros b ?. rewrite_on G <-(left_identity (&) b⁻¹)...
+    assert (Closed (G' ==> G' ==> G') (&)). intros a ? b ?. rewrite_on G <-(involutive b)...
+    exact (subgroup x).
+  Qed.
+End substructure_tests.
+
+Lemma trivial_subgroup `{Group (G:=G)} : SubGroup {{e}} G.
+Proof with try apply _. apply (subgroup_alt e). intros a [? Ea] b [? Eb]. split...
+  rewrite_on G -> Ea, Eb, (left_identity (&) e⁻¹). exact inv_mon_unit.
+Qed.
+Hint Extern 5 (SubGroup {{e}} _) => eapply @trivial_subgroup : typeclass_instances.
+
+Lemma trivial_subgroup_group `{Group (G:=G)} : Group {{e}}.
+Proof. pose proof (_:SubGroup {{e}} G). apply _. Qed.
+Hint Extern 5 (Group {{e}}) => eapply @trivial_subgroup_group : typeclass_instances.
+
+Lemma trivial_subgroup_abelian `{Group (G:=G)} : AbGroup {{e}}.
+Proof. assert (Commutative (&) {{e}}). intros a [? Ea] b [? Eb]. now rewrite_on G -> Ea, Eb. exact abgroup_from_group. Qed.
+Hint Extern 5 (AbGroup {{e}}) => eapply @trivial_subgroup_abelian : typeclass_instances.
+
+Lemma trivial_subgroup_normal `{Group (G:=G)} : {{e}} ◁ G.
+Proof. split. apply _.
+  intros n [? En] g ?. split. apply _.
+  now rewrite_on G -> En, (right_identity (&) g), (right_inverse (&) g).
+Qed.
+Hint Extern 5 ({{e}} ◁ _) => eapply @trivial_subgroup_normal : typeclass_instances.
+
+Lemma absubgroup_abelian `{SubGroup (G:=G) (H:=H)} `{!AbGroup H} : AbGroup G.
+Proof. assert (Commutative (&) G) by (rewrite (_:G ⊆ H); apply _). exact abgroup_from_group. Qed.
+
+Lemma absubgroup_normal `{SubGroup (G:=G) (H:=H)} `{!AbGroup H} : G ◁ H.
+Proof. split. apply _. intros n ? g ?.
+  rewrite_on H -> (commutativity (&) g n), <- (associativity (&) n g g⁻¹).
+  now rewrite_on H -> (right_inverse (&) g), (right_identity (&) n).
 Qed.
 
-End subsemigroup.
-
-
-Section submonoid.
-  Context `(M:Subset) `{Monoid (A:=_) (M:=M)}.
-  Lemma submonoid (N:Subset _) `{!SubSetoid N} {sub:N ⊆ M} :
-    e ∊ N ∧ Closed (N ==> N ==> N) (&) ↔ Monoid N.
-  Proof with try apply _. split. intros [??]. split... apply (subsemigroup M N)...
-    rewrite sub... rewrite sub...
-    intro. split; apply _.
-  Qed.
-End submonoid.
-
-Section subgroup_test.
-
-  Context `(G:Subset) `{GrpG : Group (A:=_) (G:=G)}.
-
-  Lemma subgroup_test (H:Subset _) `{!SubSetoid H} {sub:H ⊆ G} : 
-   (∃ x, x ∊ H) ∧ Closed (H ==> H ==> H) (&) ∧ Closed (H ==> H) (⁻¹) ↔ Group H.
-  Proof with try apply _. split.
-  + intros [[x ?] [Cop Cinv]].
-    assert (e ∊ H). rewrite <-(right_inverse x)...
-    split. apply (submonoid G H). split...
-    split... intros ?? E. unfold_sigs. red_sig. now rewrite_on G ->E.
-    rewrite sub... rewrite sub...
-  + intro. split. exists e... split. intros ????... intros ??...
-  Qed.
-
-  Lemma subgroup_test_alt (H:Subset A) `{!SubSetoid H} `{!H ⊆ G} : 
-   (∃ x, x ∊ H) ∧ (∀ `{a ∊ H} `{b ∊ H}, a & b⁻¹ ∊ H) ↔ Group H.
-  Proof. split.
-  + intros [[x ?] C]. apply (subgroup_test H). split. exists x. apply _.
-    assert (e ∊ H). rewrite <-(right_inverse x). apply (C x _ x _).
-    assert (Closed (H ==> H) (⁻¹)). intros b ?. rewrite <-(left_identity b⁻¹). apply (C e _ b _).
-    split. intros a ? b ?. rewrite_on G <-(involutive b). apply _. assumption.
-  + intro. split. exists e. apply _. intros ????. apply _.
-  Qed.
-
-End subgroup_test.
-
-Lemma trivial_subgroup_sub `{Group (G:=G)} : {{e}} ⊆ G.
-Proof. intros ? E. rewrite E. apply _. Qed.
-Hint Extern 1 (@SubsetOf _ (@singleton _ _ _ (@mon_unit _ _)) _) => eapply @trivial_subgroup_sub : typeclass_instances.
-
-Lemma trivial_subgroup `{Group (G:=G)} : Group {{e}}.
-Proof. apply (subgroup_test_alt G {{e}}). split. exists e. apply _.
-  intros a Ea b Eb.
-  change (a & b⁻¹ = e). change (a = e) in Ea. change (b = e) in Eb.
-  assert (a ∊ G) by (rewrite Ea; apply _).
-  assert (b ∊ G) by (rewrite Eb; apply _).
-  rewrite_on G ->Ea. rewrite_on G ->Eb.
-  rewrite (right_inverse e). reflexivity.
-Qed.
-Hint Extern 1 (@Group _ _ _ _ _ (@singleton _ _ _ (@mon_unit _ _))) => eapply @trivial_subgroup : typeclass_instances.
-
-Section abelian_subgroup.
-  Context {A} (G H: Subset A) {sub: H ⊆ G} `{AbGroup (A:=A) (G:=G)} `{!Group H}.
-
-  Lemma absubgroup_abelian : AbGroup H.
-  Proof with try apply _. split... rewrite sub... Qed.
-End abelian_subgroup. 
-
-Definition group_center `{Group (G:=G)} : Subset _ := λ x, x ∊ G ∧ ∀ y, y ∊ G → x & y = y & x.
+Definition group_center `{Group (G:=G)} : Subset _ := λ x, x ∊ G ∧ ∀ `{y ∊ G}, x & y = y & x.
 Arguments group_center {_ _ _ _ _} G {_} _.
 
 Local Notation Z := group_center.
@@ -84,316 +89,199 @@ Local Notation Z := group_center.
 Section center.
   Context `{Group (G:=G)}.
 
-  Instance group_center_subset: (Z G) ⊆ G.
-  Proof. now intros x [??]. Qed.
-
-  Instance: SubSetoid (Z G).
-  Proof. split. apply _. intros x y E [? C]. assert (y ∊ G) by now rewrite <-E.
+  Instance: SubSetoid (Z G) G.
+  Proof. split. apply _. split. firstorder. intros x y E [_ C]. unfold_sigs.
     split. assumption. intros z ?. rewrite_on G <-E. now apply C.
   Qed.
 
-  Instance group_center_subgroup : AbGroup (Z G).
-  Proof. split. apply (subgroup_test G (Z G) (sub:=group_center_subset)).
-    split. exists e. split. apply _. intros y ?. now rewrite (left_identity y), (right_identity y).
-    split. intros a [? Ca] b [? Cb]. split. apply _. intros y ?.
-      rewrite   (associativity y a b).
-      rewrite <-(associativity a b y).
-      rewrite_on G ->(Cb y _).
-      rewrite   (associativity a y b).
-      now rewrite_on G ->(Ca y _).
-    intros a [? Ca]. split. apply _. intros y ?.
+  Instance: e ∊ Z G.
+  Proof. split. apply _. intros y ?. now rewrite_on G -> (left_identity (&) y), (right_identity (&) y). Qed.
+
+  Instance: Closed (Z G ==> Z G ==> Z G) (&).
+  Proof. intros a [? Ca] b [? Cb]. split. apply _. intros y ?.
+      rewrite_on G -> (associativity (&) y a b).
+      rewrite_on G <- (associativity (&) a b y).
+      rewrite_on G -> (Cb y _).
+      rewrite_on G -> (associativity (&) a y b).
+      now rewrite_on G -> (Ca y _).
+  Qed.
+
+  Instance: Closed (Z G ==> Z G) (⁻¹).
+  Proof. intros a [? Ca]. split. apply _. intros y ?.
       rewrite_on G <-(involutive y) at 1.
-      rewrite      <-(inv_sg_op_distr y⁻¹ a).
-      rewrite_on G <-(Ca y⁻¹ _).
-      rewrite        (inv_sg_op_distr a y⁻¹).
-      rewrite_on G ->(involutive y).
-      reflexivity.
-    intros a [? Ca] b [? Cb]. exact (Ca b _).
+      rewrite_on G <-(inv_sg_op_distr y⁻¹ a).
+      rewrite_on G <- (Ca y⁻¹ _).
+      rewrite_on G -> (inv_sg_op_distr a y⁻¹).
+      now rewrite_on G -> (involutive y).
+  Qed.
+
+  Instance group_center_subgroup : SubGroup (Z G) G.
+  Proof subgroup e.
+
+  Instance: AbGroup (Z G).
+  Proof. assert (Commutative (&) (Z G)). intros a [? Ca] b [? Cb]. exact (Ca b _). exact abgroup_from_group. Qed.
+
+  Instance : Z G ◁ G.
+  Proof. split. apply _. intros n ? g ?. destruct (_:n ∊ Z G) as [? Cn].
+    rewrite_on G <- (Cn g _), <- (associativity (&) n g g⁻¹), (right_inverse (&) g).
+    now rewrite_on G -> (right_identity (&) n).
   Qed.
 
   Lemma abgroup_is_center : AbGroup G → Z G = G.
   Proof. intro. assert (G ⊆ (Z G)). intros x ?. split. apply _.
-    intros y ?. exact (commutativity x y).
+    intros y ?. exact (commutativity (&) x y).
     apply (subset_sub_sub_eq (Z G) G).
   Qed.
 
 End center.
 
-Section cosets.
-  Context {A} (G H: Subset A) `{H ⊆ G} `{Group (A:=A) (G:=G)} `{!Group H}.
+Section image.
+  Context `{SubGroup A (G:=H) (H:=G)} `{Group (G:=G')}.
+  Context (f:G ⇀ G') `{!SemiGroup_Morphism G G' f}.
 
-  Definition coset_equiv_l a b := a⁻¹ & b ∊ H.
-  Definition coset_equiv_r a b := a & b⁻¹ ∊ H.
+  Instance: e ∊ f⁺¹(H).
+  Proof. split. apply _. exists_sub (e:A). exact preserves_mon_unit. Qed.
 
-  Instance coset_l_subequiv: SubEquivalence coset_equiv_l G.
-  Proof. unfold coset_equiv_l. split.
-  + intros ??. rewrite (left_inverse x). apply _.
-  + intros ?????. assert (y⁻¹ & x = (x⁻¹ & y)⁻¹) as E.
-      rewrite (inv_sg_op_distr (G:=G) x⁻¹ y).
-      now rewrite_on G ->(involutive (S:=G) x).
-    rewrite E. apply _.
-  + intros ????????. assert (x⁻¹ & z = (x⁻¹ & y) & (y⁻¹ & z)) as E.
-      rewrite (associativity (x⁻¹ & y) y⁻¹ z).
-      rewrite_on G <-(associativity x⁻¹ y y⁻¹).
-      rewrite_on G ->(right_inverse y).
-      now rewrite_on G ->(right_identity x⁻¹).
-    rewrite E. apply _.
+  Lemma image_preserves_subgroup : SubGroup f⁺¹(H) G'.
+  Proof. apply (subgroup_alt e).
+    intros b1 [? [a1 [? E1]]] b2 [? [a2 [? E2]]]. split. apply _.
+    exists_sub (a1 & a2⁻¹).
+    rewrite (G' $ preserves_sg_op _ _), (G' $ preserves_inverse _).
+    now rewrite_on G' -> E1, E2.
   Qed.
+End image.
 
-  Global Instance coset_r_subequiv: SubEquivalence coset_equiv_r G.
-  Proof. unfold coset_equiv_r. split.
-  + intros ??. rewrite (right_inverse x). apply _.
-  + intros ?????. assert (y & x⁻¹ = (x & y⁻¹)⁻¹) as E.
-      rewrite (inv_sg_op_distr x y⁻¹).
-      now rewrite_on G ->(involutive y).
-    rewrite E. apply _.
-  + intros ????????. assert (x & z⁻¹ = (x & y⁻¹) & (y & z⁻¹)) as E.
-      rewrite (associativity (x & y⁻¹) y z⁻¹).
-      rewrite_on G <-(associativity x y⁻¹ y).
-      rewrite_on G ->(left_inverse y).
-      now rewrite_on G ->(right_identity x).
-    rewrite E. apply _.
+Section inv_image.
+  Context `{Group A (G:=G)} `{SubGroup (G:=K) (H:=G')}.
+  Context (f:G ⇀ G') `{!SemiGroup_Morphism G G' f}.
+
+  Instance: e ∊ f⁻¹(K).
+  Proof. split. apply _. rewrite_on G' -> preserves_mon_unit. apply _. Qed.
+
+  Lemma inv_image_preserves_subgroup : SubGroup f⁻¹(K) G.
+  Proof. apply (subgroup_alt e).
+    intros a1 [??] a2 [??]. split. apply _.
+    rewrite (G' $ preserves_sg_op _ _), (G' $ preserves_inverse _). apply _.
   Qed.
+End inv_image.
 
-End cosets.
+Lemma inv_image_preserves_normality `{Group (G:=G)} `{Normal_SubGroup (N:=N) (G:=G')}
+  (f:G ⇀ G') `{!SemiGroup_Morphism G G' f} : f⁻¹(N) ◁ G.
+Proof. pose proof (inv_image_preserves_subgroup f). split. apply _. intros n ? g ?.
+  destruct (_: n ∊ f⁻¹(N)). split. apply _.
+  rewrite 2!(G' $ preserves_sg_op _ _), (G' $ preserves_inverse _).
+  exact (normality _ _).
+Qed.
 
-Lemma coset_equiv_r_proper: Find_Proper_Signature (@coset_equiv_r) 0
-  (∀ A G H `{!H ⊆ G} `{Group (A:=A) (G:=G)} `{!SubSetoid H},
-   Proper ((G,=)==>(G,=)==>impl) (coset_equiv_r H)).
-Proof. intro. intros. intros ?? E1 ?? E2 ?. unfold coset_equiv_r in *.
-  unfold_sigs. rewrite_on G <-E1. now rewrite_on G <-E2. Qed.
-Hint Extern 0 (Find_Proper_Signature (@coset_equiv_r) 0 _) => eexact coset_equiv_r_proper : typeclass_instances.
-
-
-Section morphisms.
-  Context {A} (G  H: Subset A) `{Group (A:=A) (G:=G )}.
-  Context {B} (G' K: Subset B) `{Group (A:=B) (G:=G')}.
-
-  Context (f:A → B) `{!Domain f G} `{!SemiGroup_Morphism f G G'}.
-
-  Lemma image_preserves_subgroup `{H ⊆ G } `{!Group H} : Group f⁺¹(H).
-  Proof with try apply _. apply (subgroup_test_alt G' f⁺¹(H) ). split.
-  + exists (e:B). exists (e:A). split... apply preserves_mon_unit.
-  + intros b1 [a1 [? E1]] b2 [a2 [? E2]]. exists (a1 & a2⁻¹). split...
-      rewrite preserves_sg_op... rewrite_on G' ->(preserves_inverse a2).
-      assert (b1 ∊ G'). rewrite <- E1. apply _.
-      assert (b2 ∊ G'). rewrite <- E2. apply _.
-      rewrite_on G' ->E1. now rewrite_on G' ->E2.
-  Qed.
-
-  Lemma inv_image_preserves_subgroup `{K ⊆ G'}  `{!Group K} : Group f⁻¹(K).
-  Proof with try apply _. apply (subgroup_test_alt G f⁻¹(K) ). split.
-  + exists (e:A). split... rewrite preserves_mon_unit...
-  + intros a1 [? E1] a2 [? E2]. split...
-      rewrite (preserves_sg_op a1 a2⁻¹).
-      rewrite_on G' ->(preserves_inverse a2). apply _.
-  Qed.
-
-End morphisms.
-
-Definition group_kern `{Group (G:=G)} `{Group (G:=G')} f `{!SemiGroup_Morphism f G G'}
-  := f⁻¹( {{e}} ).
-Local Notation kern := group_kern.
+Definition monoid_kern {A B} `{Equiv A} `{Equiv B} `{MonUnit B} {M:Subset A} {N:Subset B} (f:M ⇀ N) := f⁻¹( {{e}} ).
+Local Notation kern := monoid_kern.
 
 Section kernel.
-  Context `{Group (G:=G)} `{Group (G:=G')} f `{!SemiGroup_Morphism f G G'}.
+  Context `{Group (G:=G)} `{Group (G:=G')} (f:G ⇀ G') `{!SemiGroup_Morphism G G' f}.
 
-  Instance kern_is_group : Group (kern f).
-  Proof. unfold kern. apply (inv_image_preserves_subgroup G G' {{e}}); apply _. Qed.
+  Instance kern_normal : kern f ◁ G.
+  Proof inv_image_preserves_normality (N:={{e}}) f.
 
-  Lemma kern_trivial_iff_injective : kern f = {{e}} ↔ Injective f G G'.
+  Lemma grp_mor_injective : (∀ `{x ∊ G}, f x = e → x = e) ↔ Injective G G' f.
   Proof. split.
-  + intro K. split; try apply _. intros x ? y ? E.
-    assert (x & y⁻¹ ∊ kern f) as E2. split. apply _. change (f (x & y⁻¹) = e).
-      rewrite (preserves_sg_op x y⁻¹).
-      rewrite_on G' -> (preserves_inverse y).
-      rewrite_on G' -> E.
-      exact (right_inverse (f y)).
-    rewrite K in E2. change (x & y⁻¹ = e) in E2.
-    apply (right_cancellation (&) (y⁻¹) G x y).
-    now rewrite (right_inverse y).
-  + intros ? x. split. intros [? E]. change (f x = e) in E. change (x=e).
-    apply (injective f x e). now rewrite preserves_mon_unit.
-    intro E. change (x=e) in E. rewrite E. apply _.
+  + intro P. split; try apply _. intros x ? y ? E.
+    apply (right_cancellation (&) (y⁻¹) G _ _).
+    rewrite_on G -> (right_inverse (&) y).
+    apply (P _ _).
+    rewrite (G' $ preserves_sg_op _ _), (G' $ preserves_inverse _).
+    apply (right_cancellation (&) (f y) G' _ _).
+    now rewrite_on G' -> E, (right_inverse (&) (f y)), (left_identity (&) (f y)).
+  + intros ? x ? ?. apply (injective f _ _). now rewrite_on G' -> preserves_mon_unit.
   Qed.
 
-  Lemma sg_mor_injective : (∀ `{x ∊ G}, f x = e → x = e) ↔ Injective f G G'.
-  Proof. rewrite <- kern_trivial_iff_injective. unfold kern.
-    rewrite (inv_image_eq_singleton f {{e}} e). split.
-  + intro P. split. split. apply _. exact preserves_mon_unit. exact P.
-  + tauto.
+  Lemma grp_kern_trivial_iff_injective : kern f = {{e}} ↔ Injective G G' f.
+  Proof. rewrite <- grp_mor_injective. unfold kern. rewrite (inv_image_eq_singleton _ _ _). split.
+  + intros [_ P] x ? ?. apply (P _ _). split. apply _. trivial.
+  + intros P. split. rewrite_on G' -> preserves_mon_unit. apply _.
+    intros x ? [? ?]. now apply (P _ _).
   Qed.
 
 End kernel.
 
-Section normal_subgroup.
-  Context {A} {Ae:Equiv A} {Gop: SgOp A} {Gunit:MonUnit A} {Ginv:Inv A}.
+Lemma coset_equiv `{SubGroup (G:=H) (H:=G)} : SubEquivalence G (λ a b, a & b⁻¹ ∊ H).
+Proof. split.
++ intros a ?. rewrite_on G -> (right_inverse (&) a). apply _.
++ intros a ? b ? ?. rewrite_on G <- (involutive b), <- (inv_sg_op_distr a b⁻¹). apply _.
++ intros a ? b ? c ? ??. rewrite_on G <- (right_identity (&) a), <- (left_inverse (&) b).
+  rewrite_on G -> (associativity (&) a b⁻¹ b), <- (associativity (&) (a & b⁻¹) b c⁻¹). apply _.
+Qed.
 
-  Class normal_subgroup (H:Subset A) (G:Subset A) :=
-    { normal_subgroup_g : Group G
-    ; normal_subgroup_h : Group H
-    ; normal_subgroup_sub : H ⊆ G
-    ; normal_subgroup_prop g `{!g ∊ G} : (g &)⁺¹(H) = (& g)⁺¹(H)
-    }.
-End normal_subgroup.
-
-Notation "H ◁ G" := (normal_subgroup H G) (at level 70) : grp_scope.
-
-Section normal_props.
-  Context {A} {Ae:Equiv A} {Gop: SgOp A} {Gunit:MonUnit A} {Ginv:Inv A}.
-  Lemma normal_cosets (G H:Subset A) {nsub:H ◁ G}
-    a {ag:a ∊ G} b {bg:b ∊ G} : a⁻¹ & b ∊ H ↔ a & b⁻¹ ∊ H.
-  Proof. destruct nsub as [??? P].
-    generalize a ag b bg. clear a ag b bg.
-    cut (∀ a : A, a ∊ G → ∀ b : A, b ∊ G → a⁻¹ & b ∊ H -> a & b⁻¹ ∊ H). intro P'.
-  + intros a ? b ?. split. apply P'; apply _.
-    rewrite_on G <-(involutive a) at 1. intro Q.
-    pose proof (P' _ _ _ _ Q). now rewrite_on G <-(involutive b).
-  + intros a ? b ?. intro P'. pose proof (P a _) as Pa.
-    match type of Pa with ?C = _ => assert (b ∊ C) as Cb end.
-      exists (a⁻¹ & b). split. exact P'.
-      rewrite associativity; try apply _.
-      rewrite_on G ->(right_inverse a).
-      now rewrite (left_identity b).
-    rewrite Pa in Cb. destruct Cb as [x [? E]].
-    rewrite_on G <-E.
-    rewrite_on G ->(inv_sg_op_distr x a).
-    rewrite (associativity a a⁻¹ x⁻¹).
-    rewrite_on G ->(right_inverse a).
-    rewrite (left_identity (inv x)).
-    apply _.
-  Qed.
-
-End normal_props.
-
-Section kernel_normal.
-  Context `{Group (G:=G)} `{Group (G:=G')} f `{!SemiGroup_Morphism f G G'}.
-
-  Lemma kernel_normal : kern f ◁ G.
-  Proof with try apply _. split... apply (kern_is_group f). unfold kern... intros g ?. split.
-  + intros [y[[? E] E2]]. assert (x ∊ G) by (rewrite <- E2; apply _).
-    change (f y = e) in E. exists (x & g⁻¹). split. split...
-    - change (f (x & g⁻¹) = e). rewrite (preserves_sg_op x g⁻¹).
-      rewrite_on G' ->(preserves_inverse g).
-      rewrite_on G <- E2. rewrite_on G' ->(preserves_sg_op g y).
-      rewrite_on G' ->E. rewrite_on G' ->(right_identity (f g)).
-      rewrite_on G' ->(right_inverse (f g)). reflexivity.
-    - rewrite <-associativity... rewrite_on G -> (left_inverse g). now rewrite (right_identity x).
-  + intros [y[[? E] E2]]. assert (x ∊ G) by (rewrite <- E2; apply _).
-    change (f y = e) in E. exists (g⁻¹ & x). split. split...
-    - change (f (g⁻¹ & x) = e). rewrite (preserves_sg_op g⁻¹ x).
-      rewrite_on G' ->(preserves_inverse g).
-      rewrite_on G <- E2. rewrite_on G' ->(preserves_sg_op y g).
-      rewrite_on G' ->E. rewrite_on G' ->(left_identity (f g)).
-      rewrite_on G' ->(left_inverse (f g)). reflexivity.
-    - rewrite associativity... rewrite_on G -> (right_inverse g). now rewrite (left_identity x).
-  Qed.
-End kernel_normal.    
-
-Section abelian_subgroup_normal.
-  Context {A} (G H: Subset A) {sub: H ⊆ G} `{AbGroup (A:=A) (G:=G)} `{!Group H}.
-
-  Lemma absubgroup_normal : H ◁ G.
-  Proof with try apply _. split... intros g ?. split;
-    intros [y[??]]; exists y; rewrite commutativity; try apply _; tauto.
-  Qed.
-End abelian_subgroup_normal.
-
-Definition grp_quotient_equiv `{Equiv A} {Gop: SgOp A} {Ginv: Inv A} (G H: Subset A) :=
-  equiv_ext G (coset_equiv_r H).
-
-Lemma grp_quotient_equiv_sub `{Ae:Equiv A} {Gop: SgOp A} {Ginv: Inv A} (G H: Subset A)
-  : subrelation (=) (grp_quotient_equiv G H).
-Proof _ : subrelation (=) (equiv_ext G (coset_equiv_r H)).
-Hint Extern 0 (@subrelation _ (@equiv _ ?Ae) (@grp_quotient_equiv _ ?Ae _ _ _ _)) => eapply @grp_quotient_equiv_sub : typeclass_instances.
-
-Lemma grp_quotient_equiv_correct {A} (G H: Subset A) `{!H ⊆ G} `{Group (A:=A) (G:=G)} `{!Group H}
-  a `{a ∊ G} b `{b ∊ G} : (grp_quotient_equiv G H) a b ↔ a & b⁻¹ ∊ H.
-Proof. setoid_rewrite (equiv_ext_correct G (coset_equiv_r H) a b). reflexivity. Qed.
+Lemma coset_equiv_sub `{SubGroup (G:=H) (H:=G)} : SubRelation G (=) (λ a b, a & b⁻¹ ∊ H).
+Proof. intros a ? b ? E. rewrite_on G -> E, (right_inverse (&) b). apply _. Qed.
+Hint Extern 5 (SubRelation _ (=) (λ a b, a & b⁻¹ ∊ _)) => eapply @coset_equiv_sub : typeclass_instances.
 
 Section quotient_group.
-  Context {A} {Ae:Equiv A} {Gop: SgOp A} {Gunit:MonUnit A} {Ginv:Inv A}.
-  Context (G H:Subset A) {nsub: H ◁ G}.
 
-  Existing Instance normal_subgroup_g.
-  Existing Instance normal_subgroup_h.
-  Existing Instance normal_subgroup_sub.
+  Context `{Group (G:=G)} N `{N ◁ G}.
 
-  Local Notation "(∼)" := (grp_quotient_equiv G H).
-  
-  Local Notation ext_correct := (grp_quotient_equiv_correct G H).
+  Notation "(∼)" := (λ a b, a & b⁻¹ ∊ N).
 
-  Instance: SubSetoid (Ae:=(∼)) G := _ : SubSetoid (Ae:=equiv_ext G (coset_equiv_r H)) G.
+  Instance: Setoid (Ae:=(∼)) G := coset_equiv.
+
+  Existing Instance normality.
 
   Lemma quotient_group : Group (Ae:=(∼)) G.
   Proof with try apply _. split. split... split...
-    + rewrite <- (_:subrelation (=) (∼))...
-    + split... intros a b E1 c d E2. unfold_sigs. red_sig.
-      setoid_rewrite (ext_correct a b) in E1.
-      setoid_rewrite (ext_correct c d) in E2.
-      setoid_rewrite (ext_correct (a & c) (b & d)).
-      rewrite_on G ->(inv_sg_op_distr b d).
-      rewrite (associativity (S:=G) (a & c) d⁻¹ b⁻¹).
-      rewrite_on G <-(associativity (S:=G) a c d⁻¹).
-      pose proof (_:a & (c & d⁻¹) ∊  (a &)⁺¹(H)) as P.
-      rewrite (normal_subgroup_prop a) in P.
-      destruct P as [x [? Ep]]. rewrite_on G <- Ep.
-      rewrite <-(associativity (S:=G) x a b⁻¹). apply _.
-    + rewrite <- (_:subrelation (=) (∼))...
-    + rewrite <- (_:subrelation (=) (∼))...
-    + split... intros a b E1. unfold_sigs. red_sig.
-      setoid_rewrite (ext_correct a b) in E1.
-      setoid_rewrite (ext_correct a⁻¹ b⁻¹).
-      rewrite_on G ->(involutive b).
-      now apply (normal_cosets G H).
-    + rewrite <- (_:subrelation (=) (∼))...
-    + rewrite <- (_:subrelation (=) (∼))...
+    + rewrite <- (_:SubRelation G (=) (∼))...
+    + split... intros a b E1 c d E2. unfold_sigs. red_sig. unfold equiv in *.
+      rewrite_on G -> (inv_sg_op_distr b d), <- (left_identity (&) b⁻¹), <- (left_inverse (&) a).
+      rewrite <- (G $ associativity (&) a⁻¹ _ _), (G $ associativity (&) d⁻¹ _ _).
+      rewrite (G $ associativity (&) (a&c) _ _), <- (G $ associativity (&) a c _).
+      rewrite (G $ associativity (&) c _ _), (G $ associativity (&) a _ a⁻¹).
+      apply _.
+    + rewrite <- (_:SubRelation G (=) (∼))...
+    + rewrite <- (_:SubRelation G (=) (∼))...
+    + split... intros a b E1. unfold_sigs. red_sig. unfold equiv in *.
+      rewrite_on G -> (involutive b), <- (left_identity (&) (a⁻¹ & b)), <- (left_inverse (&) b).
+      rewrite (G $ associativity (&) _ _ _), <- (G $ associativity (&) b⁻¹ _ _).
+      rewrite_on G <- (involutive b) at 2 3.
+      rewrite_on G <- (inv_sg_op_distr a b⁻¹).
+      apply _.
+    + rewrite <- (_:SubRelation G (=) (∼))...
+    + rewrite <- (_:SubRelation G (=) (∼))...
   Qed.
 
 End quotient_group.
 
 Section abelian_quotient.
-  Context {A} (G H: Subset A) {sub: H ⊆ G} `{AbGroup (A:=A) (G:=G)} `{!Group H}.
+  Context `{SubGroup (G:=H) (H:=G)} `{!AbGroup G}.
 
-  Local Notation "(∼)" := (grp_quotient_equiv G H).
+  Notation "(∼)" := (λ a b, a & b⁻¹ ∊ H).
 
   Lemma ab_quotient_group : AbGroup (Ae:=(∼)) G.
-  Proof. pose proof (absubgroup_normal G H). split. exact (quotient_group G H).
-    rewrite <- (_:subrelation (=) (∼)). apply _.
+  Proof. pose proof absubgroup_normal. pose proof quotient_group H.
+    assert (Commutative (&) G (Be:=(∼))). rewrite <- (_:SubRelation G (=) (∼)). apply _.
+    exact abgroup_from_group.
   Qed.
 End abelian_quotient.
 
 Section first_iso.
-  Context `{Group (G:=G)} `{Group (G:=G')} f `{!SemiGroup_Morphism f G G'}.
+  Context `{Group (G:=G)} `{Group (G:=G')} (f:G ⇀ G') `{!SemiGroup_Morphism G G' f}.
 
-  Local Notation K := (kern f).
+  Notation K := (kern f).
+  Notation "(∼)" := (λ a b, a & b⁻¹ ∊ K).
 
-  Local Notation "(∼)" := (grp_quotient_equiv G K).
+  Instance: K ◁ G := kern_normal f.
+  Instance: Group (Ae:=(∼)) G := quotient_group K.
 
-  Local Notation ext_correct := (grp_quotient_equiv_correct G K).
-
-  Existing Instance quotient_group.
-  Existing Instance kernel_normal.
-  Existing Instance kern_is_group.
-  Existing Instance normal_subgroup_sub.
-
-  Instance: SemiGroup_Morphism (Ae:=(∼)) f G G'.
+  Instance: SemiGroup_Morphism (Ae:=(∼)) G G' f.
   Proof. split; try apply _.
   + split; try apply _. intros ?? E. unfold_sigs. red_sig.
-    setoid_rewrite (ext_correct x y) in E.
-    destruct E as [? E]. change ( f (x & y⁻¹) = e ) in E.
-    apply (right_cancellation (&) (f y)⁻¹ G' (f x) (f y)).
-    rewrite (right_inverse (f y)).
-    rewrite (preserves_sg_op x y⁻¹) in E.
-    now rewrite_on G' -> (preserves_inverse y) in E.
+    destruct E as [_ [_ E]].
+    apply (right_cancellation (&) (f y)⁻¹ G' _ _).
+    now rewrite_on G' -> (right_inverse (&) (f y)), <- (preserves_inverse y), <- (preserves_sg_op x y⁻¹).
   + intros. now apply preserves_sg_op.
   Qed.
 
-  Instance: Injective (Ae:=(∼)) f G G'.
-  Proof. apply sg_mor_injective. apply _. intros x ? E.
-    setoid_rewrite (ext_correct x e).
-    rewrite_on G -> (inv_mon_unit (G:=G)).
-    rewrite (right_identity x). now split.
+  Instance: Injective (Ae:=(∼)) G G' f.
+  Proof. apply grp_mor_injective. apply _. intros x ? E. unfold equiv.
+    rewrite_on G -> (inv_mon_unit (G:=G)), (right_identity (&) x).
+    split. apply _. split. apply _. trivial.
   Qed.
 
 End first_iso.
