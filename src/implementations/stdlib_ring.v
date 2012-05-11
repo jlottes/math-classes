@@ -9,21 +9,21 @@ Section semiring.
   Global Instance : SubsetSig_Closed (R==>R==>R) (+)   := _ : Closed (R==>R==>R) (+).
   Global Instance : SubsetSig_Closed (R==>R==>R) (.*.) := _ : Closed (R==>R==>R) (.*.).
 
-  Notation R' := (Every (SubsetSig R)).
+  Notation R' := (every (SubsetSig R)).
 
   Instance: CommutativeSemiRing R' := subsetsig_comsemiring R.
 
   Lemma stdlib_semiring_theory : Ring_theory.semi_ring_theory (0:SubsetSig R) 1 (+) (.*.) (=).
   Proof.
    constructor; intros.
-   exact (plus_0_l (R:=R') _).
-   exact (commutativity (S:=R') _ _).
-   exact (associativity (S:=R') _ _ _).
-   exact (mult_1_l (R:=R') _).
-   exact (mult_0_l (R:=R') _).
-   exact (commutativity (S:=R') _ _).
-   exact (associativity (S:=R') _ _ _).
-   exact (distribute_r (S:=R') _ _ _).
+   exact (plus_0_l _).
+   exact (commutativity (+) _ _).
+   exact (associativity (+) _ _ _).
+   exact (mult_1_l _).
+   exact (mult_0_l _).
+   exact (commutativity (.*.) _ _).
+   exact (associativity (.*.) _ _ _).
+   exact (plus_mult_distr_r _ _ _).
   Qed.
 
 End semiring.
@@ -36,7 +36,7 @@ Section ring.
 
   Global Instance : SubsetSig_Closed (R==>R) (-) := _ : Closed (R==>R) (-).
 
-  Notation R' := (Every (SubsetSig R)).
+  Notation R' := (every (SubsetSig R)).
 
   Instance: CommutativeRing R' := subsetsig_comring R.
 
@@ -44,15 +44,15 @@ Section ring.
     Ring_theory.ring_theory 0 1 (+) (.*.) (λ x y : SubsetSig R, x - y) (-) (=).
   Proof.
    constructor; intros.
-   exact (plus_0_l (R:=R') _).
-   exact (commutativity (S:=R') _ _).
-   exact (associativity (S:=R') _ _ _).
-   exact (mult_1_l (R:=R') x).
-   exact (commutativity (S:=R') _ _).
-   exact (associativity (S:=R') _ _ _).
-   exact (distribute_r (S:=R') _ _ _).
+   exact (plus_0_l _).
+   exact (commutativity (+) _ _).
+   exact (associativity (+) _ _ _).
+   exact (mult_1_l x).
+   exact (commutativity (.*.) _ _).
+   exact (associativity (.*.) _ _ _).
+   exact (plus_mult_distr_r _ _ _).
    reflexivity.
-   exact (plus_negate_r (R:=R') _).
+   exact (plus_negate_r _).
   Qed.
 
 End ring.

@@ -1,6 +1,6 @@
 Require Import
   Arith_base abstract_algebra interfaces.naturals interfaces.orders
-  theory.subsetoids theory.common_props theory.rings orders.semirings.
+  theory.setoids theory.common_props theory.rings orders.semirings.
 Require Import Ring stdlib_ring misc.quote.
 
 Instance nat_equiv: Equiv nat := eq.
@@ -10,67 +10,68 @@ Instance nat_0: Zero nat := 0%nat.
 Instance nat_1: One nat := 1%nat.
 Instance nat_mult: Mult nat := Peano.mult.
 
-Local Notation N := (Every nat).
+Instance nat_le: Le nat := Peano.le.
+Instance nat_lt: Lt nat := Peano.lt.
 
-Instance: SubSetoid N.
+Hint Extern 10 (Subset nat) => eexact (every nat) : typeclass_instances.
+
+Local Coercion subset_to_type: Subset >-> Sortclass.
+Local Notation nat := (every nat).
+
+Instance: Setoid nat.
 Proof. repeat (split; try apply _). Qed.
 
-Instance: CommutativeSemiRing N.
+Instance: CommutativeSemiRing nat.
 Proof with try apply _. split.
-+ split. split... split...
++ split... split... split...
   * red. intros. now apply plus_assoc.
   * split... intros ?? E1 ?? E2. unfold_sigs. red_sig. lazy in E1,E2. now rewrite E1,E2.
-  * red. intros. now lazy.
-  * red. intros. now apply Plus.plus_0_r.
   * red. intros. now apply Plus.plus_comm.
-+ split. split... split...
+  * red. intros. now lazy.
++ split... split... split...
   * red. intros. now apply mult_assoc.
   * split... intros ?? E1 ?? E2. unfold_sigs. red_sig. lazy in E1,E2. now rewrite E1,E2.
-  * red. intros. now apply Mult.mult_1_l.
-  * red. intros. now apply Mult.mult_1_r.
   * red. intros. now apply mult_comm.
+  * red. intros. now apply Mult.mult_1_l.
 + red. intros. now apply mult_plus_distr_l.
 + now lazy.
 Qed.
 
 (* misc *)
-Instance: Injective S N N.
+Instance: Injective nat nat S.
 Proof. split. intros ???? E. now injection E.
  split; try apply _. intros ?? E. unfold_sigs. red_sig. lazy in E. now rewrite E.
 Qed.
 
-Instance: SubSetoid_Morphism S N N := injective_mor S.
+Instance: Setoid_Morphism nat nat S := injective_mor S.
 
-Global Instance nat_dec: ∀ x y: nat, Decision (x = y) := eq_nat_dec.
+Global Instance nat_dec: ∀ x y, Decision (x = y) := eq_nat_dec.
 
-Add Ring nat: (stdlib_semiring_theory N).
+Add Ring nat: (stdlib_semiring_theory nat).
 
 Close Scope nat_scope.
 
-Instance: NaturalsToSemiRing N :=
-  λ _ _ _ _ _ _, fix f (n: nat) := match n with 0%nat => 0 | S n' => f n' + 1 end.
+Instance: NaturalsToSemiRing nat :=
+  λ _ _ _ _ _ _, fix f n := match n with 0%nat => 0 | S n' => f n' + 1 end.
 
 Section for_another_semiring.
   Context `{CommutativeSemiRing (R:=R)}.
 
-  Notation toR := (naturals_to_semiring N R).
+  Notation toR := (naturals_to_semiring nat R).
 
   Add Ring R: (stdlib_semiring_theory R).
 
-  Instance: Proper ((=) ==> (=)) toR.
-  Proof. unfold equiv, nat_equiv. repeat intro. subst. reflexivity. Qed.
+  Instance: Closed (nat ==> R) toR.
+  Proof. intros n _. induction n; [ change (0 ∊ R) | change (toR n + 1 ∊ R) ]; apply _. Qed.
 
-  Instance f_closed: Closed (N ==> R) toR.
-  Proof. intros n _. induction n. apply _. change (toR n + 1 ∊ R). apply _. Qed.
-
-  Instance: SubProper ((N,=) ==> (R,=)) toR.
-  Proof. intros ?? E. unfold_sigs. red_sig. now rewrite E. Qed.
+  Instance: Proper ((nat,=) ==> (R,=)) toR.
+  Proof. intros n ? [_ E]. lazy in E. rewrite <- E. now red_sig. Qed.
 
   Let f_preserves_0: toR 0 = 0.
-  Proof. reflexivity. Qed.
+  Proof. subreflexivity. Qed.
 
   Let f_preserves_1: toR 1 = 1.
-  Proof. unfold naturals_to_semiring. simpl. subring R. Qed.
+  Proof. unfold naturals_to_semiring. simpl. exact (plus_0_l _). Qed.
 
   Let f_preserves_plus a a': toR (a + a') = toR a + toR a'.
   Proof with subring R.
@@ -82,10 +83,10 @@ Section for_another_semiring.
   Proof with subring R.
    induction a. change (0 = 0 * toR a')...
    change (toR (a' + a * a') = (toR a + 1) * toR a').
-   rewrite f_preserves_plus. rewrite_on R -> IHa...
+   rewrite (R $ f_preserves_plus _ _), (R $ IHa)...
   Qed.
 
-  Global Instance: SemiRing_Morphism (naturals_to_semiring N R) N R.
+  Global Instance: SemiRing_Morphism nat R (naturals_to_semiring nat R).
   Proof. repeat (split; try apply _); repeat intro.
       apply f_preserves_plus.
      apply f_preserves_0.
@@ -98,45 +99,42 @@ Lemma O_nat_0 : O ≡ 0.
 Proof. reflexivity. Qed.
 
 Lemma S_nat_plus_1 x : S x ≡ x + 1.
-Proof. rewrite (commutativity (S:=N) _ _). reflexivity. Qed.
+Proof. rewrite (commutativity (+) _ _). reflexivity. Qed.
 
 Lemma S_nat_1_plus x : S x ≡ 1 + x.
 Proof. reflexivity. Qed.
 
-Lemma nat_induction (P : nat → Prop) :
+Lemma nat_induction (P : Datatypes.nat → Prop) :
   P 0 → (∀ n, P n → P (1 + n)) → ∀ n, P n.
 Proof nat_ind P.
 
-Instance: Naturals N.
-Proof. split; try apply _. intros. pose proof (f_closed (R:=R)).
-  intros x y E. unfold_sigs. unfold equiv, nat_equiv in E. subst y.
+Instance: Naturals nat.
+Proof. split; try apply _. intros.
+  intros x y [_ E]. lazy in E. subst y. red_sig.
   induction x; [
     replace 0%nat with (zero:nat) by reflexivity
   | rewrite S_nat_1_plus ];
-  preserves_simplify h (N) R;
-  preserves_simplify (naturals_to_semiring N R) (N) R.
-  reflexivity. now rewrite_on R -> (IHx _ _).
+  preserves_simplify h; preserves_simplify (naturals_to_semiring nat R).
+  subreflexivity. now rewrite_on R -> IHx.
 Qed.
 
 (* Misc *)
-Instance: NoZeroDivisors N.
+Instance: NoZeroDivisors nat.
 Proof. intros x [[_ Ex] [y [[_ Ey1] [Ey2|Ey2]]]]; destruct (Mult.mult_is_O _ _ Ey2); intuition. Qed.
 
-Instance: ∀ `{z ∊ N ₀}, LeftCancellation (.*.) z N.
+Instance: ∀ `{z ∊ nat ₀}, LeftCancellation (.*.) z nat.
 Proof. intros z [_ Ez] x _ y _. now apply NPeano.Nat.mul_cancel_l. Qed.
 
 (* Order *)
-Instance nat_le: Le nat := Peano.le.
-Instance nat_lt: Lt nat := Peano.lt.
 
-Instance: FullPseudoSemiRingOrder N.
+Instance: FullPseudoSemiRingOrder nat.
 Proof.
-  assert (TotalRelation nat_le N).
+  assert (TotalRelation nat nat_le).
    intros x _ y _. now destruct (le_ge_dec x y); intuition.
-  assert (PartialOrder N).
-   split; try apply _. intros ?? E1 ?? E2. unfold_sigs. lazy in E1, E2. red. now rewrite E1, E2.
+  assert (PartialOrder nat).
+   split; try apply _. intros ?? [_ E1] ?? [_ E2]. lazy in E1, E2. red. now rewrite E1, E2.
    intros x _ y _ E. now apply Le.le_antisym.
-  assert (SemiRingOrder N). split. apply _. apply _.
+  assert (SemiRingOrder nat). split. apply _. apply _.
       intros x _ y _ E. exists_sub (y - x)%nat. now apply le_plus_minus.
      intros z _. repeat (split; try apply _). intros. now apply Plus.plus_le_compat_l.
     intros. now apply plus_le_reg_l with z.
@@ -145,10 +143,10 @@ Proof.
   intros. now apply NPeano.Nat.le_neq.
 Qed.
 
-Instance: OrderEmbedding S N N.
+Instance: OrderEmbedding nat nat S.
 Proof. repeat (split; try apply _); intros ? _ ? _. apply le_n_S. apply le_S_n. Qed.
 
-Instance: StrictOrderEmbedding S N N.
+Instance: StrictOrderEmbedding nat nat S.
 Proof. split; try apply _. Qed.
 
 Instance nat_le_dec: Decision (x ≤ y) := le_dec.

@@ -96,8 +96,8 @@ Proof. intro. split; try apply _; firstorder. Qed.
 (** The restriction of a relation to some subset ([restrict_rel]) is used ubiquitously.
     Apart from reflexivity, all of the above properties lift to restricted relations. *)
 
-Lemma restrict_rel_sub_fp `(S:A → Prop) (R:relation A): Find_Proper_Subrelation (restrict_rel S R) R.  Proof restrict_rel_sub S R.
-Lemma restrict_rel_sym_fp `(S:A → Prop) (R:relation A) {sym:Find_Proper_Symmetric R}: Find_Proper_Symmetric (restrict_rel S R). Proof @restrict_rel_sym _ S R sym.
+Lemma restrict_rel_sub_fp `(S:A → Prop) (R:relation A): Find_Proper_Subrelation (S,R)%signature R.  Proof restrict_rel_sub S R.
+Lemma restrict_rel_sym_fp `(S:A → Prop) (R:relation A) {sym:Find_Proper_Symmetric R}: Find_Proper_Symmetric (S,R)%signature. Proof @restrict_rel_sym _ S R sym.
 Hint Extern 0 (@Find_Proper_Subrelation _ (@restrict_rel _ _ ?R) ?R) => eapply @restrict_rel_sub_fp : typeclass_instances.
 Hint Extern 0 (@Find_Proper_Symmetric _ (@restrict_rel _ _ _)) => eapply @restrict_rel_sym_fp : typeclass_instances.
 
@@ -352,7 +352,7 @@ Ltac conv_join_apply p :=
       let with_c c :=
         (*let t := type of c in idtac "got conversion" t;*)
         let p' := constr:(c f f (conj p p) : Proper S f) in
-        (*let t := type of p' in idtac "found joined" t;*)
+        (*let t := type of p' in idtac "found joined" t; *)
         eexact p'
       in build_chain_join_conv R S with_c
     | _ => (* idtac "conv_and_apply failure"; *) fail
@@ -388,9 +388,13 @@ Ltac compare_rel sym R S k :=
       | fail 2 ]
     | pair _ (?SS,?SR)%signature => first [ compare_rel sym R SR k | fail 2 ]
     | pair (@equiv _ ?eq1) (@equiv _ ?eq2) => unify eq1 eq2; first [ k sym | fail 2 ]
+    | _ => let S1 := match R with SubRelation ?S => S | flip (SubRelation ?S) => S end in
+           let S2 := match S with SubRelation ?S => S | flip (SubRelation ?S) => S end in
+           unify S1 S2; first [k false | fail 2]
     end
   | match sym with false => idtac end; first [ k false | fail 2 ]
   | has_evar S; first [ k sym | fail 2 ]
+  | match S with @equiv _ _ => idtac end; first [k true | fail 2]
   | let fpsym := constr:(_:Find_Proper_Symmetric S) in first [ k true | fail 2 ]
   | k false
   ].
