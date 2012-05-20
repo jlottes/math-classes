@@ -1,5 +1,5 @@
 Require Import
-  Arith_base abstract_algebra interfaces.naturals interfaces.orders
+  Arith_base abstract_algebra interfaces.additional_operations interfaces.naturals interfaces.orders
   theory.setoids theory.common_props theory.rings orders.semirings.
 Require Import Ring stdlib_ring misc.quote.
 
@@ -151,15 +151,12 @@ Proof. split; try apply _. Qed.
 
 Instance nat_le_dec: Decision (x ≤ y) := le_dec.
 
-(*
-Instance nat_cut_minus: CutMinus nat := minus.
+Instance nat_cut_minus: CutMinus Datatypes.nat := minus.
 Instance: CutMinusSpec nat nat_cut_minus.
-Proof.
-  split.
-   symmetry. rewrite commutativity.
-   now apply le_plus_minus.
-  intros x y E. destruct (orders.le_equiv_lt x y E) as [E2|E2].
+Proof. split; [| intros x _ y _ E ..].
++ split; try apply _. intros ?? [_ E1] ?? [_ E2]. lazy in E1,E2. red_sig. now rewrite E1, E2. 
++ symmetry. rewrite (commutativity (+) _ _). now apply le_plus_minus.
++ destruct (orders.le_equiv_lt x y E) as [E2|E2].
    rewrite E2. now apply minus_diag.
   apply not_le_minus_0. now apply orders.lt_not_le_flip.
 Qed.
-*)

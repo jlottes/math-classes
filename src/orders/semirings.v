@@ -680,13 +680,78 @@ Section full_pseudo_semiring_order.
 
   Lemma not_le_2_0 : ¬2 ≤ 0.
   Proof. now apply (lt_not_le_flip _ _), lt_0_2. Qed.
+
+  Lemma nonneg_pos_is_pos : (R⁺)₊ = R₊ .
+  Proof. intro x. split. firstorder. intro. pose proof pos_nonneg x _. firstorder. Qed.
+
 End full_pseudo_semiring_order.
+
+Hint Extern 5 (_₊ ⊆ _⁺) => eapply @pos_nonneg : typeclass_instances.
+Hint Extern 5 (_₋ ⊆ _⁻) => eapply @neg_nonpos : typeclass_instances.
+
+Hint Extern 15 (?x ∊ ?R⁺) => match goal with
+  | el : x ∊ R₊  |- _ => eapply (pos_nonneg (R:=R) x el)
+end : typeclass_instances.
+Hint Extern 15 (?x ∊ ?R⁻) => match goal with
+  | el : x ∊ R₋  |- _ => eapply (neg_nonpos (R:=R) x el)
+end : typeclass_instances.
 
 (* Due to bug #2528 *)
 Hint Extern 7 (PropHolds (0 ≤ 1)) => eapply @le_0_1 : typeclass_instances.
 Hint Extern 7 (PropHolds (0 ≤ 2)) => eapply @le_0_2 : typeclass_instances.
 Hint Extern 7 (PropHolds (0 ≤ 3)) => eapply @le_0_3 : typeclass_instances.
 Hint Extern 7 (PropHolds (0 ≤ 4)) => eapply @le_0_4 : typeclass_instances.
+
+Section nonneg.
+  Context `{FullPseudoSemiRingOrder (R:=R)}.
+
+  Existing Instance pseudo_order_setoid.
+
+  Instance nonneg_semiring : SemiRing R⁺.
+  Proof.
+    repeat match goal with
+    | |- Setoid _ => apply _
+    | |- mon_unit ∊ R⁺ => eexact (_ : 0 ∊ R⁺)
+    | |- 1 ∊ R⁺ => apply _
+    | |- Setoid_Binary_Morphism _ _ _ (@sg_op _ ?op) =>
+         let op := match op with
+         | plus_is_sg_op => constr:(plus)
+         | mult_is_sg_op => constr:(mult)
+         end in change (Setoid_Binary_Morphism R⁺ R⁺ R⁺ op);
+         split; try apply _; intros ?? E1 ?? E2; unfold_sigs; red_sig;
+         now rewrite_on R -> E1,E2
+    | |- _ => split
+    | |- _ => rewrite (_:R⁺ ⊆ R); apply _
+    end.
+  Qed.
+
+  Instance nonneg_comsemiring `{!CommutativeSemiRing R} : CommutativeSemiRing R⁺.
+  Proof with try apply _. split... split... split... rewrite (_:R⁺ ⊆ R)... Qed.
+
+  Instance: PseudoOrder R⁺.
+  Proof. rewrite (_:R⁺ ⊆ R); apply _. Qed.
+
+  Instance: PseudoSemiRingOrder R⁺.
+  Proof. split; try apply _.
+  + intros x ? y ? E. exact (decompose_le (not_lt_le_flip _ _ E)).
+  + intros z ?. split; (split; [split;apply _|]); intros x ? y ?.
+    exact (strictly_order_preserving (z+) x y).
+    exact (strictly_order_reflecting (z+) x y).
+  + split; try apply _. intros x₁ ? y₁ ? x₂ ? y₂ ? .
+    exact (strong_binary_extensionality _ _ _ _ _).
+  + intros x xe y ye.
+    rewrite nonneg_pos_is_pos in xe.
+    rewrite nonneg_pos_is_pos in ye.
+    rewrite nonneg_pos_is_pos.
+    apply _.
+  Qed.
+
+  Instance nonneg_semiring_order : FullPseudoSemiRingOrder R⁺.
+  Proof. split. apply _. intros x ? y ?. exact (le_iff_not_lt_flip _ _). Qed.
+End nonneg.
+Hint Extern 5 (SemiRing _⁺) => eapply @nonneg_semiring : typeclass_instances.
+Hint Extern 5 (CommutativeSemiRing _⁺) => eapply @nonneg_comsemiring : typeclass_instances.
+Hint Extern 5 (FullPseudoSemiRingOrder _⁺) => eapply @nonneg_semiring_order : typeclass_instances.
 
 Section dec_semiring_order.
   (* Maybe these assumptions can be weakened? *)

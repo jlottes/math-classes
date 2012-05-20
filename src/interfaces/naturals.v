@@ -14,14 +14,15 @@ Class Naturals {A plus mult zero one e} (N:Subset A) {U: NaturalsToSemiRing N} :
 
 
 (* Specializable operations: *)
-(*
-Class NatDistance `(N:Subset A) `{Equiv A} `{Plus A}
-  := nat_distance_sig : ∀ x y : N, { z : N | x + z = y } + { z : N | y + z = x }.
-Definition nat_distance `{nd : NatDistance N} (x y : N) :=
+
+Class NatDistance `{Equiv A} `{Plus A} (N:Subset A)
+  := nat_distance_sig x y : {z | x ∊ N → y ∊ N → z ∊ N ∧ x + z = y } 
+                          + {z | x ∊ N → y ∊ N → z ∊ N ∧ y + z = x }.
+
+Definition nat_distance `{nd : NatDistance (N:=N)} : N ⇀ N ⇀ N := λ x y,
   match nat_distance_sig x y with
-  | inl (n↾_) => n
-  | inr (n↾_) => n
+  | inl (exist n _) => n
+  | inr (exist n _) => n
   end.
-Instance: Params (@nat_distance_sig) 4.
-Instance: Params (@nat_distance) 4.
-*)
+Instance: Params (@nat_distance_sig) 5.
+Instance: Params (@nat_distance) 5.

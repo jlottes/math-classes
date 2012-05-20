@@ -54,7 +54,11 @@ end : typeclass_instances.
 
 (* Check fun `{Le A} `{Zero A} R `{x ∊ R ⁻} => _ : x ∊ R. *)
 
+Hint Extern 5 (0 ∊ ?R⁺) => split; [apply _ | subreflexivity] : typeclass_instances.
+Hint Extern 5 (0 ∊ ?R⁻) => split; [apply _ | subreflexivity] : typeclass_instances.
 Hint Extern 5 (1 ∊ ?R ₀) => eapply @NonZero_element : typeclass_instances.
+Hint Extern 5 (1 ∊ ?R⁺) => eapply @NonNeg_element : typeclass_instances.
+Hint Extern 5 (1 ∊ ?R₊) => eapply @Pos_element : typeclass_instances.
 
 Lemma NonZero_subsetoid `{Equiv A} `{UnEq A} `{Zero A} R `{!UnEqualitySetoid R} `{0 ∊ R} : SubSetoid (R ₀) R.
 Proof. split. apply _. split. apply _. intros ?? E [??]. unfold_sigs. split. apply _. now rewrite_on R <- E. Qed.

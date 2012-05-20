@@ -42,7 +42,7 @@ Qed.
 
 Instance naturals_to_naturals_injective `{Naturals (N:=N)} `{Naturals (N:=N2)} (f:N ⇀ N2) `{!SemiRing_Morphism N N2 f}:
   Injective N N2 f | 15.
-Proof. now apply (to_semiring_injective (naturals_to_semiring N2 N) _). Qed.
+Proof to_semiring_injective (naturals_to_semiring N2 N) f.
 
 Section retract_is_nat.
   Local Open Scope mc_fun_scope.
