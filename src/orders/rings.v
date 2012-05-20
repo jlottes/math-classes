@@ -54,30 +54,6 @@ Lemma from_full_pseudo_ring_order
   : FullPseudoSemiRingOrder R.
 Proof. split. now apply from_pseudo_ring_order. now apply le_iff_not_lt_flip. Qed.
 
-Section ring_lemmas.
-
-  Context `{Ring (R:=R)}.
-
-  Lemma plus_negate_l_split x `{x ∊ R} y `{y ∊ R} : -x + y + x = y.
-  Proof.
-    rewrite (R $ commutativity (+) (-x) _), <- (R $ associativity (+) _ _ _), (R $ plus_negate_l _).
-    exact (plus_0_r _).
-  Qed.
-
-  Lemma plus_negate_r_split x `{x ∊ R} y `{y ∊ R} : x + y - x = y.
-  Proof. rewrite_on R <- (negate_involutive x) at 1. exact (plus_negate_l_split _ _). Qed.
-
-  Lemma plus_negate_l_split_alt x `{x ∊ R} y `{y ∊ R} : -x + (y + x) = y.
-  Proof. rewrite_on R -> (associativity (+) (-x) y x). exact (plus_negate_l_split _ _). Qed.
-
-  Lemma plus_negate_r_split_alt x `{x ∊ R} y `{y ∊ R} : x + (y - x) = y.
-  Proof. rewrite_on R -> (associativity (+) x y (-x)). exact (plus_negate_r_split _ _). Qed.
-
-  Lemma plus_plus_negate_l x `{x ∊ R} y `{y ∊ R} : x - y + y = x.
-  Proof. rewrite_on R -> (commutativity (+) x (-y)). exact (plus_negate_l_split _ _). Qed.
-
-End ring_lemmas.
-
 Section ring_order.
   Context `{Ring A (R:=R)} `{Le A} `{!SemiRingOrder R}.
 
@@ -111,6 +87,9 @@ Section more_ring_order.
   Lemma negate_nonneg_nonpos x `{x ∊ R} : -x ∊ R⁺ → x ∊ R⁻.
   Proof. intro. rewrite_on R <- (negate_involutive x). apply _. Qed.
 
+  Lemma nonneg_nonpos_zero x `{x ∊ R⁺} `{x ∊ R⁻} : x = 0.
+  Proof. apply (subantisymmetry (≤) _ _); firstorder. Qed.
+
   Lemma flip_le_minus_r x `{x ∊ R} y `{y ∊ R} z `{z ∊ R} : z ≤ y - x ↔ z + x ≤ y.
   Proof. split; intro.
   + rewrite_on R -> (commutativity (+) z x), <- (plus_negate_r_split_alt x y).
@@ -130,10 +109,14 @@ Section more_ring_order.
     pose proof (_ : y - x ∊ R). firstorder.
   Qed.
 
+  Definition minus_nonneg x `{x ∊ R} y `{y ∊ R} := proj2 (flip_nonneg_minus x y).
+
   Lemma flip_nonpos_minus x `{x ∊ R} y `{y ∊ R} : y - x ∊ R⁻ ↔ y ≤ x.
   Proof. rewrite_on R <- (plus_0_l x) at 2. rewrite <- (flip_le_minus_l _ _ _).
     pose proof (_ : y - x ∊ R). firstorder.
   Qed.
+
+  Definition minus_nonpos x `{x ∊ R} y `{y ∊ R} := proj2 (flip_nonpos_minus x y).
 
   Lemma nonneg_minus_compat x `{x ∊ R} y `{y ∊ R} z `{z ∊ R⁺} : x ≤ y → x - z ≤ y.
   Proof. intros.

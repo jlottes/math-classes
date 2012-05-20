@@ -260,24 +260,30 @@ Arguments mult_1_l {A Aplus Amult Azero Aone Ae R SemiRing} _ {_}.
 Arguments mult_1_r {A Aplus Amult Azero Aone Ae R SemiRing} _ {_}.
 Arguments field_inv_l {A Aplus Amult Azero Aone Anegate Ainv Ae Aue F Field} _ {_}.
 
+Class SemiGroup_Morphism {A B Aop Bop Ae Be} S T f :=
+  { sgmor_a : @SemiGroup A Aop Ae S
+  ; sgmor_b : @SemiGroup B Bop Be T
+  ; sgmor_subsetmor :>> Setoid_Morphism S T f
+  ; sgmor_preserves_sg_op `{x ∊ S} `{y ∊ S} : f (x & y) = f x & f y
+  }.
+Definition preserves_sg_op {A B} {S:Subset A} {T:Subset B} {f : S ⇀ T}
+  `{SemiGroup_Morphism A B (S:=S) (T:=T) (f:=f)} x `{x ∊ S} y `{y ∊ S} := sgmor_preserves_sg_op (x:=x) (y:=y).
+
+Class Monoid_Morphism {A B Aop Bop Aunit Bunit Ae Be} M N f :=
+  { monmor_a : @Monoid A Aop Aunit Ae M
+  ; monmor_b : @Monoid B Bop Bunit Be N
+  ; monmor_sgmor :>> SemiGroup_Morphism M N f
+  ; monmor_preserves_mon_unit : f mon_unit = mon_unit
+  }.
+Definition preserves_mon_unit {A B} {M:Subset A} {N:Subset B} {f : M ⇀ N}
+  `{Monoid_Morphism A B (M:=M) (N:=N) (f:=f)} := monmor_preserves_mon_unit.
+
+Notation AdditiveSemiGroup_Morphism := (SemiGroup_Morphism (Aop:=plus_is_sg_op) (Bop:=plus_is_sg_op)).
+Notation AdditiveMonoid_Morphism := (Monoid_Morphism (Aop:=plus_is_sg_op) (Bop:=plus_is_sg_op) (Aunit:=zero_is_mon_unit) (Bunit:=zero_is_mon_unit)).
+Notation MultiplicativeSemiGroup_Morphism := (SemiGroup_Morphism (Aop:=mult_is_sg_op) (Bop:=mult_is_sg_op)).
 
 Section morphism_classes.
   Context {A B} {Ae:Equiv A} {Be:Equiv B}.
-
-  Class SemiGroup_Morphism {Aop Bop} S T f :=
-    { sgmor_a : @SemiGroup A Aop Ae S
-    ; sgmor_b : @SemiGroup B Bop Be T
-    ; sgmor_subsetmor :>> Setoid_Morphism S T f
-    ; preserves_sg_op `{x ∊ S} `{y ∊ S} : f (x & y) = f x & f y
-    }.
-
-  Class Monoid_Morphism {Aop Bop Aunit Bunit} M N f :=
-    { monmor_a : @Monoid A Aop Aunit Ae M
-    ; monmor_b : @Monoid B Bop Bunit Be N
-    ; monmor_sgmor :>> SemiGroup_Morphism M N f
-    ; preserves_mon_unit : f mon_unit = mon_unit
-    }.
-
   Context {Aplus:Plus A} {Bplus:Plus B}.
   Context {Amult:Mult A} {Bmult:Mult B}.
   Context {Azero:Zero A} {Bzero:Zero B}.
@@ -286,15 +292,15 @@ Section morphism_classes.
   Class SemiRng_Morphism R S f :=
     { srngmor_a : SemiRng (A:=A) R
     ; srngmor_b : SemiRng (A:=B) S
-    ; srngmor_plus_mor :>> @Monoid_Morphism plus_is_sg_op plus_is_sg_op zero_is_mon_unit zero_is_mon_unit R S f
-    ; srngmor_mult_mor :>> @SemiGroup_Morphism mult_is_sg_op mult_is_sg_op R S f
+    ; srngmor_plus_mor :>> AdditiveMonoid_Morphism R S f
+    ; srngmor_mult_mor :>> MultiplicativeSemiGroup_Morphism R S f
     }.
 
   Class SemiRing_Morphism R S f :=
     { sringmor_a : SemiRing (A:=A) R
     ; sringmor_b : SemiRing (A:=B) S
     ; sringmor_srng_mor :>> SemiRng_Morphism R S f
-    ; preserves_1 : f 1 = 1
+    ; sringmor_preserves_1 : f 1 = 1
     }.
 
   Context {Anegate :Negate A} {Bnegate :Negate B}.
@@ -302,8 +308,8 @@ Section morphism_classes.
   Class Rng_Morphism R S f :=
     { rngmor_a : Rng (A:=A) R
     ; rngmor_b : Rng (A:=B) S
-    ; rngmor_plus_mor :>> @SemiGroup_Morphism plus_is_sg_op plus_is_sg_op R S f
-    ; rngmor_mult_mor :>> @SemiGroup_Morphism mult_is_sg_op mult_is_sg_op R S f
+    ; rngmor_plus_mor :>> AdditiveSemiGroup_Morphism R S f
+    ; rngmor_mult_mor :>> MultiplicativeSemiGroup_Morphism R S f
     }.
 
   Class Ring_Morphism R S f :=
@@ -313,9 +319,7 @@ Section morphism_classes.
     ; ringmor_1 : ∃ `{x ∊ R}, f x = 1
     }.
 End morphism_classes.
-Arguments preserves_sg_op {A B Ae Be Aop Bop S T f} {_} x {_} y {_}.
-Arguments preserves_mon_unit {A B Ae Be Aop Bop _ _ M N f} {_}.
-Arguments preserves_1 {A B Ae Be _ _ _ _ _ _ _ _ R S f} {_}.
+Definition preserves_1 `{SemiRing (R:=R1)} `{SemiRing (R:=R2)} {f : R1 ⇀ R2} `{!SemiRing_Morphism R1 R2 f} := sringmor_preserves_1.
 
 Section jections.
   Context {A B} {Ae:Equiv A} {Aue:UnEq A} {Be:Equiv B} {Bue:UnEq B}.
@@ -329,7 +333,7 @@ Section jections.
     }.
 
   Class Injective : Prop :=
-    { injective `{x ∊ S} `{y ∊ S} : f x = f y → x = y
+    { injective_def `{x ∊ S} `{y ∊ S} : f x = f y → x = y
     ; injective_mor : Setoid_Morphism S T f
     }.
 
@@ -346,10 +350,12 @@ Section jections.
 End jections.
 Arguments strong_injective {A B Ae Aue Be Bue S T} f {_} x {_} y {_} _.
 Arguments strong_injective_mor {A B Ae Aue Be Bue S T} f {_}.
-Arguments injective {A B Ae Be S T} f {_} x {_} y {_} _.
+(* Arguments injective {A B Ae Be S T} f {_} x {_} y {_} _. *)
 Arguments injective_mor {A B Ae Be S T} f {_}.
 Arguments surjective {A B Ae Be S T} f {_} {_} _ _ _.
 Arguments surjective_mor {A B Ae Be S T} f {_} {_}.
 Arguments surjective_closed {A B Ae Be S T} f {_} {_} _ {_}.
+
+Definition injective {A B S T} (f : S ⇀ T) `{Equiv A} `{Equiv B} `{!Injective (A:=A) (B:=B) S T f} x `{x ∊ S} y `{y ∊ S} := injective_def S T f (x:=x) (y:=y).
 
 Hint Extern 5 (inverse _ _ ∊ _) => eapply @surjective_closed.

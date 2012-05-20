@@ -17,7 +17,7 @@ Section ops.
   Definition frac_equiv : Equiv (FracPair A) := λ f f', let (a,b) := f in let (c,d) := f' in a*d = b*c.
   Definition frac_uneq  : UnEq  (FracPair A) := λ f f', let (a,b) := f in let (c,d) := f' in a*d ≠ b*c.
 
-  Definition frac_inject : Cast A (FracPair A) := λ x, C x 1.
+  Global Instance frac_inject : Cast D (Frac D) := λ x, C x 1.
 
   Definition frac_zero   : Zero   (FracPair _) := C 0 1.
   Definition frac_one    : One    (FracPair _) := C 1 1.
@@ -27,15 +27,14 @@ Section ops.
   Definition frac_inv    : Inv    (FracPair A) := λ f, let (a,b) := f in C b a.
 End ops.
 
-Hint Extern 0 (Equiv   (FracPair _ )) => eexact frac_equiv  : typeclass_instances.
-Hint Extern 0 (UnEq    (FracPair _ )) => eexact frac_uneq   : typeclass_instances.
-Hint Extern 0 (Cast ?A (FracPair ?A)) => eexact frac_inject : typeclass_instances.
-Hint Extern 0 (Zero    (FracPair _ )) => eexact frac_zero   : typeclass_instances.
-Hint Extern 0 (One     (FracPair _ )) => eexact frac_one    : typeclass_instances.
-Hint Extern 0 (Plus    (FracPair _ )) => eexact frac_plus   : typeclass_instances.
-Hint Extern 0 (Mult    (FracPair _ )) => eexact frac_mult   : typeclass_instances.
-Hint Extern 0 (Negate  (FracPair _ )) => eexact frac_negate : typeclass_instances.
-Hint Extern 0 (Inv     (FracPair ?A)) => eexact (frac_inv (A:=A)) : typeclass_instances.
+Hint Extern 0 (Equiv   (FracPair _ )) => eapply @frac_equiv  : typeclass_instances.
+Hint Extern 0 (UnEq    (FracPair _ )) => eapply @frac_uneq   : typeclass_instances.
+Hint Extern 0 (Zero    (FracPair _ )) => eapply @frac_zero   : typeclass_instances.
+Hint Extern 0 (One     (FracPair _ )) => eapply @frac_one    : typeclass_instances.
+Hint Extern 0 (Plus    (FracPair _ )) => eapply @frac_plus   : typeclass_instances.
+Hint Extern 0 (Mult    (FracPair _ )) => eapply @frac_mult   : typeclass_instances.
+Hint Extern 0 (Negate  (FracPair _ )) => eapply @frac_negate : typeclass_instances.
+Hint Extern 0 (Inv     (FracPair _ )) => eapply @frac_inv    : typeclass_instances.
 
 Section contents.
   Context `{IntegralDomain (R:=D)}.
@@ -101,10 +100,10 @@ Section contents.
   + dispatch3 (LeftDistribute (.*.) (+) F).
   Qed.
 
-  Instance: Setoid_Morphism D F (cast _ _).
+  Instance: Setoid_Morphism D F (cast D F).
   Proof. split; try apply _. intros ?? E. unfold_sigs. reduce_sig. rewrite_on D -> E. subring D. Qed.
 
-  Instance: Ring_Morphism D F (cast _ _).
+  Instance: Ring_Morphism D F (cast D F).
   Proof with try apply _. split... split...
   + split... intros x ? y ?. unfold cast, frac_inject. reduce.
     replace (x & y) with (x+y) by easy. subring D.
@@ -113,8 +112,8 @@ Section contents.
   + exists_sub (1:A). apply (subreflexivity (S:=F)). apply _.
   Qed.
 
-  Instance: Injective D F (cast _ _).
-  Proof. rewrite <- (rng_mor_injective (cast _ _)).
+  Instance: Injective D F (cast D F).
+  Proof. rewrite <- (rng_mor_injective (cast D F)).
     intros x ? E. unfold cast, frac_inject, equiv, frac_equiv in E. simpl in E.
     subtransitivity (x*1). subsymmetry. exact (mult_1_r x).
     subtransitivity (1*0). exact (mult_1_l 0).

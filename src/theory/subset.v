@@ -1,10 +1,10 @@
 Require Import abstract_algebra interfaces.orders.
 
-Ltac subreflexivity    := first [ apply (subreflexivity _) | apply subreflexivity]; trivial.
-Ltac subsymmetry       := first [ apply (subsymmetry _ _)  | apply subsymmetry   ]; trivial.
+Ltac subreflexivity    := first [ apply (subreflexivity _) | rapply (subreflexivity)]; trivial.
+Ltac subsymmetry       := first [ apply (subsymmetry _ _)  | rapply (subsymmetry)   ]; trivial.
 Ltac subtransitivity y := apply (subtransitivity _ y _); trivial.
 
-Tactic Notation "subsymmetry" "in" hyp(H) := apply (subsymmetry _ _) in H.
+Tactic Notation "subsymmetry" "in" hyp(H) :=  apply (subsymmetry _ _) in H.
 
 (* add subreflexivity, subsymmetry to the easy tactic (and thereby now) *)
 Ltac easy ::=
@@ -226,6 +226,9 @@ Tactic Notation "rewrite_on" constr(S) "->" constr(E)
   "in" ident(H) := rewrite   (to_restrict_rel S E) in H.
 Tactic Notation "rewrite_on" constr(S) "<-" constr(E)
   "in" ident(H) := rewrite <-(to_restrict_rel S E) in H.
+
+Tactic Notation "mc_replace" constr(x) "with" constr(y) "on" constr(S) "by" tactic(tac) :=
+  let E := fresh "E" in assert (x = y) as E by tac; rewrite_on S -> E; clear E.
 
 Class SubDecision {A B} (S:Subset A) (T:Subset B) (R : A → B → Prop)
   := decide_sub `{x ∊ S} `{y ∊ T} : Decision (R x y).

@@ -1,5 +1,5 @@
 Require Import
-  abstract_algebra theory.setoids theory.common_props.
+  abstract_algebra theory.setoids theory.common_props theory.jections.
 
 Local Open Scope grp_scope. (* notation for inverse *)
 Local Notation e := mon_unit.
@@ -162,7 +162,7 @@ Proof. split; try apply _. subreflexivity. Qed.
 Hint Extern 0 (Monoid_Morphism _ _ id) => class_apply @id_monoid_mor : typeclass_instances.
 
 Lemma compose_semigroup_morphism `(S:Subset A) `{SemiGroup A (S:=S)} `{SemiGroup (S:=T)} `{SemiGroup (S:=U)}
-  f g `{!SemiGroup_Morphism S T f} `{!SemiGroup_Morphism T U g}: SemiGroup_Morphism S U (g ∘ f).
+  (f:S ⇀ T) (g:T ⇀ U) `{!SemiGroup_Morphism S T f} `{!SemiGroup_Morphism T U g}: SemiGroup_Morphism S U (g ∘ f).
 Proof. split; try apply _.
   intros x ? y ?. unfold compose.
   rewrite_on T -> (preserves_sg_op x y).
@@ -171,12 +171,30 @@ Qed.
 Hint Extern 4 (SemiGroup_Morphism _ _ (_ ∘ _)) => class_apply @compose_semigroup_morphism : typeclass_instances.
 
 Lemma compose_monoid_morphism `{Monoid (M:=M)} `{Monoid (M:=N)} `{Monoid (M:=P)}
-  f g `{!Monoid_Morphism M N f} `{!Monoid_Morphism N P g}: Monoid_Morphism M P (g ∘ f).
+  (f:M ⇀ N) (g:N ⇀ P) `{!Monoid_Morphism M N f} `{!Monoid_Morphism N P g}: Monoid_Morphism M P (g ∘ f).
 Proof. split; try apply _.
   unfold compose. rewrite -> (N $ preserves_mon_unit).
   exact preserves_mon_unit.
 Qed.
 Hint Extern 4 (Monoid_Morphism _ _ (_ ∘ _)) => class_apply @compose_monoid_morphism : typeclass_instances.
+
+Lemma invert_semigroup_morphism {A B} `{S:Subset A} `{T:Subset B}
+ (f:S ⇀ T) `{SemiGroup_Morphism A B (S:=S) (T:=T) (f:=f)} `{!Inverse f} `{!Bijective S T f} :
+  SemiGroup_Morphism T S (inverse f).
+Proof. pose proof sgmor_a. pose proof sgmor_b. split; try apply _.
+  intros x ? y ?. apply (injective f _ _).
+  now rewrite (T $ preserves_sg_op _ _), 3!(T $ surjective_applied _ _).
+Qed.
+Hint Extern 4 (SemiGroup_Morphism _ _ (inverse _)) => eapply @invert_semigroup_morphism : typeclass_instances.
+
+Lemma invert_monoid_morphism {A B} `{M:Subset A} `{N:Subset B}
+ (f:M ⇀ N) `{Monoid_Morphism A B (M:=M) (N:=N) (f:=f)} `{!Inverse f} `{!Bijective M N f} :
+  Monoid_Morphism N M (inverse f).
+Proof. pose proof monmor_a. pose proof monmor_b. split; try apply _.
+  apply (injective f _ _).
+  now rewrite (N $ preserves_mon_unit), (N $ surjective_applied _ _).
+Qed.
+Hint Extern 4 (Monoid_Morphism _ _ (inverse _)) => eapply @invert_monoid_morphism : typeclass_instances.
 
 Section groupmor_props.
   Context `{G:Subset A} `{H:Subset B} `{Group (A:=A) (G:=G)} `{Group (A:=B) (G:=H)} {f : G ⇀ H} `{!SemiGroup_Morphism G H f}.
@@ -204,13 +222,13 @@ Ltac structure_mor_proper :=
 Lemma semigroup_morphism_proper: Find_Proper_Signature (@SemiGroup_Morphism) 0
   (∀ A Ae B Be Sop Top, Proper ((=) ==> (=) ==> eq ==> impl) (@SemiGroup_Morphism A Ae B Be Sop Top)).
 Proof. structure_mor_proper.
-  intros x Hx y Hy. rewrite <-ES in Hx, Hy. exact (preserves_sg_op _ _ _ _).
+  intros x Hx y Hy. rewrite <-ES in Hx, Hy. eauto.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@SemiGroup_Morphism) 0 _) => eexact semigroup_morphism_proper : typeclass_instances.
 
 Lemma monoid_morphism_proper: Find_Proper_Signature (@Monoid_Morphism) 0
   (∀ A Ae B Be Sunit Tunit Sop Top,
     Proper ((=) ==> (=) ==> eq ==> impl) (@Monoid_Morphism A Ae B Be Sunit Tunit Sop Top)).
-Proof. structure_mor_proper. exact preserves_mon_unit. Qed.
-Hint Extern 0 (Find_Proper_Signature (@Monoid_Morphism) 0 _) => eexact monoid_morphism_proper : typeclass_instances.
+Proof. now structure_mor_proper. Qed.
+Hint Extern 0 (Find_Proper_Signature (@Monoid_Morphism) 0 _) => eexact monoid_morphism_proper : typeclass_instances. 
 

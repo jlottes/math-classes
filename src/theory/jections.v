@@ -46,6 +46,9 @@ Section contents.
   Lemma bijective : f⁻¹ ∘ f = id. (* a.k.a. "split-mono" *)
   Proof. intros x y E. unfold_sigs. red_sig. subtransitivity x. exact (bijective_applied x). Qed.
 End contents.
+
+Hint Extern 5 (Setoid_Morphism _ _ (_⁻¹)) => eapply @inverse_mor : typeclass_instances.
+
 (*
 
 Lemma injective_ne `{Equiv A} `{Equiv B} `(f : A → B) `{!Injective f} x y :
@@ -85,43 +88,46 @@ Hint Extern 4 (Inverse        (_ ∘ _)) => class_apply @compose_inverse    : ty
 Hint Extern 4 (Injective  _ _ (_ ∘ _)) => class_apply @compose_injective  : typeclass_instances.
 Hint Extern 4 (Surjective _ _ (_ ∘ _)) => class_apply @compose_surjective : typeclass_instances.
 Hint Extern 4 (Bijective  _ _ (_ ∘ _)) => class_apply @compose_bijective  : typeclass_instances.
-(*
-Lemma alt_Build_Injective `{Equiv A} `{Equiv B} (f : A → B) `{!Inverse f} :
-  Setoid_Morphism f → Setoid_Morphism (f⁻¹) → f⁻¹ ∘ f = id → Injective f.
+
+Lemma alt_Build_Injective `{Equiv A} `{Equiv B} {X:Subset A} {Y:Subset B} (f: X ⇀ Y) `{!Inverse f} :
+  Setoid_Morphism X Y f → Setoid_Morphism Y X (f⁻¹) → f⁻¹ ∘ f = id → Injective X Y f.
 Proof.
   intros ?? E.
   pose proof (setoidmor_a f). pose proof (setoidmor_b f).
   split; try apply _.
-  intros x y F.
-  rewrite <-(ext_equiv_applied E x), <-(ext_equiv_applied E y).
-  unfold compose. now rewrite F.
+  intros x ? y ? F.
+  rewrite <- (E _ _ (X $ subreflexivity x)).
+  rewrite <- (E _ _ (X $ subreflexivity y)).
+  unfold compose. now rewrite_on Y -> F.
 Qed.
 
-Lemma alt_Build_Bijective `{Equiv A} `{Equiv B} (f : A → B) `{!Inverse f} :
-  Setoid_Morphism f → Setoid_Morphism (f⁻¹) → f⁻¹ ∘ f = id → f ∘ f⁻¹ = id → Bijective f.
+Lemma alt_Build_Bijective `{Equiv A} `{Equiv B} {X:Subset A} {Y:Subset B} (f: X ⇀ Y) `{!Inverse f} :
+  Setoid_Morphism X Y f → Setoid_Morphism Y X (f⁻¹) → f⁻¹ ∘ f = id → f ∘ f⁻¹ = id → Bijective X Y f.
 Proof.
   intros. split.
    now apply (alt_Build_Injective f).
-  split; auto.
+  split; auto. exact morphism_closed.
 Qed.
 
-Definition inverse_inverse `{Inverse A B f} : Inverse (f⁻¹) := f.
+Definition inverse_inverse `{Inverse (f:=f)} : Inverse (f⁻¹) := f.
 Hint Extern 4 (Inverse (_ ⁻¹)) => class_apply @inverse_inverse : typeclass_instances.
 
-Lemma flip_bijection `{Bijective A B f} : Bijective (f⁻¹).
+Lemma flip_bijection `{Bijective (S:=X) (T:=Y) (f:=f)} : Bijective Y X (f⁻¹).
 Proof. apply alt_Build_Bijective; try apply _. apply (surjective f). apply (bijective f). Qed.
 
 (* We use this instead of making flip_bijection a real instance, because
    otherwise it gets applied too eagerly, resulting in cycles. *)
-Hint Extern 4 (Bijective (_ ⁻¹)) => apply flip_bijection : typeclass_instances.
+Hint Extern 4 (Bijective _ _ (_ ⁻¹)) => apply flip_bijection : typeclass_instances.
 
-Lemma inverse_involutive `(f : A → B) `{!Inverse f} : (f⁻¹)⁻¹ ≡ f.
+Lemma inverse_involutive `{X:Subset A} `{Y:Subset B} `(f : X ⇀ Y) `{!Inverse f} : (f⁻¹)⁻¹ ≡ f.
 Proof. reflexivity. Qed.
 
 (* This second version is strictly for manual application. *)
-Lemma flip_bijection_back `{Equiv A} `{Equiv B} (f: A → B) `{!Inverse f} : Bijective (f⁻¹) → Bijective f.
-Proof. intro. apply (_: Bijective (f⁻¹⁻¹)). Qed.
+Lemma flip_bijection_back `{Equiv A} `{Equiv B} {X:Subset A} {Y:Subset B} (f: X ⇀ Y) `{!Inverse f} :
+  Bijective Y X (f⁻¹) → Bijective X Y f.
+Proof. intro. apply (_: Bijective X Y (f⁻¹⁻¹)). Qed.
 
+(*
 Instance injective_proper `{Equiv A} `{Equiv B} : Proper ((=) ==> (=)) (@Injective A B _ _).
 Proof.
   assert (∀ f g : A → B, f = g → Injective f → Injective g) as aux.
@@ -147,8 +153,8 @@ Qed.
 
 Ltac setoid_inject :=
   match goal with
-  | E : _ = ?f _ |- _ => apply (injective f) in E
-  | E : ?f _ = _ |- _ => apply (injective f) in E
+  | E : _ = ?f _ |- _ => apply (injective f _ _) in E
+  | E : ?f _ = _ |- _ => apply (injective f _ _) in E
   | E : _ ≡ _ |-  ?G => change (id G); injection E; clear E; intros; unfold id at 1 
   end.
 *)

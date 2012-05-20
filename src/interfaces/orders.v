@@ -147,6 +147,8 @@ Class FullPseudoSemiRingOrder `{Equiv A} `{UnEq A} `{Plus A}
 
 Hint Extern 4 (_ * _ ∊ _⁺) => eapply @nonneg_mult_compat : typeclass_instances. 
 Hint Extern 4 (_ * _ ∊ _₊) => eapply @pos_mult_compat    : typeclass_instances. 
+Hint Extern 20 (Closed (?R⁺ ==> ?R⁺ ==> ?R⁺) (.*.)) => eapply @nonneg_mult_compat : typeclass_instances. 
+Hint Extern 20 (Closed (?R₊ ==> ?R₊ ==> ?R₊) (.*.)) => eapply @pos_mult_compat    : typeclass_instances. 
 
 (* Due to bug #2528 *)
 (*

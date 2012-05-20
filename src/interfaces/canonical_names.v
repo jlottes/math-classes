@@ -127,8 +127,8 @@ Definition inv_image {A B} `{Equiv A} {X Y} (f:X ⇀ Y) (T:Subset B) : Subset A 
 Notation "f ⁺¹( T )" :=     (image f T) (at level 1, format "f ⁺¹( T )" ) : mc_scope.
 Notation "f ⁻¹( T )" := (inv_image f T) (at level 1, format "f ⁻¹( T )") : mc_scope.
 
-Class Cast A B := cast: A → B.
-Arguments cast _ _ {Cast} _.
+Class Cast {A B} (S:Subset A) (T:Subset B) := cast: S ⇀ T.
+Arguments cast {A B} _ _ {Cast} _.
 Notation "' x" := (cast _ _ x) (at level 20) : mc_scope.
 Instance: Params (@cast) 3.
 Typeclasses Transparent Cast.
@@ -231,8 +231,8 @@ Hint Extern 4 (?x < ?z) => auto_trans.
 Class Inverse `(A → B) : Type := inverse: B → A.
 Arguments inverse {A B} _ {Inverse} _.
 *)
-Class Inverse `(@Fun A B X Y) : Type := inverse: Fun Y X.
-Arguments inverse {A B X Y} _ {Inverse} _.
+Class Inverse `(f: @Fun A B X Y) : Type := inverse: Fun Y X.
+Arguments inverse {A B X Y} f {Inverse} _.
 Typeclasses Transparent Inverse.
 Notation "f ⁻¹" := (inverse f) (at level 1, format "f ⁻¹") : mc_fun_scope. (* to co-exist with group inverse *)
 

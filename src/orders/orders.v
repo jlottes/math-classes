@@ -359,6 +359,8 @@ Section dec_partial_order.
 
   Existing Instance po_setoid.
 
+  Definition dec_lt `{UnEq A} : Lt A := λ x y, x ≤ y ∧ x ≠ y.
+
   Context `{UnEq A} `{!StandardUnEq P} `{Alt : Lt A}
           (lt_correct : ∀ `{x ∊ P} `{y ∊ P}, x < y ↔ x ≤ y ∧ x ≠ y).
 
