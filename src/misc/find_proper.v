@@ -96,22 +96,24 @@ Proof. intro. split; try apply _; firstorder. Qed.
 (** The restriction of a relation to some subset ([restrict_rel]) is used ubiquitously.
     Apart from reflexivity, all of the above properties lift to restricted relations. *)
 
-Lemma restrict_rel_sub_fp `(S:A → Prop) (R:relation A): Find_Proper_Subrelation (S,R)%signature R.  Proof restrict_rel_sub S R.
-Lemma restrict_rel_sym_fp `(S:A → Prop) (R:relation A) {sym:Find_Proper_Symmetric R}: Find_Proper_Symmetric (S,R)%signature. Proof @restrict_rel_sym _ S R sym.
+Lemma restrict_rel_sub_fp `(S:A → Prop) (R:relation A): Find_Proper_Subrelation (restrict_rel S R)%signature R.  Proof restrict_rel_sub S R.
+Lemma restrict_rel_sym_fp `(S:A → Prop) (R:relation A) {sym:Find_Proper_Symmetric R}: Find_Proper_Symmetric (restrict_rel S R). Proof @restrict_rel_sym _ S R sym.
 Hint Extern 0 (@Find_Proper_Subrelation _ (@restrict_rel _ _ ?R) ?R) => eapply @restrict_rel_sub_fp : typeclass_instances.
-Hint Extern 0 (@Find_Proper_Symmetric _ (@restrict_rel _ _ _)) => eapply @restrict_rel_sym_fp : typeclass_instances.
+Hint Extern 4 (@Find_Proper_Symmetric _ (@restrict_rel _ _ _)) => eapply @restrict_rel_sym_fp : typeclass_instances.
 
+(*
 Lemma restrict_sub_sub_fp `(S:A → Prop) (R1 R2:relation A) {sub:Find_Proper_Subrelation R1 R2}
-  : Find_Proper_Subrelation (S,R1)%signature (S,R2)%signature.
+  : Find_Proper_Subrelation (restrict_rel S R1) (restrict_rel S R2).
 Proof restrict_sub_sub S R1 R2 (sub:=sub).
 
-Hint Extern 0 (@Find_Proper_Subrelation  _ (@restrict_rel _ ?S _) (@restrict_rel _ ?S _)) => eapply @restrict_sub_sub_fp : typeclass_instances.
+Hint Extern 4 (@Find_Proper_Subrelation  _ (@restrict_rel _ ?S _) (@restrict_rel _ ?S _)) => eapply @restrict_sub_sub_fp : typeclass_instances.
 
 Lemma restrict_ppo_fp `(S:A → Prop) (eq le:relation A) `{!Find_Proper_PrePartialOrder eq le}
-  : Find_Proper_PrePartialOrder (S,eq)%signature (S,le)%signature.
+  : Find_Proper_PrePartialOrder (restrict_rel S eq) (restrict_rel S le).
 Proof. pose proof (find_proper_antisym (eq:=eq)). split; apply _. Qed.
 
-Hint Extern 0 (@Find_Proper_PrePartialOrder _ (@restrict_rel _ ?S _) (@restrict_rel _ ?S _)) => eapply @restrict_ppo_fp : typeclass_instances.
+Hint Extern 2 (@Find_Proper_PrePartialOrder _ (@restrict_rel _ ?S _) (@restrict_rel _ ?S _)) => eapply @restrict_ppo_fp : typeclass_instances.
+*)
 
 (** The tactic for partial applications, which uses reflexivity. *)
 
@@ -332,7 +334,8 @@ Abort.
 
 Ltac conv_and_apply bc p :=
   match goal with |- Proper ?S ?f =>
-    match type of p with Proper ?R f =>
+    match type of p with Proper ?R ?g =>
+      unify f g;
       let with_c c :=
         (* let t := type of c in idtac "got conversion" t; *)
         let p' := constr:(c f f p : Proper S f) in
@@ -348,7 +351,8 @@ Ltac conv_inv_apply p := conv_and_apply ltac:(build_chain_inv_conv) p.
 
 Ltac conv_join_apply p :=
   match goal with |- Proper ?S ?f =>
-    match type of p with Proper ?R f =>
+    match type of p with Proper ?R ?g =>
+      unify f g;
       let with_c c :=
         (*let t := type of c in idtac "got conversion" t;*)
         let p' := constr:(c f f (conj p p) : Proper S f) in
@@ -383,10 +387,10 @@ Ltac compare_rel sym R S k :=
   | has_evar R;
     (* idtac "compare" R S; *)
     match constr:(pair R S) with
-    | pair (?RS,?RR)%signature (?SS,?SR)%signature => first [
+    | pair (restrict_rel ?RS ?RR) (restrict_rel ?SS ?SR) => first [
         unify RS SS; compare_rel sym RR SR k
       | fail 2 ]
-    | pair _ (?SS,?SR)%signature => first [ compare_rel sym R SR k | fail 2 ]
+    | pair _ (restrict_rel ?SS ?SR) => first [ compare_rel sym R SR k | fail 2 ]
     | pair (@equiv _ ?eq1) (@equiv _ ?eq2) => unify eq1 eq2; first [ k sym | fail 2 ]
     | _ => let S1 := match R with SubRelation ?S => S | flip (SubRelation ?S) => S end in
            let S2 := match S with SubRelation ?S => S | flip (SubRelation ?S) => S end in
@@ -503,7 +507,7 @@ Ltac rebuild p pa k :=
   let t := constr:(t') in
   (* idtac "rebuild" t; *)
   let P := fresh "P" in
-  assert t as P by (eapply p; apply _); instantiate;
+  assert t as P by (class_apply p; apply _); instantiate;
   let P' := constr:(P) in
   (* let t := type of P' in
   idtac "got" t; *)

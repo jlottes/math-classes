@@ -5,9 +5,6 @@ Local Existing Instance injective_mor.
 Local Existing Instance surjective_mor.
 Local Existing Instance surjective_closed.
 
-Local Existing Instance setoidmor_a.
-Local Existing Instance setoidmor_b.
-
 Local Open Scope mc_fun_scope.
 
 (*
@@ -22,16 +19,17 @@ Qed.
 *)
 
 Section contents.
-  Context {A B} `{Equiv A} `{Equiv B} {X:Subset A} {Y:Subset B} (f: X ⇀ Y) `{!Inverse f}.
+  Context `{Setoid (S:=X)} `{Setoid (S:=Y)} (f: X ⇀ Y) `{!Inverse f}.
 
   Lemma surjective_applied `{!Surjective X Y f} x `{x ∊ Y} : f (f⁻¹ x) = x.
   Proof. apply (surjective f x). now red_sig. Qed.
 
   Context `{!Bijective X Y f}.
 
-  Instance inverse_mor : Setoid_Morphism Y X (f⁻¹).
-  Proof. split; try apply _.
-    intros x y E. unfold_sigs. red_sig. apply (injective f _ _). now rewrite !(Y $ surjective_applied _).
+  Instance inverse_mor : Morphism (Y ⇒ X) f⁻¹.
+  Proof.
+    intros x y E. unfold_sigs. red_sig. apply (injective f _ _).
+    now rewrite !(Y $ surjective_applied _).
   Qed.
 
   Lemma bijective_cancel_left x `{x ∊ X} y `{y ∊ Y} : f x = y → x = f⁻¹ y.
@@ -47,7 +45,7 @@ Section contents.
   Proof. intros x y E. unfold_sigs. red_sig. subtransitivity x. exact (bijective_applied x). Qed.
 End contents.
 
-Hint Extern 5 (Setoid_Morphism _ _ (_⁻¹)) => eapply @inverse_mor : typeclass_instances.
+Hint Extern 5 (Morphism _ (_⁻¹)) => eapply @inverse_mor : typeclass_instances.
 
 (*
 
@@ -56,26 +54,26 @@ Lemma injective_ne `{Equiv A} `{Equiv B} `(f : A → B) `{!Injective f} x y :
 Proof. intros E1 E2. apply E1. now apply (injective f). Qed.
 *)
 
-Instance id_inverse {A} {X:Subset A} {Y:Subset A} : Inverse (id : X ⇀ Y) := (id : Y ⇀ X).
+Instance id_inverse `{X:Subset} {Y} : Inverse (id : X ⇀ Y) := (id : Y ⇀ X).
 
-Instance id_injective `{Equiv} `{!Setoid X} `{!Setoid Y} `{X ⊆ Y} : Injective X Y id.
+Instance id_injective `{Equiv} `{!Setoid X} `{!Setoid Y} `{!SubsetOf X Y} : Injective X Y id.
 Proof. split; try apply _. easy. Qed.
 Instance id_surjective `{Equiv} `{!Setoid X} : Surjective X X id.
-Proof. split; try apply _. intros ?? E. unfold_sigs. now red_sig. Qed.
+Proof. split; try apply _. change (Morphism (X ⇒ X) id). apply _. Qed.
 Instance id_bijective `{Equiv} `{!Setoid X} : Bijective X X id := {}.
 
 Section compositions.
-  Context {A B C} `{Equiv A} `{Equiv B} `{Equiv C} {X:Subset A} {Y:Subset B} {Z:Subset C}.
+  Context `{X:Subset} `{Y:Subset} `{Z:Subset}.
   Context (g: X ⇀ Y) (f: Y ⇀ Z) `{!Inverse f} `{!Inverse g}.
 
   Instance compose_inverse: Inverse (f ∘ g) := g⁻¹ ∘ f⁻¹.
 
+  Context `{Setoid _ (S:=X)} `{Setoid _ (S:=Y)} `{Setoid _ (S:=Z)}.
   Instance compose_injective: Injective Y Z f → Injective X Y g → Injective X Z (f ∘ g).
   Proof. split; try apply _. intros ?? ?? ?. apply (injective g _ _). now apply (injective f _ _). Qed.
 
   Instance compose_surjective: Surjective Y Z f → Surjective X Y g → Surjective X Z (f ∘ g).
   Proof. intros.
-    pose proof setoidmor_a f. pose proof setoidmor_b f. pose proof setoidmor_a g.
     split; try apply _.
     intros x y E. unfold_sigs. change ((Z,=)%signature (f (g (g⁻¹ (f⁻¹ x))))  y).
     red_sig. rewrite_on Z <- E. rewrite (Y $ surjective_applied g _). exact (surjective_applied _ _).
@@ -89,43 +87,47 @@ Hint Extern 4 (Injective  _ _ (_ ∘ _)) => class_apply @compose_injective  : ty
 Hint Extern 4 (Surjective _ _ (_ ∘ _)) => class_apply @compose_surjective : typeclass_instances.
 Hint Extern 4 (Bijective  _ _ (_ ∘ _)) => class_apply @compose_bijective  : typeclass_instances.
 
-Lemma alt_Build_Injective `{Equiv A} `{Equiv B} {X:Subset A} {Y:Subset B} (f: X ⇀ Y) `{!Inverse f} :
-  Setoid_Morphism X Y f → Setoid_Morphism Y X (f⁻¹) → f⁻¹ ∘ f = id → Injective X Y f.
+Lemma alt_Build_Injective `{Setoid (S:=X)} `{Setoid (S:=Y)} (f: X ⇀ Y) `{!Inverse f} :
+  Morphism (X ⇒ Y) f → Morphism (Y ⇒ X) f⁻¹ → f⁻¹ ∘ f = id → Injective X Y f.
 Proof.
-  intros ?? E.
-  pose proof (setoidmor_a f). pose proof (setoidmor_b f).
-  split; try apply _.
-  intros x ? y ? F.
+  intros ?? E. split; try apply _. intros x ? y ? F.
   rewrite <- (E _ _ (X $ subreflexivity x)).
   rewrite <- (E _ _ (X $ subreflexivity y)).
   unfold compose. now rewrite_on Y -> F.
 Qed.
 
-Lemma alt_Build_Bijective `{Equiv A} `{Equiv B} {X:Subset A} {Y:Subset B} (f: X ⇀ Y) `{!Inverse f} :
-  Setoid_Morphism X Y f → Setoid_Morphism Y X (f⁻¹) → f⁻¹ ∘ f = id → f ∘ f⁻¹ = id → Bijective X Y f.
+Lemma alt_Build_Bijective `{Setoid (S:=X)} `{Setoid (S:=Y)} (f: X ⇀ Y) `{!Inverse f} :
+  Morphism (X ⇒ Y) f → Morphism (Y ⇒ X) f⁻¹ → f⁻¹ ∘ f = id → f ∘ f⁻¹ = id → Bijective X Y f.
 Proof.
   intros. split.
    now apply (alt_Build_Injective f).
-  split; auto. exact morphism_closed.
+  split; auto. apply _.
 Qed.
 
-Definition inverse_inverse `{Inverse (f:=f)} : Inverse (f⁻¹) := f.
-Hint Extern 4 (Inverse (_ ⁻¹)) => class_apply @inverse_inverse : typeclass_instances.
+Definition inverse_inverse `{Inverse (f:=f)} : Inverse f⁻¹ := f.
+Hint Extern 4 (Inverse (_ ⁻¹)) => eapply @inverse_inverse : typeclass_instances.
 
-Lemma flip_bijection `{Bijective (S:=X) (T:=Y) (f:=f)} : Bijective Y X (f⁻¹).
+Lemma flip_bijection `{Setoid (S:=X)} `{Setoid (S:=Y)} (f: X ⇀ Y) `{!Inverse f} `{!Bijective X Y f} : Bijective Y X f⁻¹.
 Proof. apply alt_Build_Bijective; try apply _. apply (surjective f). apply (bijective f). Qed.
+Hint Extern 4 (Bijective _ _ _⁻¹) => eapply @flip_bijection : typeclass_instances.
 
-(* We use this instead of making flip_bijection a real instance, because
-   otherwise it gets applied too eagerly, resulting in cycles. *)
-Hint Extern 4 (Bijective _ _ (_ ⁻¹)) => apply flip_bijection : typeclass_instances.
-
-Lemma inverse_involutive `{X:Subset A} `{Y:Subset B} `(f : X ⇀ Y) `{!Inverse f} : (f⁻¹)⁻¹ ≡ f.
+Lemma inverse_involutive `{X:Subset} `{Y:Subset} (f : X ⇀ Y) `{!Inverse f} : (f⁻¹)⁻¹ ≡ f.
 Proof. reflexivity. Qed.
 
 (* This second version is strictly for manual application. *)
-Lemma flip_bijection_back `{Equiv A} `{Equiv B} {X:Subset A} {Y:Subset B} (f: X ⇀ Y) `{!Inverse f} :
+Lemma flip_bijection_back `{Setoid (S:=X)} `{Setoid (S:=Y)} (f: X ⇀ Y) `{!Inverse f} :
   Bijective Y X (f⁻¹) → Bijective X Y f.
 Proof. intro. apply (_: Bijective X Y (f⁻¹⁻¹)). Qed.
+
+Lemma injective_proper : Find_Proper_Signature (@Injective) 0
+  (∀ `{Setoid (S:=X)} `{Setoid (S:=Y)}, Proper ((@equiv (X ⇀ Y) _) ==> impl) (Injective X Y)).
+Proof. red. intros. intros f g E ?. assert (Morphism (X ⇒ Y) g) by (rewrite <- E; apply _).
+  split; try apply _.
+  intros x ? y ? E2. apply (injective f _ _).
+  subtransitivity (g x). now apply extensionally_equal.
+  subtransitivity (g y). apply extensionally_equal; try easy. now symmetry.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@Injective) 0 _) => eexact injective_proper : typeclass_instances.
 
 (*
 Instance injective_proper `{Equiv A} `{Equiv B} : Proper ((=) ==> (=)) (@Injective A B _ _).

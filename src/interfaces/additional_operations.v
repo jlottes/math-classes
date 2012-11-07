@@ -10,25 +10,21 @@ Instance: Params (@pow) 3.
 
 (* If we make [nat_pow_proper] a subclass, Coq is unable to find it.
 However, if we make a global instance in theory.nat_pow, it works? *)
-Class NatPowSpec {A B} S N (pw : Pow A B) `{Equiv A} `{Equiv B} `{One A} `{Mult A} `{Zero B} `{One B} `{Plus B} :=
-  { nat_pow_proper : Setoid_Binary_Morphism S N S (^)
-  ; nat_pow_0 x `{x ∊ S} : x ^ 0 = 1
-  ; nat_pow_S x `{x ∊ S} n `{n ∊ N} : x ^ (1 + n) = x * x ^ n
+Class NatPowSpec {A B} R N (pw : Pow A B) `{Equiv A} `{Equiv B} `{One A} `{Mult A} `{Zero B} `{One B} `{Plus B} :=
+  { nat_pow_proper : Morphism (R ⇒ N ⇒ R) (^)
+  ; nat_pow_0 x `{x ∊ R} : x ^ 0 = 1
+  ; nat_pow_S x `{x ∊ R} n `{n ∊ N} : x ^ (1 + n) = x * x ^ n
   }.
 
-Class IntPowSpec {A B} S Z (pow : Pow A B) `{Equiv A} `{Equiv B} `{UnEq A} `{UnEq B} `{Zero A} `{One A} `{Mult A} `{Zero B} `{One B} `{Plus B} :=
-  { int_pow_proper : Setoid_Binary_Morphism S Z S (^)
-  ; int_pow_uneq_a : UnEqualitySetoid S
-  ; int_pow_uneq_b : UnEqualitySetoid Z
-  ; int_pow_0 x `{x ∊ S} : x ^ 0 = 1
-  ; int_pow_base_0  n `{n ∊ N ₀} : 0 ^ n = 0
-  ; int_pow_S x `{x ∊ S ₀} n `{n ∊ N} : x ^ (1 + n) = x * x ^ n
+(* This version of the spec does not require F to have decidable equality. *)
+Class IntPowSpec {A B} F Z (pow : Pow A B) `{Equiv A} `{Equiv B} `{UnEq A} `{Le B} `{Lt B} `{Zero A} `{One A} `{Mult A} `{Zero B} `{One B} `{Plus B} `{Negate B} :=
+  { int_pow_nat_spec :>> NatPowSpec F Z⁺ pow
+  ; int_pow_neg_closed : Closed (F ₀ ⇀ Z₋ ⇀ F) (^)
+  ; int_pow_neg x `{x ∊ F ₀} n `{n ∊ Z₋} : x ^ n * (x ^ (-n)) = 1
   }.
 
-Hint Extern 4 (Setoid_Binary_Morphism _ _ _ (^)  ) => eapply @nat_pow_proper : typeclass_instances.
-Hint Extern 5 (Setoid_Binary_Morphism _ _ _ (^)  ) => eapply @int_pow_proper : typeclass_instances.
+Hint Extern 5 (Morphism _ (^)  ) => class_apply @nat_pow_proper : typeclass_instances.
 
-(*
 Class ShiftL A B := shiftl: A → B → A.
 Infix "≪" := shiftl (at level 33, left associativity).
 Notation "(≪)" := shiftl (only parsing).
@@ -36,48 +32,30 @@ Notation "( x ≪)" := (shiftl x) (only parsing).
 Notation "(≪ n )" := (λ x, x ≪ n) (only parsing).
 Instance: Params (@shiftl) 3.
 
-Class ShiftLSpec A B (sl : ShiftL A B) `{Equiv A} `{Equiv B} `{One A} `{Plus A} `{Mult A} `{Zero B} `{One B} `{Plus B} := {
-  shiftl_proper : Proper ((=) ==> (=) ==> (=)) (≪) ;
-  shiftl_0 :> RightIdentity (≪) 0 ;
-  shiftl_S : ∀ x n, x ≪ (1 + n) = 2 * x ≪ n
-}.
-
-Lemma shiftl_spec_from_nat_pow `{SemiRing A} `{SemiRing B} `{!NatPowSpec A B pw} (sl : ShiftL A B) :
-  (∀ x n, x ≪ n = x * 2 ^ n) → ShiftLSpec A B sl.
-Proof.
-  pose proof nat_pow_proper.
-  intros spec. split.
-    intros ? ? E1 ? ? E2.
-    rewrite 2!spec.
-    now rewrite E1, E2.
-   intro x. rewrite spec, nat_pow_0. now apply right_identity.
-  intros x n. rewrite 2!spec. rewrite nat_pow_S.
-  now rewrite ?associativity, (commutativity x 2).
-Qed.
-
-Lemma shiftl_spec_from_int_pow `{SemiRing A} `{!PropHolds ((2:A) ≠ 0)} `{SemiRing B} `{!IntPowSpec A B ip} (sl : ShiftL A B) :
-  (∀ x n, x ≪ n = x * 2 ^ n) → ShiftLSpec A B sl.
-Proof.
-  pose proof int_pow_proper.
-  intros spec. split.
-    intros ? ? E1 ? ? E2.
-    rewrite 2!spec. now rewrite E1, E2.
-   intro x. rewrite spec, int_pow_0. now apply right_identity.
-  intros x n. rewrite 2!spec. rewrite int_pow_S by solve_propholds.
-  now rewrite ?associativity, (commutativity x 2).
-Qed.
+Class ShiftLSpec {A B} R N (sl : ShiftL A B) `{Equiv A} `{Equiv B} `{One A} `{Plus A} `{Mult A} `{Zero B} `{One B} `{Plus B} :=
+  { shiftl_proper : Morphism (R ⇒ N ⇒ R) (≪)
+  ; shiftl_0 : RightIdentity (≪) 0 R
+  ; shiftl_S x `{x ∊ R} n `{n ∊ N} : x ≪ (1 + n) = 2 * x ≪ n
+  }.
+Arguments shiftl_0 {A B R N sl _ _ _ _ _ _ _ _ ShiftLSpec} _ {_}.
+Hint Extern 5 (Morphism _ (≪) ) => eapply @shiftl_proper : typeclass_instances.
+Hint Extern 5 (RightIdentity (≪) _ _) => eapply @shiftl_0 : typeclass_instances.
 
 Class ShiftR A B := shiftr: A → B → A.
 Infix "≫" := shiftr (at level 33, left associativity).
 Notation "(≫)" := shiftr (only parsing).
 Instance: Params (@shiftr) 3.
 
-Class ShiftRSpec A B (sl : ShiftR A B) `{Equiv A} `{Equiv B} `{One A} `{Plus A} `{Mult A} `{Zero B} `{One B} `{Plus B} := {
-  shiftr_proper : Proper ((=) ==> (=) ==> (=)) (≫) ;
-  shiftr_0 :> RightIdentity (≫) 0 ;
-  shiftr_S : ∀ x n, x ≫ n = 2 * x ≫ (1 + n) ∨ x ≫ n = 2 * x ≫ (1 + n) + 1
-}.
+Class ShiftRSpec {A B} R N (sr : ShiftR A B) `{Equiv A} `{Equiv B} `{One A} `{Plus A} `{Mult A} `{Zero B} `{One B} `{Plus B} :=
+  { shiftr_proper : Morphism (R ⇒ N ⇒ R) (≫)
+  ; shiftr_0 :> RightIdentity (≫) 0 R
+  ; shiftr_S x `{x ∊ R} n `{n ∊ N} : x ≫ n = 2 * x ≫ (1 + n) ∨ x ≫ n = 2 * x ≫ (1 + n) + 1
+  }.
+Arguments shiftr_0 {A B R N sr _ _ _ _ _ _ _ _ ShiftRSpec} _ {_}.
+Hint Extern 5 (Morphism _ (≫) ) => eapply @shiftr_proper : typeclass_instances.
+Hint Extern 5 (RightIdentity (≫) _ _) => eapply @shiftr_0 : typeclass_instances.
 
+(*
 Class DivEuclid A := div_euclid : A → A → A.
 Class ModEuclid A := mod_euclid : A → A → A.
 Infix "`div`" := div_euclid (at level 35).
@@ -109,8 +87,8 @@ Notation "(∸ y )" := (λ x, x ∸ y) (only parsing).
 Instance: Params (@cut_minus) 2.
 
 Class CutMinusSpec {A} N (cm : CutMinus A) `{Equiv A} `{Zero A} `{Plus A} `{Le A} :=
-  { cut_minus_proper : Setoid_Binary_Morphism N N N (∸)
+  { cut_minus_proper : Morphism (N ⇒ N ⇒ N) (∸)
   ; cut_minus_le x `{x ∊ N} y `{y ∊ N} : y ≤ x → x ∸ y + y = x
   ; cut_minus_0 x `{x ∊ N} y `{y ∊ N} : x ≤ y → x ∸ y = 0
   }.
-Hint Extern 0 (Setoid_Binary_Morphism _ _ _ (∸) ) => eapply @cut_minus_proper : typeclass_instances.
+Hint Extern 0 (Morphism _ (∸) ) => eapply @cut_minus_proper : typeclass_instances.

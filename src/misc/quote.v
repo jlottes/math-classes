@@ -1,17 +1,15 @@
 Require Import abstract_algebra interfaces.orders.
-Require Import theory.setoids theory.rings.
+Require Import theory.strong_setoids theory.fields.
 
 (* Todo: unify with subsetsig somehow *)
 
 Section quote.
-  Context {A B} {R1:Subset A} {R2:Subset B} (f:R1 ⇀ R2) `{Equiv B}.
+  Context {A B} {R1:@Subset A} {R2:@Subset B} (f:R1 ⇀ R2) `{Equiv B}.
 
   Definition Quote x y := (x ∊ R1 ∧ f x ∊ R2 ∧ y ∊ R2) ∧ f x = y.
 
   Section setoid.
-    Context `{Equiv A} `{!Setoid_Morphism R1 R2 f}.
-    Existing Instance setoidmor_a.
-    Existing Instance setoidmor_b.
+    Context `{Equiv A} `{!Setoid R1} `{!Setoid R2} `{!Morphism (R1 ⇒ R2) f}.
 
     Lemma quote_base x `{x ∊ R1} : Quote x (f x).
     Proof. now repeat (split; try apply _). Qed.
@@ -24,6 +22,17 @@ Section quote.
     Proof. destruct Ex as [[?[??]] Ex]. now rewrite_on R2 -> Ex. Qed.
 
   End setoid.
+
+  Section strong_setoid.
+    Context `{Equiv A} `{UnEq A} `{UnEq B} `{!StrongSetoid R1} `{!StrongSetoid R2}.
+    Context `{!StrongInjective R1 R2 f}.
+    Instance: Strong_Morphism R1 R2 f := strong_injective_mor _.
+
+    Lemma quote_uneq `(Ex : Quote x x2) `(Ey : Quote y y2) : x ≠ y ↔ x2 ≠ y2.
+    Proof. destruct Ex as [[?[??]] Ex], Ey as [[?[??]] Ey]. rewrite_on R2 <- Ex, <- Ey. split; intro E.
+      now apply (strong_injective f _ _). now apply (strong_extensionality f).
+    Qed.
+  End strong_setoid.
 
   Ltac quote_tac :=
     repeat match goal with E : Quote _ _ |- _ => destruct E as [[?[??]] E] end;
@@ -66,12 +75,27 @@ Section quote.
     Proof. quote_tac. rewrite_on R2 <- Ex. exact (preserves_negate _). Qed.
   End rng.
 
+  Section field.
+    Context `{Field A (F:=R1)} `{Field B (Ae:=_) (F:=R2)}
+      `{!Strong_Morphism R1 R2 f} `{!Ring_Morphism R1 R2 f}.
+
+    Lemma quote_mult_inv `{x ∊ R1 ₀} `(Ex : Quote x x2) : Quote (inv x) (inv x2).
+    Proof. destruct Ex as [[? [??]] Ex].
+      pose proof (_ : f x ∊ R2 ₀).
+      assert (x2 ∊ R2 ₀) by now rewrite <- (R2 $ Ex).
+      split. intuition (apply _). rewrite <- (R2 ₀ $ Ex).
+      exact (preserves_mult_inv _).
+    Qed.
+  End field.
 End quote.
 
 Lemma quote_equiv_id `{Setoid (S:=X)} `(Ex:Quote id x x2) `(Ey:Quote id y y2) : x=y ↔ x2 = y2.
-Proof. destruct Ex as [[?[??]] Ex], Ey as [[?[??]] Ey]. unfold id in Ex, Ey. now rewrite_on X -> Ex, Ey. Qed.
+Proof quote_equiv id Ex Ey.
 
-Lemma quote_id {A B} {R1:Subset A} {R2:Subset B} (f:R1 ⇀ R2) `{Equiv B} `{!Setoid R2}
+Lemma quote_uneq_id `{StrongSetoid (S:=X)} `(Ex:Quote id x x2) `(Ey:Quote id y y2) : x ≠ y ↔ x2 ≠ y2.
+Proof quote_uneq id Ex Ey.
+
+Lemma quote_id `{R1:Subset} `{Setoid (S:=R2)} (f:R1 ⇀ R2)
   `(E:Quote f x y) : Quote id (f x) y.
 Proof. destruct E as [[?[??]] E]. split. intuition (apply _). trivial. Qed.
 
@@ -82,8 +106,11 @@ Ltac quote_expr f quote :=
     | @one  _ _ => constr:(quote_1 f)
     | @plus _ _  ?x ?y => let qx := q x in let qy := q y in constr:(quote_plus f qx qy)
     | @mult _ _  ?x ?y => let qx := q x in let qy := q y in constr:(quote_mult f qx qy)
-    | @negate _ _  ?x => let qx := q x in constr:(quote_negate f qx)
-    | ?P ?x => match P with @equiv _ _ _ => fail 1
+    | @negate _ _ ?x => let qx := q x in constr:(quote_negate f qx)
+    | @inv    _ _ ?x => let qx := q x in constr:(quote_mult_inv f qx)
+    | ?P ?x => match P with
+               | @equiv _ _ _ => fail 1
+               | @uneq  _ _ _ => fail 1
                | _ => match type of P with _ -> Prop =>
                  let qx := q x in constr:(quote_pred f P qx) end
                end
@@ -116,6 +143,7 @@ Ltac quote_inj_expr f :=
     let q := quote_expr f q' in
     match expr with
     | @equiv _ _ ?x ?y => let qx := q x in let qy := q y in constr:(quote_equiv f qx qy)
+    | @uneq  _ _ ?x ?y => let qx := q x in let qy := q y in constr:(quote_uneq  f qx qy)
     | _ => prop_quote q expr
     end
   in quote_expr f q'.
@@ -126,7 +154,7 @@ Ltac quote_inj f :=
   end.
 
 Ltac preserves_simplify_expr f :=
-  match type of f with ?R1 ⇀ ?R2 =>
+  match type of f with elt_type (?R1 ⇀ ?R2) =>
     let qa expr := fail in
     let rec qb expr :=
       let q := quote_expr (id:R2⇀R2) qb in
@@ -134,6 +162,7 @@ Ltac preserves_simplify_expr f :=
       | f ?x => let qfx := quote_expr f qa x in
           constr:(quote_id f qfx)
       | @equiv _ _ ?x ?y => let qx := q x in let qy := q y in constr:(quote_equiv_id qx qy)
+      | @uneq  _ _ ?x ?y => let qx := q x in let qy := q y in constr:(quote_uneq_id  qx qy)
       | _ => prop_quote q expr
       end
     in quote_expr (id:R2⇀R2) qb

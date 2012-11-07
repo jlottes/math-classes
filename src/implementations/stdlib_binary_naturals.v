@@ -16,7 +16,7 @@ Instance N_lt: Lt N := Nlt.
 
 Instance N_cut_minus: CutMinus N := Nminus.
 
-Hint Extern 10 (Subset N) => eexact (every N) : typeclass_instances.
+Hint Extern 10 (@Subset N) => eexact (every N) : typeclass_instances.
 
 Local Notation N   := (every N  ).
 Local Notation nat := (every nat).
@@ -28,8 +28,10 @@ Instance: Setoid N := {}.
 Instance: CommutativeSemiRing N.
 Proof.
   repeat match goal with
-  | |- Setoid_Binary_Morphism _ _ _ _ => split; try apply _; intros ?? [_ E1] ?? [_ E2];
+  | |- Morphism (_ ⇒ _ ⇒ _) _ => apply binary_morphism_proper_back; intros ?? [_ E1] ?? [_ E2];
        red_sig; lazy in E1,E2; now rewrite E1,E2
+  | |- Morphism _ _ => intros ?? [_ E1];
+       red_sig; lazy in E1; now rewrite E1
   | |- _ => split; try apply _
   end; repeat intro.
 + now apply Nplus_assoc.
@@ -45,7 +47,7 @@ Instance: ∀ x y, Decision (x = y) := N_eq_dec.
 Instance inject_nat_N: Cast nat N := N_of_nat.
 Instance inject_N_nat: Cast N nat := nat_of_N.
 
-Instance: SemiRing_Morphism N nat (cast N nat).
+Instance: SemiRing_Morphism N nat (').
 Proof.
   repeat (split; try apply _); repeat intro.
   + unfold_sigs. match goal with E : _ = _ |- _ => lazy in E; now rewrite E end.
@@ -56,22 +58,21 @@ Qed.
 
 Instance: Inverse (cast N nat) := (cast nat N).
 
-Instance: Surjective N nat (cast N nat).
+Instance: Surjective N nat (').
 Proof. split; [| apply _ | intros ??; apply _].
   intros x y [_ E]. lazy in E. red_sig. rewrite <- E. now apply nat_of_N_of_nat.
 Qed.
 
-Instance: Injective N nat (cast N nat).
+Instance: Injective N nat (').
 Proof. constructor. intros x _ y _. exact (nat_of_N_inj _ _). apply _. Qed.
 
-Instance: Bijective N nat (cast N nat) := {}.
+Instance: Bijective N nat (') := {}.
 
 Instance: Inverse (cast nat N) := (cast N nat).
 
-Instance: Bijective nat N (cast nat N) := flip_bijection.
+Instance: Bijective nat N (') := flip_bijection _.
 
-Instance: SemiRing_Morphism nat N (cast nat N).
-Proof _ : SemiRing_Morphism nat N (cast N nat)⁻¹. 
+Instance: SemiRing_Morphism nat N (') := _ : SemiRing_Morphism nat N (')⁻¹.
 
 Instance: NaturalsToSemiRing N := retract_is_nat_to_sr (cast nat N).
 Instance: Naturals N := retract_is_nat (cast nat N).
@@ -113,7 +114,8 @@ Next Obligation. now apply not_symmetry. Qed.
 Instance: CutMinusSpec N _.
 Proof.
   split; try apply _.
-  + split; try apply _. intros ?? [_ E1] ?? [_ E2]. red_sig. lazy in E1,E2. now rewrite E1,E2.
+  + apply binary_morphism_proper_back.
+    intros ?? [_ E1] ?? [_ E2]. red_sig. lazy in E1,E2. now rewrite E1,E2.
   + intros x _ y _. now apply N.sub_add.
   + intros x _ y _. now apply Nminus_N0_Nle.
 Qed.

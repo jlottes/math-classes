@@ -7,40 +7,44 @@ Lemma lt_proper : Find_Proper_Signature (@lt) 0  (∀ `{StrictSetoidOrder (S:=T)
 Hint Extern 0 (Find_Proper_Signature (@le) 0 _) => eexact le_proper : typeclass_instances.
 Hint Extern 0 (Find_Proper_Signature (@lt) 0 _) => eexact lt_proper : typeclass_instances.
 
-(* Any subset of an order is still an order. *) 
+(** Any subset of an order is still an order. *) 
 
 Local Ltac proper_tac := red; intros; intros S1 S2 ES; destruct 1; unfold flip in ES; split; try rewrite ES; trivial.
-Local Ltac proper_tac2 := let S1 := match goal with _ : _ ⊆ ?S1 |- _ => S1 end in
+Local Ltac proper_tac2 := let S1 := match goal with _ : SubsetOf _ ?S1 |- _ => S1 end in
   intros ?? E1 ?? E2 ?; unfold_sigs; rewrite_on S1 <- E1; now rewrite_on S1 <- E2.
 
-Lemma PartialOrder_proper     : Find_Proper_Signature (@PartialOrder     ) 0 (∀ A Ae     Ale    , Proper ((⊆)-->impl) (@PartialOrder     A Ae     Ale    )).
+Local Hint Extern 20 (?x ∊ ?T) => match goal with
+  | sub : SubsetOf _ ?T |- _ => eapply (subset (SubsetOf:=sub) x)
+end : typeclass_instances.
+
+Lemma PartialOrder_proper     : Find_Proper_Signature (@PartialOrder     ) 0 (∀ A Ae     Ale    , Proper (SubsetOf-->impl) (@PartialOrder     A Ae     Ale    )).
 Proof. proper_tac. proper_tac2. Qed.
 Hint Extern 0 (Find_Proper_Signature (@PartialOrder    ) 0 _) => eexact PartialOrder_proper     : typeclass_instances.
 
-Lemma TotalOrder_proper       : Find_Proper_Signature (@TotalOrder       ) 0 (∀ A Ae     Ale    , Proper ((⊆)-->impl) (@TotalOrder       A Ae     Ale    )).
+Lemma TotalOrder_proper       : Find_Proper_Signature (@TotalOrder       ) 0 (∀ A Ae     Ale    , Proper (SubsetOf-->impl) (@TotalOrder       A Ae     Ale    )).
 Proof. proper_tac. Qed.
 Hint Extern 0 (Find_Proper_Signature (@TotalOrder      ) 0 _) => eexact TotalOrder_proper       : typeclass_instances.
 
-Lemma StrictSetoidOrder_proper: Find_Proper_Signature (@StrictSetoidOrder) 0 (∀ A Ae         Alt, Proper ((⊆)-->impl) (@StrictSetoidOrder   A Ae         Alt)).
+Lemma StrictSetoidOrder_proper: Find_Proper_Signature (@StrictSetoidOrder) 0 (∀ A Ae         Alt, Proper (SubsetOf-->impl) (@StrictSetoidOrder   A Ae         Alt)).
 Proof. proper_tac. proper_tac2. Qed.
 Hint Extern 0 (Find_Proper_Signature (@StrictSetoidOrder  ) 0 _) => eexact StrictSetoidOrder_proper   : typeclass_instances.
 
-Lemma PseudoOrder_proper      : Find_Proper_Signature (@PseudoOrder      ) 0 (∀ A Ae Aue     Alt, Proper ((⊆)-->impl) (@PseudoOrder      A Ae Aue     Alt)).
+Lemma PseudoOrder_proper      : Find_Proper_Signature (@PseudoOrder      ) 0 (∀ A Ae Aue     Alt, Proper (SubsetOf-->impl) (@PseudoOrder      A Ae Aue     Alt)).
 Proof. proper_tac; intros. apply (pseudo_order_antisym _ _ _ _). apply (apart_iff_total_lt _ _ _ _). Qed.
 Hint Extern 0 (Find_Proper_Signature (@PseudoOrder     ) 0 _) => eexact PseudoOrder_proper      : typeclass_instances.
 
-Lemma FullPartialOrder_proper : Find_Proper_Signature (@FullPartialOrder ) 0 (∀ A Ae Aue Ale Alt, Proper ((⊆)-->impl) (@FullPartialOrder A Ae Aue Ale Alt)).
+Lemma FullPartialOrder_proper : Find_Proper_Signature (@FullPartialOrder ) 0 (∀ A Ae Aue Ale Alt, Proper (SubsetOf-->impl) (@FullPartialOrder A Ae Aue Ale Alt)).
 Proof. proper_tac; intros. apply (lt_iff_le_apart _ _ _ _). Qed.
 Hint Extern 0 (Find_Proper_Signature (@FullPartialOrder) 0 _) => eexact FullPartialOrder_proper : typeclass_instances.
 
-Lemma FullPseudoOrder_proper  : Find_Proper_Signature (@FullPseudoOrder  ) 0 (∀ A Ae Aue Ale Alt, Proper ((⊆)-->impl) (@FullPseudoOrder  A Ae Aue Ale Alt)).
+Lemma FullPseudoOrder_proper  : Find_Proper_Signature (@FullPseudoOrder  ) 0 (∀ A Ae Aue Ale Alt, Proper (SubsetOf-->impl) (@FullPseudoOrder  A Ae Aue Ale Alt)).
 Proof. proper_tac; intros. apply (le_iff_not_lt_flip _ _ _ _). Qed.
 Hint Extern 0 (Find_Proper_Signature (@FullPseudoOrder ) 0 _) => eexact FullPseudoOrder_proper  : typeclass_instances.
 
 
 
 
-Lemma le_flip `{Le A} {S:Subset A} `{!TotalRelation S (≤)} x `{x ∊ S} y `{y ∊ S} : ¬y ≤ x → x ≤ y.
+Lemma le_flip `{Le} {S} `{!TotalRelation S (≤)} x `{x ∊ S} y `{y ∊ S} : ¬y ≤ x → x ≤ y.
 Proof. firstorder. Qed.
 
 Section partial_order.
@@ -49,21 +53,21 @@ Section partial_order.
   Existing Instance po_setoid.
 
   Lemma eq_le  x `{x ∊ P} y `{y ∊ P} : x = y → x ≤ y.
-  Proof. intros E. rewrite_on P -> E. subreflexivity. Qed.
+  Proof. intros E. now rewrite_on P -> E. Qed.
 
   Lemma eq_le_flip x `{x ∊ P} y `{y ∊ P} : x = y → y ≤ x.
-  Proof. intros E. rewrite_on P -> E. subreflexivity. Qed.
+  Proof. intros E. now rewrite_on P -> E. Qed.
 
   Lemma not_le_ne x `{x ∊ P} y `{y ∊ P} : ¬x ≤ y → ¬ x = y.
-  Proof. intros E1 E2. destruct E1. rewrite_on P -> E2. subreflexivity. Qed.
+  Proof. intros E1 E2. destruct E1. now rewrite_on P -> E2. Qed.
 
   Lemma eq_iff_le x `{x ∊ P} y `{y ∊ P} : x = y ↔ x ≤ y ∧ y ≤ x.
-  Proof. split; intros E. split; rewrite_on P -> E; subreflexivity.
+  Proof. split; intros E. split; now rewrite_on P -> E.
          now apply (subantisymmetry (≤) x y). Qed.
 End partial_order.
 
 Section strict_order.
-  Context `{S:Subset A} `{StrictSetoidOrder (A:=A) (S:=S)}.
+  Context `{S:Subset} `{StrictSetoidOrder _ (S:=S)}.
 
   Existing Instance so_setoid.
 
@@ -91,7 +95,7 @@ Section strict_order.
 End strict_order.
 
 Section pseudo_order.
-  Context `{S:Subset A} `{PseudoOrder (A:=A) (S:=S)}.
+  Context `{S:Subset} `{PseudoOrder _ (S:=S)}.
 
   Existing Instance pseudo_order_setoid.
 
@@ -231,6 +235,19 @@ Section full_partial_order.
     right. rewrite lt_iff_le_ne; tauto.
   Qed.
 
+  Program Instance strong_dec_from_lt_dec `{!StandardUnEq P} `{!StrongSubDecision P P (≤)} :
+     StrongSubDecision P P (=) := λ x y,
+    match decide_sub_strong (≤) x y with
+    | left E1 => match decide_sub_strong (≤) y x with
+       | left E2 => left _
+       | right E2 => right _
+       end
+     | right E1 => right _
+     end.
+  Next Obligation. apply (subantisymmetry (≤)); auto. Qed.
+  Next Obligation. intro E. subsymmetry in E. generalize E. apply not_le_ne; auto. Qed.
+  Next Obligation. apply not_le_ne; auto. Qed.
+
   Program Instance dec_from_lt_dec `{!StandardUnEq P} `{!SubDecision P P (≤)} :
      SubDecision P P (=) := λ x xs y ys,
     match decide_sub (≤) x y with
@@ -244,6 +261,15 @@ Section full_partial_order.
   Next Obligation. intro E. subsymmetry in E. generalize E. now apply not_le_ne. Qed.
   Next Obligation. now apply not_le_ne. Qed.
 
+  Definition strong_lt_dec_slow `{!StandardUnEq P} `{!StrongSubDecision P P (≤)} : StrongSubDecision P P (<).
+  Proof. intros x y.
+    destruct (decide_sub_strong (≤) x y).
+     destruct (decide_sub_strong (=) x y).
+      right. intros. apply eq_not_lt; intuition.
+     left. intros. apply lt_iff_le_ne; intuition.
+    right. intros. apply not_le_not_lt; intuition.
+  Defined.
+
   Definition lt_dec_slow `{!StandardUnEq P} `{!SubDecision P P (≤)} : SubDecision P P (<).
   Proof. intros x ? y ?.
     destruct (decide_sub (≤) x y).
@@ -255,10 +281,11 @@ Section full_partial_order.
 End full_partial_order.
 
 Hint Extern 10 (PropHolds (_ ≤ _)) => eapply @lt_le : typeclass_instances.
+Hint Extern 20 (StrongSubDecision _ _ (<)) => eapply @strong_lt_dec_slow : typeclass_instances.
 Hint Extern 20 (SubDecision _ _ (<)) => eapply @lt_dec_slow : typeclass_instances.
 
 Section full_pseudo_order.
-  Context `{S:Subset A} `{FullPseudoOrder (A:=A) (S:=S)}.
+  Context `{S:Subset} `{FullPseudoOrder _ (S:=S)}.
 
   Existing Instance pseudo_order_setoid.
 
@@ -309,7 +336,17 @@ Section full_pseudo_order.
   Lemma not_le_lt_flip `{!StandardUnEq S} `{!SubDecision S S (=)} x `{x ∊ S} y `{y ∊ S} : ¬y ≤ x → x < y.
   Proof. intros. destruct (le_or_lt y x); intuition. Qed.
 
+  Existing Instance strong_dec_from_lt_dec.
   Existing Instance dec_from_lt_dec.
+
+  Program Definition strong_lt_dec `{!StandardUnEq S} `{!StrongSubDecision S S (≤)} : StrongSubDecision S S (<)
+     := λ x y,
+    match decide_sub_strong (≤) y x with
+    | left E => right _
+    | right E => left _
+    end.
+  Next Obligation. apply le_not_lt_flip; intuition. Qed.
+  Next Obligation. apply not_le_lt_flip; intuition. Qed.
 
   Program Definition lt_dec `{!StandardUnEq S} `{!SubDecision S S (≤)} : SubDecision S S (<)
      := λ x xs y ys,
@@ -321,6 +358,7 @@ Section full_pseudo_order.
   Next Obligation. now apply not_le_lt_flip. Qed.
 End full_pseudo_order.
 
+Hint Extern 8 (StrongSubDecision _ _ (<)) => eapply @strong_lt_dec : typeclass_instances.
 Hint Extern 8 (SubDecision _ _ (<)) => eapply @lt_dec : typeclass_instances.
 (*
 The following instances would be tempting, but turn out to be a bad idea.
@@ -334,7 +372,7 @@ semirings.lt_0_1 → lt_ne_flip → ...
 *)
 
 Section dec_strict_order.
-  Context {A S} `{StrictSetoidOrder A (S:=S)} `{UnEq A} `{!StandardUnEq S} `{!SubDecision S S (=)}.
+  Context `{S:Subset} `{StrictSetoidOrder _ (S:=S)} `{UnEq _} `{!StandardUnEq S} `{!SubDecision S S (=)}.
 
   Existing Instance so_setoid.
   Instance: StrongSetoid S := dec_strong_setoid.

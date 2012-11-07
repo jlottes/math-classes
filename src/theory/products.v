@@ -1,23 +1,27 @@
 Require Import
   abstract_algebra theory.subset.
 
-Definition prod_equiv `{Equiv A} `{Equiv B} : Equiv (A * B) :=
-  λ p q, let (a,b) := p in let (c,d) := q in a = c ∧ b = d.
-(* Avoid eager application *)
-Hint Extern 10 (Equiv (_ * _)) => eapply @prod_equiv : typeclass_instances.
-
-Definition prod_subset {A B} (S:Subset A) (T:Subset B) : Subset (A*B) := λ p, let (a,b) := p in a ∊ S ∧ b ∊ T.
-Infix "*" := prod_subset : subset_scope.
-
-Lemma prod_el {A B} S T (x:A) `{x ∊ S} (y:B) `{y ∊ T} : pair x y ∊ S * T.
+Lemma prod_el `{X:Subset} `{Y:Subset} x `{x ∊ X} y `{y ∊ Y} : (x, y) ∊ X * Y.
 Proof. firstorder. Qed.
-Hint Extern 5 (pair _ _ ∊ _ * _) => eapply @prod_el : typeclass_instances.
+Hint Extern 5 ((_, _) ∊ _ * _) => eapply @prod_el : typeclass_instances.
 
-Instance prod_setoid `{Setoid (S:=X)} `{Setoid (S:=Y)} : Setoid (X * Y).
+Lemma prod_setoid `{Setoid (S:=X)} `{Setoid (S:=Y)} : Setoid (X * Y).
 Proof. split.
 + intros [??][??]. now split.
 + intros [??][??][??] [??] [??]. split; subsymmetry.
 + intros [??][??][x y][??][??][??] [??][??]. split. subtransitivity x. subtransitivity y.
+Qed.
+Hint Extern 5 (Setoid (_ * _)) => eapply @prod_setoid : typeclass_instances.
+
+Lemma prod_strongsetoid `{StrongSetoid (S:=X)} `{StrongSetoid (S:=Y)} : StrongSetoid (X * Y).
+Proof. split. split.
++ intros [??][??] [E|E]; contradict E; apply (subirreflexivity _ _).
++ intros [??][??][??][??] [E|E]; do 2 red; subsymmetry in E; tauto.
++ intros [a b][??][c d][??] [E|E] [x y][??].
+  destruct (subcotransitivity E x); [left | right]; do 2 red; tauto.
+  destruct (subcotransitivity E y); [left | right]; do 2 red; tauto.
++ intros [??][??][??][??]. unfold equiv, uneq, prod_equiv, prod_uneq.
+  rewrite <-2!(tight_apart _ _). tauto.
 Qed.
 
 Lemma pair_proper: Find_Proper_Signature (@pair) 0
@@ -25,16 +29,41 @@ Lemma pair_proper: Find_Proper_Signature (@pair) 0
 Proof. red. intros. intros ?? E1 ?? E2. unfold_sigs. red_sig. now split. Qed.
 Hint Extern 0 (Find_Proper_Signature (@pair) 0 _) => eexact pair_proper : typeclass_instances.
 
+Lemma fst_closed `{X:Subset} `{Y:Subset} : Closed (X * Y ⇀ X) fst.
+Proof. intros [??]. firstorder. Qed.
+
+Lemma snd_closed `{X:Subset} `{Y:Subset} : Closed (X * Y ⇀ Y) snd.
+Proof. intros [??]. firstorder. Qed.
+
+Lemma fst_morphism `{X:Subset} `{Y:Subset} `{Equiv X} `{Equiv Y} : Morphism (X * Y ⇒ X) fst.
+Proof. intros [??][??] [[[??][??]][??]]. now red_sig. Qed.
+Hint Extern 2 (Morphism _ fst) => class_apply @fst_morphism : typeclass_instances.
+
+Lemma snd_morphism `{X:Subset} `{Y:Subset} `{Equiv X} `{Equiv Y} : Morphism (X * Y ⇒ Y) snd.
+Proof. intros [??][??] [[[??][??]][??]]. now red_sig. Qed.
+Hint Extern 2 (Morphism _ snd) => class_apply @snd_morphism : typeclass_instances.
+
+Hint Extern 2 (fst ?p ∊ ?X) =>
+  let A := type of (snd p) in
+  let S := fresh "S" in evar (S:@Subset A);
+  let Y := eval unfold S in S in clear S;
+  let el := fresh "el" in assert (p ∊ X * Y) as el by typeclasses eauto;
+  eapply (@fst_closed _ X _ Y p el)
+: typeclass_instances.
+
+Hint Extern 2 (snd ?p ∊ ?Y) =>
+  let A := type of (fst p) in
+  let S := fresh "S" in evar (S:@Subset A);
+  let X := eval unfold S in S in clear S;
+  let el := fresh "el" in assert (p ∊ X * Y) as el by typeclasses eauto;
+  eapply (@snd_closed _ X _ Y p el)
+: typeclass_instances.
+
+
 Section product.
   Context `{Setoid A (S:=X)} `{Setoid B (S:=Y)}.
 
-  Global Instance: Setoid_Morphism (X * Y) X fst.
-  Proof. split; try apply _. intros [??][??] [[[??][??]][??]]. now red_sig. Qed.
-
-  Global Instance: Setoid_Morphism (X * Y) Y snd.
-  Proof. split; try apply _. intros [??][??] [[[??][??]][??]]. now red_sig. Qed.
- 
-  Global Program Instance prod_dec `(A_dec : ∀ x y : A, Decision (x = y)) `(B_dec : ∀ x y : B, Decision (x = y))
+  Program Instance prod_dec `(A_dec : ∀ x y : A, Decision (x = y)) `(B_dec : ∀ x y : B, Decision (x = y))
     : ∀ x y : A * B, Decision (x = y) := λ x y,
     match A_dec (fst x) (fst y) with
     | left _ => match B_dec (snd x) (snd y) with left _ => left _ | right _ => right _ end
@@ -43,13 +72,15 @@ Section product.
   Solve Obligations using (program_simpl; firstorder).
 
   Context `{!SubDecision X X (=)} `{!SubDecision Y Y (=)}.
-  Global Instance prod_sub_dec : SubDecision (X*Y) (X*Y) (=) | 20.
+  Instance prod_sub_dec : SubDecision (X*Y) (X*Y) (=).
   Proof. intros [a b] [??] [c d] [??].
     destruct (decide_sub (=) a c); [|right; now intros [??]].
     destruct (decide_sub (=) b d); [left; split |right; intros [??]]; easy.
   Defined.
 
 End product.
+Hint Extern 2 (Decision (@equiv _ prod_equiv _ _)) => eapply @prod_dec : typeclass_instances.
+
 
 (*
 Definition prod_fst_equiv X A `{Equiv X} : relation (X * A) := λ x y, fst x = fst y.

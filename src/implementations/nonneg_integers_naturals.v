@@ -10,13 +10,15 @@ Local Open Scope mc_fun_scope.
 Local Notation nat := (every nat).
 
 Section nonneg_integers_naturals.
-Context `{Integers A (Z:=Z)} `{UnEq A} `{Le A} `{Lt A} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
+Context `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
 
 Let of_nat := (naturals_to_semiring nat Z⁺).
 Instance: Inverse of_nat := int_abs Z nat.
 
-Instance: Setoid_Morphism Z⁺ nat of_nat⁻¹.
-Proof. change (Setoid_Morphism Z⁺ nat (int_abs Z nat)). rewrite (_:Z⁺ ⊆ Z). apply _. Qed.
+Instance: Morphism (Z⁺ ⇒ nat) of_nat⁻¹.
+Proof. change (Morphism (Z⁺ ⇒ nat) (int_abs Z nat)).
+  rewrite <-(_:SubsetOf (Z ⇒ nat) (Z⁺ ⇒ nat)). apply _.
+Qed.
 
 Instance: SemiRing_Morphism Z⁺ nat of_nat⁻¹.
 Proof. apply semiring_morphism_alt; try apply _.
@@ -34,8 +36,11 @@ Proof.
   exact (int_abs_nonneg _).
 Qed.
 
-Global Instance: NaturalsToSemiRing Z⁺ := naturals.retract_is_nat_to_sr of_nat.
-Global Instance: Naturals Z⁺ := naturals.retract_is_nat of_nat.
+Instance ZPos_to_semiring: NaturalsToSemiRing Z⁺ := naturals.retract_is_nat_to_sr of_nat.
+Instance ZPos_naturals: Naturals Z⁺ := naturals.retract_is_nat of_nat.
+
+Instance ZPos_standard_uneq: StandardUnEq Z⁺.
+Proof. now rewrite (_:Z⁺ ⊆ Z). Qed.
 
 Context `{!IntAbs Z Z⁺}.
 
@@ -54,9 +59,10 @@ Proof int_to_nat_nonpos (f:=id:Z⁺⇀Z) x.
 
 Instance ZPos_cut_minus : CutMinus A := λ x y, int_to_nat Z Z⁺ (x - y).
 
-Global Instance: CutMinusSpec Z⁺ _.
+Instance ZPos_cut_minus_spec: CutMinusSpec Z⁺ _.
 Proof. split; unfold cut_minus, ZPos_cut_minus.
-+ split; try apply _. intros ?? E1 ?? E2. unfold_sigs. red_sig. rewrite_on Z -> E1, E2.
++ apply binary_morphism_proper_back.
+  intros ?? E1 ?? E2. unfold_sigs. red_sig. rewrite_on Z -> E1, E2.
   exact (subreflexivity (S:=Z⁺) _).
 + intros x ? y ? E. pose proof minus_nonneg _ _ E.
   rewrite (Z⁺ $ ZPos_int_to_nat_nonneg (x-y)).
@@ -65,4 +71,19 @@ Proof. split; unfold cut_minus, ZPos_cut_minus.
   exact (ZPos_int_to_nat_nonpos _).
 Qed.
 
+Section another_semiring.
+  Context `{FullPseudoSemiRingOrder (R:=R)} (f:Z ⇀ R) `{!SemiRing_Morphism Z R f}.
+
+  Existing Instance pseudo_srorder_semiring.
+  Instance: SemiRing_Morphism Z⁺ R f := semiring_mor_nonneg_mor f.
+
+  Instance Zpos_semiring_mor_nonneg : SemiRing_Morphism Z⁺ R⁺ f.
+  Proof to_semiring_nonneg_mor (N:=Z⁺) (f:=f).
+
+End another_semiring.
+
 End nonneg_integers_naturals.
+
+Hint Extern 5 (NaturalsToSemiRing _⁺) => eapply @ZPos_to_semiring : typeclass_instances.
+Hint Extern 5 (Naturals _⁺) => class_apply @ZPos_naturals : typeclass_instances.
+Hint Extern 5 (StandardUnEq _⁺) => eapply @ZPos_standard_uneq : typeclass_instances.

@@ -66,41 +66,46 @@ Program Definition decision_from_bool_decide {P b} (prf : b ≡ true ↔ P) :
 Next Obligation. now apply prf. Qed.
 Next Obligation. rewrite <-prf. discriminate. Qed.
 
-Program Instance prod_eq_dec `(A_dec : ∀ x y : A, Decision (x ≡ y))
+Program Definition prod_eq_dec `(A_dec : ∀ x y : A, Decision (x ≡ y))
      `(B_dec : ∀ x y : B, Decision (x ≡ y)) : ∀ x y : A * B, Decision (x ≡ y) := λ x y,
   match A_dec (fst x) (fst y) with
   | left _ => match B_dec (snd x) (snd y) with left _ => left _ | right _ => right _ end
   | right _ => right _
   end.
 Solve Obligations using (program_simpl; f_equal; firstorder).
+Hint Extern 2 (Decision (@eq (prod _ _) _ _)) => eapply @prod_eq_dec : typeclass_instances.
 
-Program Instance and_dec `(P_dec : Decision P) `(Q_dec : Decision Q) : Decision (P ∧ Q) :=
+Program Definition and_dec `(P_dec : Decision P) `(Q_dec : Decision Q) : Decision (P ∧ Q) :=
   match P_dec with
   | left _ => match Q_dec with left _ => left _ | right _ => right _ end
   | right _ => right _
   end.
 Solve Obligations using (program_simpl; tauto).
+Hint Extern 2 (Decision (and _ _)) => eapply @and_dec : typeclass_instances.
 
-Program Instance or_dec `(P_dec : Decision P) `(Q_dec : Decision Q) : Decision (P ∨ Q) :=
+Program Definition or_dec `(P_dec : Decision P) `(Q_dec : Decision Q) : Decision (P ∨ Q) :=
   match P_dec with
   | left _ => left _
   | right _ => match Q_dec with left _ => left _ | right _ => right _ end
   end.
 Solve Obligations using (program_simpl; firstorder).
+Hint Extern 2 (Decision (or _ _)) => eapply @or_dec : typeclass_instances.
 
-Program Instance is_Some_dec `(x : option A) : Decision (is_Some x) :=
+Program Definition is_Some_dec `(x : option A) : Decision (is_Some x) :=
   match x with
   | None => right _
   | Some _ => left _
   end.
+Hint Extern 2 (Decision (is_Some _)) => eapply @is_Some_dec : typeclass_instances.
 
-Program Instance is_None_dec `(x : option A) : Decision (is_None x) :=
+Program Definition is_None_dec `(x : option A) : Decision (is_None x) :=
   match x with
   | None => left _
   | Some _ => right _
   end.
+Hint Extern 2 (Decision (is_None _)) => eapply @is_None_dec : typeclass_instances.
 
-Program Instance option_eq_dec `(A_dec : ∀ x y : A, Decision (x ≡ y))
+Program Definition option_eq_dec `(A_dec : ∀ x y : A, Decision (x ≡ y))
      : ∀ x y : option A, Decision (x ≡ y) := λ x y,
   match x with
   | Some r =>
@@ -114,6 +119,10 @@ Program Instance option_eq_dec `(A_dec : ∀ x y : A, Decision (x ≡ y))
     | None => left _
     end
   end.
+Hint Extern 2 (Decision (@eq (option _) _ _)) => eapply @option_eq_dec : typeclass_instances.
 
-Program Instance True_dec: Decision True := left _.
-Program Instance False_dec: Decision False := right _.
+
+Program Definition True_dec: Decision True := left _.
+Program Definition False_dec: Decision False := right _.
+Hint Extern 0 (Decision True ) => exact True_dec : typeclass_instances.
+Hint Extern 0 (Decision False) => exact False_dec : typeclass_instances.

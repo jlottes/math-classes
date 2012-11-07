@@ -1,10 +1,10 @@
 Require Import
-  abstract_algebra.
+  abstract_algebra theory.products.
 Require Export
   theory.setoids.
 
 Section contents.
-Context {A S} `{StrongSetoid A (S:=S)}.
+Context `{S:Subset} `{StrongSetoid _ (S:=S)}.
 
 Global Instance: Setoid S.
 Proof. split; red; intros x ?; [| intros y ? ..]; [| | intros z ?]; rewrite <- ?(tight_apart _ _).
@@ -30,8 +30,22 @@ Global Instance: ∀ `{x ∊ S} `{y ∊ S}, Stable (x = y).
 Proof. intros. unfold Stable, DN. rewrite <- (tight_apart _ _). tauto. Qed.
 End contents.
 
+Local Hint Extern 20 (?x ∊ ?T) => match goal with
+  | sub : SubsetOf _ ?T |- _ => eapply (subset (SubsetOf:=sub) x)
+end : typeclass_instances.
+
+
+Lemma standard_uneq_proper : Find_Proper_Signature (@StandardUnEq) 0
+  (∀ A, Proper ((=)==>(=)==>SubsetOf-->impl) (@StandardUnEq A)).
+Proof. red. intros. intros e1 e2 Ee u1 u2 Eu S1 S2 ES P. unfold flip in ES.
+  intros x ? y ?. split; intro Q.
+    apply Eu in Q. apply (P _ _ _ _) in Q. contradict Q. now apply Ee.
+    apply Eu. apply (P _ _ _ _). contradict Q. now apply Ee.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@StandardUnEq) 0 _) => eexact standard_uneq_proper : typeclass_instances.
+
 Lemma tight_apart_proper : Find_Proper_Signature (@TightApart) 0
-  (∀ A, Proper ((=)==>(=)==>(⊆)-->impl) (@TightApart A)).
+  (∀ A, Proper ((=)==>(=)==>SubsetOf-->impl) (@TightApart A)).
 Proof. red. intros. intros e1 e2 Ee u1 u2 Eu S1 S2 ES P. unfold flip in ES.
   intros x ? y ?. split; intro Q.
     apply Ee. apply (tight_apart _ _). contradict Q. now apply Eu.
@@ -40,20 +54,20 @@ Qed.
 Hint Extern 0 (Find_Proper_Signature (@TightApart) 0 _) => eexact tight_apart_proper : typeclass_instances.
 
 Lemma strong_setoid_proper : Find_Proper_Signature (@StrongSetoid) 0
-  (∀ A, Proper ((=)==>(=)==>(⊆)-->impl) (@StrongSetoid A)).
+  (∀ A, Proper ((=)==>(=)==>SubsetOf-->impl) (@StrongSetoid A)).
 Proof. red. intros. intros e1 e2 Ee u1 u2 Eu S1 S2 ES P. unfold flip in ES.
-  split; unfold uneq; rewrite <- ?Ee, <- Eu, ES; apply _.
+  split; unfold uneq; rewrite <- ?Ee, <- Eu, ES. apply strongsetoid_apart. apply _.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@StrongSetoid) 0 _) => eexact strong_setoid_proper : typeclass_instances.
 
 (* In case we have a decidable setoid, we can construct a strong setoid. Again
   we do not make this an instance as it will cause loops *)
 Section dec_setoid.
-  Context `{UnEq A} {S} `{Setoid A (S:=S)} `{!StandardUnEq S} `{!SubDecision S S (=)}.
+  Context `{UnEq} {S} `{Setoid _ (S:=S)} `{!StandardUnEq S} `{!SubDecision S S (=)}.
 
   Instance dec_strong_setoid: StrongSetoid S.
   Proof. split; [ split; red | red ]; intros x ?; [| intros y ? ..]; rewrite -> ?(standard_uneq _ _).
-  + intro E. contradict E. subreflexivity.
+  + intro E. now contradict E.
   + intro E. contradict E. subsymmetry.
   + intros E1 z ?. rewrite -> ?(standard_uneq _ _).
     destruct (decide_sub (=) x z) as [E2|?]; [|tauto]. right. contradict E1. subtransitivity z.
@@ -61,125 +75,247 @@ Section dec_setoid.
   Qed.
 End dec_setoid.
 
-(*
-Hint Extern 19 (StrongSetoid ?S) => match goal with
-  | mor : StrongSetoid_Morphism S _ ?f |- _ => eexact (strong_setoidmor_a f (StrongSetoid_Morphism:=mor))
-  | mor : StrongSetoid_Morphism _ S ?f |- _ => eexact (strong_setoidmor_b f (StrongSetoid_Morphism:=mor))
-  | mor : StrongSetoid_Binary_Morphism S _ _ ?f  |- _ => eexact (strong_binary_setoidmor_a f (StrongSetoid_Binary_Morphism:=mor))
-  | mor : StrongSetoid_Binary_Morphism _ S _ ?f  |- _ => eexact (strong_binary_setoidmor_b f (StrongSetoid_Binary_Morphism:=mor))
-  | mor : StrongSetoid_Binary_Morphism _ _ S ?f  |- _ => eexact (strong_binary_setoidmor_c f (StrongSetoid_Binary_Morphism:=mor))
-end : typeclass_instances.
+Lemma strong_ext_equiv_1 `{X:Subset} `{Y:Subset} (f g:X ⇀ Y) `{UnEq X} `{UnEq Y}
+  : strong_ext_equiv (X ⇀ Y) f g ≡ ∀ `{x ∊ X} `{y ∊ X}, f x ≠ g y → x ≠ y.
+Proof. reflexivity. Qed.
 
-Hint Extern 10 (?f _ _ ∊ ?S) => match goal with
-  | mor : StrongSetoid_Binary_Morphism _ _ S f |- _ => eapply (strong_binary_setoidmor_closed f (StrongSetoid_Binary_Morphism:=mor))
-end : typeclass_instances.
-
-Hint Extern 11 (?f _ ∊ ?S) => match goal with
-  | mor : StrongSetoid_Morphism _ S f |- _ => eapply (strong_setoidmor_closed f (StrongSetoid_Morphism:=mor))
-end : typeclass_instances.
-*)
-(* Check fun `{StrongSetoid_Morphism (S:=X) (T:=Y) (f:=f)} `{x ∊ X} => _ : f x ∊ Y. *)
-
-Local Existing Instance strong_setoidmor_a.
-Local Existing Instance strong_setoidmor_b.
-Local Existing Instance strong_binary_setoidmor_a.
-Local Existing Instance strong_binary_setoidmor_b.
-Local Existing Instance strong_binary_setoidmor_c.
-
-Instance strong_setoidmor_setoidmor `{sm: StrongSetoid_Morphism (S:=X) (T:=Y) (f:=f)} : Setoid_Morphism X Y f.
-Proof. pose proof strong_setoidmor_closed f. split; try apply _.
-  intros x₁ x₂ Ex. unfold_sigs. red_sig.
-  rewrite <- (tight_apart _ _). rewrite <- (tight_apart _ _) in Ex.
-  contradict Ex. exact (strong_extensionality f _ _ Ex).
+Lemma strong_ext_equiv_2 `{X:Subset} `{Y:Subset} `{Z:Subset} (f g:X ⇀ Y ⇀ Z) `{UnEq X} `{UnEq Y} `{UnEq Z}
+  : strong_ext_equiv (X ⇀ Y ⇀ Z) f g 
+  ↔ ∀ `{x₁ ∊ X} `{x₂ ∊ X} `{y₁ ∊ Y} `{y₂ ∊ Y}, f x₁ y₁ ≠ g x₂ y₂ → x₁ ≠ x₂ ∨ y₁ ≠ y₂.
+Proof. unfold strong_ext_equiv, uncurried_domain, uncurry; simpl. split.
++ intros P a ? b ? c ? d ? E. destruct (P (c,a) _ (d,b) _ E); tauto.
++ intros P [??][??][??][??] E. do 2 red. destruct (P _ _ _ _ _ _ _ _ E); tauto.
 Qed.
 
-(*
-Hint Extern 11 (Proper ((?S,=)==>_) ?f) => match goal with
-  | mor : StrongSetoid_Morphism S _ f |- _ => eapply (setoidmor_proper f (Setoid_Morphism:=strong_setoidmor_setoidmor (sm:=mor)))
-end : typeclass_instances.
-*)
-(* Check fun `{StrongSetoid_Morphism (S:=X) (T:=Y) (f:=f)} => _ : Proper ((X,=)==>_) f. *)
+Lemma strong_ext_equiv_1_proper : Find_Proper_Signature (@strong_ext_equiv) 1
+  (∀ `{StrongSetoid (S:=X)} `{StrongSetoid (S:=Y)},
+     Proper ((restrict_rel (X ⇀ Y) (@equiv (X ⇀ Y) _))
+         ==> (restrict_rel (X ⇀ Y) (@equiv (X ⇀ Y) _)) ==> impl) (strong_ext_equiv (X ⇀ Y))).
+Proof. red; intros. intros f1 f2 [[cf1 cf2] Ef] g1 g2 [[cg1 cg2] Eg].
+  pose proof @closed_range.
+  change (Closed (X ⇀ Y) f1) in cf1.
+  change (Closed (X ⇀ Y) f2) in cf2.
+  change (Closed (X ⇀ Y) g1) in cg1.
+  change (Closed (X ⇀ Y) g2) in cg2.
+  rewrite 2!strong_ext_equiv_1.
+  intros Es x ? y ? E. apply Es; trivial.
+  now rewrite (Ef _ _ (_:Proper(X,=) x)), (Eg _ _ (_:Proper(X,=) y)).
+Qed.
 
-Lemma strong_binary_setoidmor_binary_setoidmor `{sbm: StrongSetoid_Binary_Morphism (S:=X) (T:=Y) (U:=Z) (f:=f)}
-  : Setoid_Binary_Morphism X Y Z f.
-Proof. pose proof strong_binary_setoidmor_closed f. split; try apply _.
+Lemma strong_ext_equiv_2_proper : Find_Proper_Signature (@strong_ext_equiv) 0
+  (∀ `{StrongSetoid (S:=X)} `{StrongSetoid (S:=Y)} `{StrongSetoid (S:=Z)},
+     Proper ((restrict_rel (X ⇀ Y ⇀ Z) (@equiv (X ⇀ Y ⇀ Z) _))
+         ==> (restrict_rel (X ⇀ Y ⇀ Z) (@equiv (X ⇀ Y ⇀ Z) _)) ==> impl) (strong_ext_equiv (X ⇀ Y ⇀ Z))).
+Proof. red; intros. intros f1 f2 [[cf1 cf2] Ef] g1 g2 [[cg1 cg2] Eg].
+  pose proof @closed_binary.
+  change (Closed (X ⇀ Y ⇀ Z) f1) in cf1.
+  change (Closed (X ⇀ Y ⇀ Z) f2) in cf2.
+  change (Closed (X ⇀ Y ⇀ Z) g1) in cg1.
+  change (Closed (X ⇀ Y ⇀ Z) g2) in cg2.
+  rewrite 2!strong_ext_equiv_2.
+  intros Es x₁ ? x₂ ? y₁ ? y₂ ? E. apply Es; trivial.
+  rewrite ext_equiv_binary_sig in Ef.
+  rewrite ext_equiv_binary_sig in Eg.
+  rewrite (Ef _ _ (_:Proper(X,=) x₁) _ _ (_:Proper(Y,=) y₁)).
+  now rewrite (Eg _ _ (_:Proper(X,=) x₂) _ _ (_:Proper(Y,=) y₂)).
+Qed.
+
+Hint Extern 0 (Find_Proper_Signature (@strong_ext_equiv) 0 _) => eexact strong_ext_equiv_2_proper : typeclass_instances.
+Hint Extern 0 (Find_Proper_Signature (@strong_ext_equiv) 1 _) => eexact strong_ext_equiv_1_proper : typeclass_instances.
+
+Lemma strong_extensionality `{X:Subset} `{Y:Subset} (f:X ⇀ Y) `{UnEq X} `{UnEq Y} {sm: Strong_Morphism X Y f}
+  `{x ∊ X} `{y ∊ X} : f x ≠ f y → x ≠ y.
+Proof. destruct sm as [? sm]. exact (sm x _ y _). Qed.
+
+Lemma strong_binary_extensionality `{X:Subset} `{Y:Subset} `{Z:Subset} (f:X ⇀ Y ⇀ Z) `{UnEq X} `{UnEq Y} `{UnEq Z}
+  {sm: Strong_Binary_Morphism X Y Z f}
+  `{x₁ ∊ X} `{x₂ ∊ X} `{y₁ ∊ Y} `{y₂ ∊ Y} : f x₁ y₁ ≠ f x₂ y₂ → x₁ ≠ x₂ ∨ y₁ ≠ y₂.
+Proof. destruct sm as [? sm]. rewrite (strong_ext_equiv_2 _ _) in sm. auto. Qed.
+
+Lemma id_strong_injective `{StrongSetoid (S:=X)} `{!StrongSetoid Y} `{!SubsetOf X Y}: StrongInjective X Y id.
+Proof. split. intuition. split; try apply _. firstorder. Qed.
+Hint Extern 2 (StrongInjective _ _ id) => class_apply @id_strong_injective : typeclass_instances.
+
+Lemma id_strong_morphism `{StrongSetoid (S:=X)} `{!StrongSetoid Y} `{!SubsetOf X Y}: Strong_Morphism X Y id.
+Proof strong_injective_mor _.
+Hint Extern 2 (Strong_Morphism _ _ id) => class_apply @id_strong_morphism : typeclass_instances.
+
+Lemma strong_morphism_closed `{Strong_Morphism (X:=X) (Y:=Y) (f:=f)} : Closed (X ⇀ Y) f.
+Proof. firstorder. Qed.
+
+Lemma strong_binary_morphism_closed `{Strong_Binary_Morphism (X:=X) (Y:=Y) (Z:=Z) (f:=f)} : Closed (X ⇀ Y ⇀ Z) f.
+Proof. firstorder. Qed.
+
+Local Existing Instance strong_morphism_closed.
+Local Existing Instance strong_binary_morphism_closed.
+Local Existing Instance closed_range.
+Local Existing Instance closed_binary.
+
+Lemma strong_morphism_morphism
+  `{StrongSetoid (S:=X)} `{StrongSetoid (S:=Y)}
+  f {sm: Strong_Morphism X Y f} : Morphism (X ⇒ Y) f.
+Proof.
+  intros x₁ x₂ Ex. unfold_sigs. red_sig.
+  rewrite <- (tight_apart _ _). rewrite <- (tight_apart _ _) in Ex.
+  contradict Ex. exact (strong_extensionality f Ex).
+Qed.
+
+Lemma strong_binary_morphism_morphism
+  `{StrongSetoid (S:=X)} `{StrongSetoid (S:=Y)} `{StrongSetoid (S:=Z)}
+  f {sm: Strong_Binary_Morphism X Y Z f} : Morphism (X ⇒ Y ⇒ Z) f.
+Proof.
+  apply binary_morphism_proper_back.
   intros x₁ x₂ Ex y₁ y₂ Ey. unfold_sigs. red_sig.
   rewrite <- (tight_apart _ _). rewrite <- (tight_apart _ _) in Ex. rewrite <- (tight_apart _ _) in Ey.
-  intro E. destruct (strong_binary_extensionality f x₁ y₁ x₂ y₂ E); contradiction.
+  intro E. destruct (strong_binary_extensionality f E); contradiction.
+Qed.
+
+Hint Extern 8 (Morphism _ _) =>
+  match goal with
+  | |- Morphism (?X ⇒ ?Y ⇒ ?Z) ?f => first [
+    let sm := constr:(_ : Strong_Binary_Morphism X Y Z f) in
+    eexact (strong_binary_morphism_morphism f (sm:=sm))
+    | fail 2 ]
+  | |- Morphism (?X ⇒ ?Y) ?f =>
+    let sm := constr:(_ : Strong_Morphism X Y f) in
+    eexact (strong_morphism_morphism f (sm:=sm))
+  end : typeclass_instances.
+
+Lemma compose_strong_morphism `{X:Subset} `{Y:Subset} `{Z:Subset}
+  (f:X ⇀ Y) (g:Y ⇀ Z) `{UnEq X} `{UnEq Y} `{UnEq Z}
+  {mf:Strong_Morphism X Y f} {mg:Strong_Morphism Y Z g}
+  : Strong_Morphism X Z (g ∘ f).
+Proof. split.
++ intros ??. unfold compose. apply _.
++ rewrite strong_ext_equiv_1.
+  intros x ? y ? E. apply (strong_extensionality f).
+  now apply (strong_extensionality g).
+Qed.
+Hint Extern 5 (Strong_Morphism _ _ (_ ∘ _)) => class_apply @compose_strong_morphism : typeclass_instances.
+
+Lemma compose_strong_injective `{X:Subset} `{Y:Subset} `{Z:Subset}
+  (f:X ⇀ Y) (g:Y ⇀ Z) `{UnEq X} `{UnEq Y} `{UnEq Z}
+  `{!StrongInjective X Y f} `{!StrongInjective Y Z g}
+  : StrongInjective X Z (g ∘ f).
+Proof. pose proof strong_injective_mor f. pose proof strong_injective_mor g.
+  split; try apply _.
+  intros x ? y ? E. apply (strong_injective g _ _).
+  now apply (strong_injective f _ _).
+Qed.
+Hint Extern 5 (StrongInjective _ _ (_ ∘ _)) => class_apply @compose_strong_injective : typeclass_instances.
+
+
+
+Instance strong_injective_injective `{StrongSetoid (S:=X)} `{StrongSetoid (S:=Y)}
+  f {s: StrongInjective X Y f} : Injective X Y f.
+Proof.
+  pose proof (strong_injective_mor f).
+  split; try apply _.
+  intros ?? ??. rewrite <-!(tight_apart _ _). intros E1 E2.
+  destruct E1. now apply (strong_injective f).
 Qed.
 
 (* If a morphism satisfies the binary strong extensionality property, it is
   strongly extensional in both coordinates. *)
 Instance strong_setoid_morphism_1 :
-  ∀ `{sbm: StrongSetoid_Binary_Morphism (S:=X) (T:=Y) (U:=Z) (f:=f) } `{x ∊ X},
-    StrongSetoid_Morphism Y Z (f x) | 10.
-Proof. intros. pose proof strong_binary_setoidmor_closed f. split; try apply _. intros ??; apply _.
-  intros y₁ ? y₂ ? E.
-  destruct (strong_binary_extensionality f _ _ _ _ E); trivial.
+  ∀ `{sbm: Strong_Binary_Morphism (X:=X) (Y:=Y) (Z:=Z) (f:=f) } `{Equiv X} `{!StrongSetoid X} `{x ∊ X},
+    Strong_Morphism Y Z (f x) | 10.
+Proof. intros. split. intros ??. apply _.
+  rewrite strong_ext_equiv_1. intros y₁ ? y₂ ? E.
+  destruct (strong_binary_extensionality f E); trivial.
   now destruct (subirreflexivity (≠) x).
 Qed.
 
 Lemma strong_setoid_morphism_2 :
-  ∀ `{sbm: StrongSetoid_Binary_Morphism (S:=X) (T:=Y) (U:=Z) (f:=f)} `{y ∊ Y},
-    StrongSetoid_Morphism X Z (λ x, f x y).
-Proof. intros. split; try apply _. intros ??; apply _.
-  intros x₁ ? x₂ ? E.
-  destruct (strong_binary_extensionality f _ _ _ _ E); trivial.
+  ∀ `{sbm: Strong_Binary_Morphism (X:=X) (Y:=Y) (Z:=Z) (f:=f) } `{Equiv Y} `{!StrongSetoid Y} `{y ∊ Y},
+    Strong_Morphism X Z (λ x, f x y).
+Proof. intros. split. intros ??. apply _.
+  rewrite strong_ext_equiv_1. intros x₁ ? x₂ ? E.
+  destruct (strong_binary_extensionality f E); trivial.
   now destruct (subirreflexivity (≠) y).
 Qed.
-Hint Extern 5 (StrongSetoid_Morphism _ _ (λ x, ?f x _)) => eapply @strong_setoid_morphism_2 : typeclass_instances.
+Hint Extern 5 (Strong_Morphism _ _ (λ x, ?f x _)) => eapply @strong_setoid_morphism_2 : typeclass_instances.
 
 (* Conversely, if a morphism is strongly extensional in both coordinates, it
   satisfies the binary strong extensionality property. We don't make this an
   instance in order to avoid loops. *)
-Lemma strong_binary_setoid_morphism_both_coordinates
-  `{StrongSetoid (S:=X)} `{StrongSetoid (S:=Y)} `{StrongSetoid (S:=Z)}
-  `{sm1: ∀ `{z ∊ X}, StrongSetoid_Morphism Y Z (f z)}
-  `{sm2: ∀ `{z ∊ Y}, StrongSetoid_Morphism X Z (λ x, f x z)}
-  : StrongSetoid_Binary_Morphism X Y Z f.
-Proof. assert (Closed (X ==> Y ==> Z) f). intros x ? y ?. apply _.
-  split; try apply _. 
-  intros x₁ ? y₁ ? x₂ ? y₂ ? E.
+Lemma strong_binary_morphism_both_coordinates
+  `{X:Subset} `{Y:Subset} `{Z:Subset} (f : X ⇀ Y ⇀ Z)
+  `{UnEq X} `{UnEq Y} `{StrongSetoid _ (S:=Z)} :
+    (∀ x, x ∊ X → Strong_Morphism Y Z (f x))
+  → (∀ y, y ∊ Y → Strong_Morphism X Z (λ x, f x y))
+  → Strong_Binary_Morphism X Y Z f.
+Proof. intros. split. intros x ? y ?. apply _.
+  rewrite strong_ext_equiv_2. intros x₁ ? x₂ ? y₁ ? y₂ ? E.
   destruct (subcotransitivity E (f x₂ y₁)).
    left. now apply (strong_extensionality (λ x, f x y₁)).
   right. now apply (strong_extensionality (f x₂)).
 Qed.
 
-Lemma strong_binary_setoid_morphism_commutative
-  `{StrongSetoid A (S:=X)} `{StrongSetoid B (S:=Y)} {f : A → A → B}
-  `{!Commutative f X} `{sm1: ∀ `{z ∊ X}, StrongSetoid_Morphism X Y (f z)}
-  : StrongSetoid_Binary_Morphism X X Y f.
-Proof. assert (Closed (X ==> X ==> Y) f). intros x ? y ?. apply _.
-  assert (∀ z, z ∊ X → StrongSetoid_Morphism X Y (λ x, f x z)).
-    split; try apply _.
-    intros x ?. apply _.
-    intros x ? y ?. rewrite_on Y -> (commutativity f x z), (commutativity f y z).
-    now apply (strong_extensionality (f z)).
-  apply strong_binary_setoid_morphism_both_coordinates.
+Lemma strong_binary_morphism_commutative
+  `{X:Subset} `{Z:Subset} (f : X ⇀ X ⇀ Z)
+  `{UnEq X} `{StrongSetoid _ (S:=Z)} :
+  Commutative f X → (∀ x, x ∊ X → Strong_Morphism X Z (f x))
+  → Strong_Binary_Morphism X X Z f.
+Proof. intros. apply (strong_binary_morphism_both_coordinates f). apply _.
+  intros y ?. split. intros ??; apply _.
+  rewrite strong_ext_equiv_1. intros x₁ ? x₂ ?.
+  rewrite 2!(Z $ commutativity f _ y). now apply (strong_extensionality (f y)).
 Qed.
 
-Lemma strong_morphism_proper : Find_Proper_Signature (@StrongSetoid_Morphism) 0
-  (∀ A B Ae Be Aue Bue, Proper ((⊆)-->(=)==>eq==>impl) (@StrongSetoid_Morphism A B Ae Be Aue Bue)).
+Lemma strong_morphism_proper : Find_Proper_Signature (@Strong_Morphism) 0
+  (∀ `{StrongSetoid (S:=X)} `{StrongSetoid (S:=Y)},
+     Proper ((@equiv (X ⇀ Y) _) ==> impl) (Strong_Morphism X Y)).
+Proof. red. intros. intros f g E [??].
+  assert (Closed (X ⇀ Y) g) by (rewrite <- E; apply _).
+  split. apply _. now rewrite <- ( X ⇀ Y $ E).
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@Strong_Morphism) 0 _) => eexact strong_morphism_proper : typeclass_instances.
+
+Lemma strong_binary_morphism_proper : Find_Proper_Signature (@Strong_Binary_Morphism) 0
+  (∀ `{StrongSetoid (S:=X)} `{StrongSetoid (S:=Y)} `{StrongSetoid (S:=Z)},
+     Proper ((@equiv (X ⇀ Y ⇀ Z) _) ==> impl) (Strong_Binary_Morphism X Y Z)).
+Proof. red. intros. intros f g E [??].
+  assert (Closed (X ⇀ Y ⇀ Z) g) by (rewrite <- E; apply _).
+  split. apply _. now rewrite <- ( X ⇀ Y ⇀ Z $ E).
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@Strong_Binary_Morphism) 0 _) => eexact strong_binary_morphism_proper : typeclass_instances.
+
+
+Lemma strong_morphism_proper2 : Find_Proper_Signature (@Strong_Morphism) 1
+  (∀ A B Aue Bue, Proper (SubsetOf-->SubsetOf++>eq==>impl) (@Strong_Morphism A B Aue Bue)).
 Proof. red. intros. intros S1 S2 ES T1 T2 ET f g Ef ?. unfold flip in ES. rewrite <- Ef.
-  split. rewrite ES. apply _. rewrite <- ET. apply _. intros ??. rewrite <- ET. apply _.
-  intros ?? ?? E. exact (strong_extensionality f _ _ E).
+  split. rewrite <- (_ : SubsetOf (S1 ⇀ T1) (S2 ⇀ T2)). apply _.
+  rewrite strong_ext_equiv_1. intros ?? ?? E. exact (strong_extensionality f E).
 Qed.
-Hint Extern 0 (Find_Proper_Signature (@StrongSetoid_Morphism) 0 _) => eexact strong_morphism_proper : typeclass_instances.
+Hint Extern 0 (Find_Proper_Signature (@Strong_Morphism) 1 _) => eexact strong_morphism_proper2 : typeclass_instances.
 
-Lemma strong_binary_morphism_proper : Find_Proper_Signature (@StrongSetoid_Binary_Morphism) 0
-  (∀ A B C Ae Be Ce Aue Bue Cue, Proper ((⊆)-->(⊆)-->(=)==>eq==>impl) (@StrongSetoid_Binary_Morphism A B C Ae Be Ce Aue Bue Cue)).
+Lemma strong_binary_morphism_proper2 : Find_Proper_Signature (@Strong_Binary_Morphism) 1
+  (∀ A B C Aue Bue Cue, Proper (SubsetOf-->SubsetOf-->SubsetOf++>eq==>impl) (@Strong_Binary_Morphism A B C Aue Bue Cue)).
 Proof. red. intros. intros S1 S2 ES T1 T2 ET U1 U2 EU f g Ef ?. unfold flip in ES, ET. rewrite <- Ef.
-  split. rewrite ES. apply _. rewrite ET. apply _. rewrite <- EU. apply _. intros ?? ??. rewrite <- EU. apply _.
-  intros ?? ?? ?? ?? E. exact (strong_binary_extensionality f _ _ _ _ E).
+  split. rewrite <- (_ : SubsetOf (S1 ⇀ T1 ⇀ U1) (S2 ⇀ T2 ⇀ U2)). apply _.
+  rewrite strong_ext_equiv_2. intros ?? ?? ?? ?? E. exact (strong_binary_extensionality f E).
 Qed.
-Hint Extern 0 (Find_Proper_Signature (@StrongSetoid_Binary_Morphism) 0 _) => eexact strong_binary_morphism_proper : typeclass_instances.
+Hint Extern 0 (Find_Proper_Signature (@Strong_Binary_Morphism) 1 _) => eexact strong_binary_morphism_proper2 : typeclass_instances.
+
+Lemma strong_injective_proper : Find_Proper_Signature (@StrongInjective) 0
+  (∀ `{StrongSetoid (S:=X)} `{StrongSetoid (S:=Y)},
+     Proper ((@equiv (X ⇀ Y) _) ==> impl) (StrongInjective X Y)).
+Proof. red. intros. intros f g E ?. pose proof strong_injective_mor f.
+  assert (Strong_Morphism X Y g) by (rewrite <- E; apply _).
+  split; try apply _. intros x ? y ? E2.
+  rewrite <-(E x x), <-(E y y); try now red_sig.
+  now apply (strong_injective f _ _).
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@StrongInjective) 0 _) => eexact strong_injective_proper : typeclass_instances.
+
 
 Section dec_setoid_morphisms.
   Context `{StrongSetoid (S:=X)} `{!StandardUnEq X} `{StrongSetoid (S:=Y)}.
 
-  Instance dec_strong_morphism (f : X ⇀ Y) `{!Setoid_Morphism X Y f} : StrongSetoid_Morphism X Y f.
-  Proof.
-    split; try apply _.
+  Instance dec_strong_morphism (f : X ⇀ Y) `{!Morphism (X ⇒ Y) f} : Strong_Morphism X Y f.
+  Proof. split. now apply morphism_closed.
+    rewrite strong_ext_equiv_1.
     intros x ? y ? E. rewrite (standard_uneq _ _). contradict E. apply (equiv_nue _ _).
     now rewrite_on X -> E.
   Qed.
@@ -195,10 +331,10 @@ Section dec_setoid_morphisms.
 
   Context `{StrongSetoid (S:=Z)}.
 
-  Instance dec_strong_binary_morphism (f : X ⇀ Y ⇀ Z)
-    `{sbm: !Setoid_Binary_Morphism X Y Z f} : StrongSetoid_Binary_Morphism X Y Z f.
-  Proof. split; try apply _. apply (binary_morphism_closed f).
-    intros x₁ ? y₁ ? x₂ ? y₂ ? E1.
+  Instance dec_strong_binary_morphism (f : X ⇀ Y ⇀ Z) `{!Morphism (X ⇒ Y ⇒ Z) f}
+    : Strong_Binary_Morphism X Y Z f.
+  Proof. split. now apply binary_morphism_closed. rewrite strong_ext_equiv_2.
+    intros x₁ ? x₂ ? y₁ ? y₂ ? E1.
     case (subcotransitivity E1 (f x₂ y₁)); rewrite ?(standard_uneq _ _); intro E2;
     [ left | right ]; intro E3; destruct (uneq_ne _ _ E2).
     now rewrite_on X -> E3. now rewrite_on Y -> E3.
@@ -208,7 +344,7 @@ End dec_setoid_morphisms.
 
 Section strong_cancellation.
 
-  Context `{StrongSetoid (S:=R)} `{!Closed (R==>R==>R) op}.
+  Context `{StrongSetoid (S:=R)} `{!Closed (R ⇀ R ⇀ R) op}.
 
   Lemma strong_right_cancel_from_left `{!Commutative op R}
     `{z ∊ R} `{!StrongLeftCancellation op z R} : StrongRightCancellation op z R.

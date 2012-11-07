@@ -2,7 +2,7 @@ Require
   orders.naturals peano_naturals.
 Require Import
   abstract_algebra interfaces.additional_operations interfaces.naturals interfaces.orders
-  theory.setoids theory.rings.
+  theory.setoids theory.rings theory.cut_minus.
 
 Lemma nat_distance_el `{nd : NatDistance (N:=N)} x `{x ∊ N} y `{y ∊ N} : nat_distance x y ∊ N.
 Proof. unfold nat_distance. destruct (nat_distance_sig x y) as [[z p]|[z p]]; tauto. Qed.
@@ -12,10 +12,11 @@ Local Existing Instance nat_distance_el.
 Section contents.
 Context `{Naturals (N:=N)}.
 
-(* NatDistance instances are all equivalent, because their behavior is fully
+(** NatDistance instances are all equivalent, because their behavior is fully
  determined by the specification. *)
 Lemma nat_distance_unique_respectful {a b : NatDistance N} : nat_distance (nd:=a) = nat_distance (nd:= b).
-Proof. intros x1 y1 E x2 y2 F. unfold_sigs. red_sig. unfold nat_distance, nat_distance_sig.
+Proof. rewrite ext_equiv_binary_sig.
+  intros x1 y1 E x2 y2 F. unfold_sigs. red_sig. unfold nat_distance, nat_distance_sig.
   destruct a as [[z1 p1]|[z1 p1]], b as [[z2 p2]|[z2 p2]];
   destruct (p1 _ _) as [? E1], (p2 _ _) as [? E2]; clear p1; clear p2.
   + apply (left_cancellation (+) x1 N _ _). subtransitivity x2. subtransitivity y2. now rewrite_on N -> E.
@@ -33,24 +34,24 @@ Proof. intros x1 y1 E x2 y2 F. unfold_sigs. red_sig. unfold nat_distance, nat_di
 Qed.
 
 Lemma nat_distance_unique {a b: NatDistance N} x `{x ∊ N} y `{y ∊ N} : nat_distance (nd:=a) x y = nat_distance (nd:=b) x y.
-Proof. apply nat_distance_unique_respectful; now red_sig. Qed.
+Proof ext_equiv_binary_applied nat_distance_unique_respectful _ _.
 
-Lemma nat_distance_proper `{!NatDistance N} : Setoid_Binary_Morphism N N N nat_distance.
-Proof. split; try apply _. exact nat_distance_unique_respectful. Qed.
+Lemma nat_distance_proper `{!NatDistance N} : Morphism (N ⇒ N ⇒ N) nat_distance.
+Proof. rewrite binary_morphism_ext_equiv. exact nat_distance_unique_respectful. Qed.
 
 End contents.
 
-Hint Extern 0 (Setoid_Binary_Morphism _ _ _ nat_distance) => eapply @nat_distance_proper : typeclass_instances.
+Hint Extern 0 (Morphism _ nat_distance) => eapply @nat_distance_proper : typeclass_instances.
 
-(* An existing instance of [CutMinus] allows to create an instance of [NatDistance] *)
-(* assuming decidability of (≤) on the entire type *)
-Program Instance natdistance_cut_minus `{Naturals A (N:=N)} `{UnEq A} `{Le A} `{Lt A} `{!StandardUnEq N} `{!FullPseudoSemiRingOrder N}
+(** An existing instance of [CutMinus] allows to create an instance of [NatDistance]
+ assuming decidability of (≤) on the entire type *)
+Program Instance natdistance_cut_minus `{Naturals (N:=N)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq N} `{!FullPseudoSemiRingOrder N}
     `{!CutMinusSpec N cm} `{∀ x y, Decision (x ≤ y)} : NatDistance N :=
   λ x y, if decide_rel (≤) x y then inl (y ∸ x) else inr (x ∸ y).
 Next Obligation. split. apply _. rewrite (N $ commutativity (+) _ _). now apply cut_minus_le. Qed.
 Next Obligation. split. apply _. rewrite (N $ commutativity (+) _ _). now apply (cut_minus_le _ _), orders.le_flip. Qed.
 
-(* Using the preceding instance we can make an instance for arbitrary models of the naturals
+(** Using the preceding instance we can make an instance for arbitrary models of the naturals
     by translation into [nat] on which we already have a [CutMinus] instance. *)
 Local Notation nat := (every nat).
 Global Program Instance natdistance_default `{Naturals (N:=N)} : NatDistance N | 10 := λ x y,
