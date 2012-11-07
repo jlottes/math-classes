@@ -1,7 +1,7 @@
 Require Import
-  Arith_base abstract_algebra interfaces.additional_operations interfaces.naturals interfaces.orders
+  Ring Arith_base abstract_algebra interfaces.additional_operations interfaces.naturals interfaces.orders
   theory.setoids theory.common_props theory.rings orders.semirings.
-Require Import Ring stdlib_ring misc.quote.
+Require Import stdlib_ring misc.quote.
 
 Instance nat_equiv: Equiv nat := eq.
 Instance nat_uneq: UnEq nat := _.
@@ -13,39 +13,42 @@ Instance nat_mult: Mult nat := Peano.mult.
 Instance nat_le: Le nat := Peano.le.
 Instance nat_lt: Lt nat := Peano.lt.
 
-Hint Extern 10 (Subset nat) => eexact (every nat) : typeclass_instances.
+Hint Extern 10 (@Subset nat) => eexact (every nat) : typeclass_instances.
 
-Local Coercion subset_to_type: Subset >-> Sortclass.
 Local Notation nat := (every nat).
 
-Instance: Setoid nat.
-Proof. repeat (split; try apply _). Qed.
+Instance: Setoid nat := {}.
 
 Instance: CommutativeSemiRing nat.
-Proof with try apply _. split.
-+ split... split... split...
-  * red. intros. now apply plus_assoc.
-  * split... intros ?? E1 ?? E2. unfold_sigs. red_sig. lazy in E1,E2. now rewrite E1,E2.
-  * red. intros. now apply Plus.plus_comm.
-  * red. intros. now lazy.
-+ split... split... split...
-  * red. intros. now apply mult_assoc.
-  * split... intros ?? E1 ?? E2. unfold_sigs. red_sig. lazy in E1,E2. now rewrite E1,E2.
-  * red. intros. now apply mult_comm.
-  * red. intros. now apply Mult.mult_1_l.
-+ red. intros. now apply mult_plus_distr_l.
-+ now lazy.
+Proof.
+  repeat match goal with
+  | |- Morphism (_ ⇒ _ ⇒ _) _ => apply binary_morphism_proper_back; intros ?? [_ E1] ?? [_ E2];
+       red_sig; lazy in E1,E2; now rewrite E1,E2
+  | |- Morphism _ _ => intros ?? [_ E1];
+       red_sig; lazy in E1; now rewrite E1
+  | |- _ => split; try apply _
+  end; repeat intro.
++ now apply plus_assoc.
++ now apply plus_comm.
++ now apply mult_assoc.
++ now apply mult_comm.
++ now apply Mult.mult_1_l.
++ now apply mult_plus_distr_l.
 Qed.
 
 (* misc *)
 Instance: Injective nat nat S.
 Proof. split. intros ???? E. now injection E.
- split; try apply _. intros ?? E. unfold_sigs. red_sig. lazy in E. now rewrite E.
+  intros ?? [_ E]. red_sig. lazy in E. now rewrite E.
 Qed.
 
-Instance: Setoid_Morphism nat nat S := injective_mor S.
+Instance: Morphism (nat ⇒ nat) S := injective_mor S.
 
-Global Instance nat_dec: ∀ x y, Decision (x = y) := eq_nat_dec.
+Definition nat_dec: ∀ x y, Decision (x = y) := eq_nat_dec.
+Hint Extern 2 (Decision (@equiv _ nat_equiv _ _)) => eapply @nat_dec : typeclass_instances.
+
+Instance: StandardUnEq nat := default_uneq_standard _.
+Instance: StrongSetoid nat := strong_setoids.dec_strong_setoid.
 
 Add Ring nat: (stdlib_semiring_theory nat).
 
@@ -61,10 +64,12 @@ Section for_another_semiring.
 
   Add Ring R: (stdlib_semiring_theory R).
 
-  Instance: Closed (nat ==> R) toR.
+  Instance: Closed (nat ⇀ R) toR.
   Proof. intros n _. induction n; [ change (0 ∊ R) | change (toR n + 1 ∊ R) ]; apply _. Qed.
 
-  Instance: Proper ((nat,=) ==> (R,=)) toR.
+  Existing Instance closed_range.
+
+  Instance: Morphism (nat ⇒ R) toR.
   Proof. intros n ? [_ E]. lazy in E. rewrite <- E. now red_sig. Qed.
 
   Let f_preserves_0: toR 0 = 0.
@@ -87,11 +92,11 @@ Section for_another_semiring.
   Qed.
 
   Global Instance: SemiRing_Morphism nat R (naturals_to_semiring nat R).
-  Proof. repeat (split; try apply _); repeat intro.
-      apply f_preserves_plus.
-     apply f_preserves_0.
-    apply f_preserves_mult.
-   apply f_preserves_1.
+  Proof. apply semiring_morphism_alt; try apply _; repeat intro.
+  + apply f_preserves_plus.
+  + apply f_preserves_mult.
+  + apply f_preserves_0.
+  + apply f_preserves_1.
   Qed.
 End for_another_semiring.
 
@@ -99,7 +104,7 @@ Lemma O_nat_0 : O ≡ 0.
 Proof. reflexivity. Qed.
 
 Lemma S_nat_plus_1 x : S x ≡ x + 1.
-Proof. rewrite (commutativity (+) _ _). reflexivity. Qed.
+Proof. rewrite (commutativity (+) x 1). reflexivity. Qed.
 
 Lemma S_nat_1_plus x : S x ≡ 1 + x.
 Proof. reflexivity. Qed.
@@ -149,12 +154,13 @@ Proof. repeat (split; try apply _); intros ? _ ? _. apply le_n_S. apply le_S_n. 
 Instance: StrictOrderEmbedding nat nat S.
 Proof. split; try apply _. Qed.
 
-Instance nat_le_dec: Decision (x ≤ y) := le_dec.
+Definition nat_le_dec : ∀ x y, Decision (x ≤ y) := le_dec.
+Hint Extern 2 (Decision (@le _ nat_le _ _)) => eapply @nat_le_dec : typeclass_instances.
 
 Instance nat_cut_minus: CutMinus Datatypes.nat := minus.
 Instance: CutMinusSpec nat nat_cut_minus.
 Proof. split; [| intros x _ y _ E ..].
-+ split; try apply _. intros ?? [_ E1] ?? [_ E2]. lazy in E1,E2. red_sig. now rewrite E1, E2. 
++ apply binary_morphism_proper_back. intros ?? [_ E1] ?? [_ E2]. lazy in E1,E2. red_sig. now rewrite E1, E2.
 + symmetry. rewrite (commutativity (+) _ _). now apply le_plus_minus.
 + destruct (orders.le_equiv_lt x y E) as [E2|E2].
    rewrite E2. now apply minus_diag.

@@ -5,10 +5,10 @@ Require Import
 Lemma int_abs_el `{IntAbs (Z:=Z) (N:=N)} x `{x ∊ Z} : int_abs Z N x ∊ N.
 Proof. unfold int_abs. destruct (int_abs_sig Z N x) as [[z p]|[z p]]; tauto. Qed.
 
-Local Existing Instance int_abs_el.
-
 Section proper.
-Context `{Integers A (Z:=Z)} `{Naturals (N:=N)}.
+Context `{Integers (Z:=Z)} `{Naturals (N:=N)}.
+
+Existing Instance int_abs_el.
 
 Lemma int_abs_unique_respectful {a b : IntAbs Z N} : int_abs Z N (ia:=a) = int_abs Z N (ia:= b).
 Proof. intros x y E. unfold_sigs. red_sig.
@@ -26,24 +26,23 @@ Lemma int_abs_unique {a b: IntAbs Z N} z `{z ∊ Z} :
   int_abs Z N (ia:=a) z = int_abs Z N (ia:= b) z.
 Proof. apply int_abs_unique_respectful; now red_sig. Qed.
 
-Lemma int_abs_proper `{!IntAbs Z N} : Setoid_Morphism Z N (int_abs Z N).
-Proof. split; try apply _. exact int_abs_unique_respectful. Qed.
+Lemma int_abs_proper `{!IntAbs Z N} : Morphism (Z ⇒ N) (int_abs Z N).
+Proof int_abs_unique_respectful.
 
 End proper.
 
-Hint Extern 0 (Setoid_Morphism _ _ (int_abs _ _)) => eapply @int_abs_proper : typeclass_instances.
+Hint Extern 0 (Morphism _ (int_abs _ _)) => eapply @int_abs_proper : typeclass_instances.
 
 Section contents.
-Context {A B} {Z:Subset A} {N:Subset B} {f : N ⇀ Z}.
-Context `{Integers A (Z:=Z)} `{UnEq A} `{Le A} `{Lt A} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
-Context `{Naturals B (N:=N)} `{!SemiRing_Morphism N Z f} `{!IntAbs Z N}.
-
-Existing Instance to_semiring_nonneg.
+Context `{Z:Subset} `{N:Subset} {f : N ⇀ Z}.
+Context `{Integers _ (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
+Context `{Naturals _ (N:=N)} `{!SemiRing_Morphism N Z f} `{!IntAbs Z N}.
 
 Lemma int_abs_spec x `{x ∊ Z} :
   { x ∊ Z⁺ ∧ f (int_abs Z N x) = x } + { x ∊ Z⁻ ∧ f (int_abs Z N x) = -x }.
 Proof.
-  unfold int_abs. destruct (int_abs_sig Z N x) as [[n p]|[n p]]; destruct (p _) as [? E]; clear p;
+  unfold int_abs.
+  destruct (int_abs_sig Z N x) as [[n p]|[n p]]; destruct (p _) as [? E]; clear p;
   [ left; split
   | right; split; [ apply (negate_nonneg_nonpos _) |]];
   rewrite_on Z <- E; try apply _; exact (naturals.to_semiring_unique _ _).
@@ -52,7 +51,7 @@ Qed.
 Lemma int_abs_sig_alt x `{x ∊ Z} :
   {n | n ∊ N ∧ f n = x } + {n | n ∊ N ∧ f n = -x }.
 Proof. destruct (int_abs_spec x) as [[??]|[??]]; [left|right];
-  exists (int_abs Z N x); (split; [apply _|trivial]).
+  exists (int_abs Z N x); (split; [try apply _|trivial]).
 Qed.
 
 Lemma int_abs_nat n `{n ∊ N} :

@@ -4,6 +4,16 @@ Require Import
 Require Export
   interfaces.naturals.
 
+Section naturals_to_semiring_hints.
+  Context `{Naturals (N:=N)} `{CommutativeSemiRing (R:=R)}.
+  Existing Instance naturals_to_semiring_mor.
+  Instance naturals_to_semiring_morphism : Morphism (N ⇒ R) (naturals_to_semiring N R) := _.
+End naturals_to_semiring_hints.
+Hint Extern 2 (Morphism _ (naturals_to_semiring _ _)) => class_apply @naturals_to_semiring_morphism : typeclass_instances.
+Hint Extern 2 (SemiRng_Morphism _ _ (naturals_to_semiring _ _)) => class_apply @sringmor_srng_mor : typeclass_instances.
+Hint Extern 2 (AdditiveMonoid_Morphism _ _ (naturals_to_semiring _ _)) => class_apply @srngmor_plus_mor : typeclass_instances.
+Hint Extern 2 (MultiplicativeSemiGroup_Morphism _ _ (naturals_to_semiring _ _)) => class_apply @srngmor_mult_mor : typeclass_instances.
+
 Lemma to_semiring_unique `{Naturals (N:=N)} `{CommutativeSemiRing (R:=R)} (f:N ⇀ R) `{!SemiRing_Morphism N R f} x `{x ∊ N} :
   f x = naturals_to_semiring N R x.
 Proof. apply (naturals_initial f). now red_sig. Qed.
@@ -61,7 +71,7 @@ Section retract_is_nat.
 End retract_is_nat.
 
 Section contents.
-Context `{Naturals A (N:=N)} `{UnEq A} `{!StandardUnEq N}.
+Context `{Naturals (N:=N)} `{UnEq _} `{!StandardUnEq N}.
 
 Section borrowed_from_nat.
 
@@ -119,7 +129,7 @@ Proof. intro E. destruct (zero_sum 1 x E).
   pose proof nat_nontrivial as T. rewrite (standard_uneq _ _) in T. contradiction.
 Qed.
 
-Global Program Instance: SubDecision N N (=) | 10 := λ x _ y _,
+Global Program Instance: StrongSubDecision N N (=) | 10 := λ x y,
   match decide (naturals_to_semiring _ (every nat) x = naturals_to_semiring _ (every nat) y) with
   | left E => left _
   | right E => right _
@@ -146,3 +156,6 @@ Hint Extern 6 (PropHolds (1 ≠ 0)) => eapply @nat_nontrivial : typeclass_instan
 (*
 Hint Extern 6 (PropHolds (1 ≶ 0)) => eapply @nat_nontrivial_apart : typeclass_instances.
 *)
+
+Ltac nat_induction n E :=
+  pattern n; apply induction; [solve_proper | | | trivial]; clear dependent n; [| intros n ? E].

@@ -9,7 +9,7 @@ Local Existing Instance strict_srorder_semiring.
 Local Existing Instance pseudo_srorder_semiring.
 
 Local Ltac subsetoid_tac R :=
-  split; [apply _ |]; split; [apply _ |]; intros ?? E [??]; unfold_sigs;
+  split; [apply _ | | apply _]; intros ?? E [??]; unfold_sigs;
   split; [apply _ |]; now rewrite_on R <- E.
 
 Lemma NonNeg_subsetoid    `{SemiRingOrder (R:=R)} : SubSetoid R⁺ R. Proof. subsetoid_tac R. Qed.
@@ -17,14 +17,17 @@ Lemma NonPos_subsetoid    `{SemiRingOrder (R:=R)} : SubSetoid R⁻ R. Proof. sub
 Lemma Pos_subsetoid `{StrictSemiRingOrder (R:=R)} : SubSetoid R₊ R. Proof. subsetoid_tac R. Qed.
 Lemma Neg_subsetoid `{StrictSemiRingOrder (R:=R)} : SubSetoid R₋ R. Proof. subsetoid_tac R. Qed.
 
-Hint Extern 0 (SubSetoid _⁺ _) => eapply @NonNeg_subsetoid : typeclass_instances. 
-Hint Extern 0 (SubSetoid _⁻ _) => eapply @NonPos_subsetoid : typeclass_instances. 
-Hint Extern 0 (SubSetoid _₊ _) => eapply @Pos_subsetoid    : typeclass_instances. 
-Hint Extern 0 (SubSetoid _₋ _) => eapply @Neg_subsetoid    : typeclass_instances. 
+Hint Extern 0 (SubSetoid _⁺ _) => eapply @NonNeg_subsetoid : typeclass_instances.
+Hint Extern 0 (SubSetoid _⁻ _) => eapply @NonPos_subsetoid : typeclass_instances.
+Hint Extern 0 (SubSetoid _₊ _) => eapply @Pos_subsetoid    : typeclass_instances.
+Hint Extern 0 (SubSetoid _₋ _) => eapply @Neg_subsetoid    : typeclass_instances.
 
 
 Section semiring_order.
   Context `{SemiRingOrder (R:=R)}.
+
+  Lemma nonneg_or_nonpos `{!TotalOrder R} x `{x ∊ R} : x ∊ R⁺ ∨ x ∊ R⁻.
+  Proof. destruct (total le 0 x); [left | right]; firstorder. Qed.
 
   Global Instance: ∀ `{z ∊ R}, OrderEmbedding R R (+z).
   Proof.
@@ -71,12 +74,17 @@ Section semiring_order.
   Lemma plus_le_compat_l x `{x ∊ R} y `{y ∊ R} z `{z ∊ R⁺} : x ≤ y → x ≤ z + y.
   Proof. rewrite_on R -> (commutativity (+) z y). exact (plus_le_compat_r x y z). Qed.
 
-  Lemma nonpos_plus_compat : Closed (R⁻ ==> R⁻ ==> R⁻) (+).
+  Lemma plus_le_compat_2 a `{a ∊ R} b `{b ∊ R} c `{c ∊ R}
+                         x `{x ∊ R} y `{y ∊ R} z `{z ∊ R}
+    : a ≤ b ≤ c → x ≤ y ≤ z → a + x ≤ b + y ≤ c + z.
+  Proof. intros [??] [??]. split; now apply (plus_le_compat _ _ _ _). Qed.
+
+  Lemma nonpos_plus_compat : Closed (R⁻ ⇀ R⁻ ⇀ R⁻) (+).
   Proof. intros x [??] y [??]. split. apply _. rewrite_on R <-(plus_0_r 0).
     apply (plus_le_compat x 0 y 0); solve_propholds.
   Qed.
 
-  Lemma nonneg_plus_compat : Closed (R⁺ ==> R⁺ ==> R⁺) (+).
+  Lemma nonneg_plus_compat : Closed (R⁺ ⇀ R⁺ ⇀ R⁺) (+).
   Proof. intros ?? ??. split. apply _. apply plus_le_compat_l; try apply _; firstorder. Qed.
 
   Lemma decompose_le `{x ∊ R} `{y ∊ R} : x ≤ y → ∃ `{z ∊ R⁺}, y = x + z.
@@ -156,21 +164,21 @@ Section semiring_order.
     now rewrite_on R <- Ea, (mult_0_r b), (plus_0_r (x*z)).
   Qed.
 
-  Lemma nonpos_mult : Closed (R⁻ ==> R⁻ ==> R⁺) (.*.).
+  Lemma nonpos_mult : Closed (R⁻ ⇀ R⁻ ⇀ R⁺) (.*.).
   Proof.
     intros x ? y [??]. destruct (_ : x ∊ R⁻). split. apply _.
     rewrite_on R <- (mult_0_r x).
     apply (flip_nonpos_mult_l y 0 x). solve_propholds.
   Qed.
 
-  Lemma nonpos_nonneg_mult : Closed (R⁻ ==> R⁺ ==> R⁻) (.*.).
+  Lemma nonpos_nonneg_mult : Closed (R⁻ ⇀ R⁺ ⇀ R⁻) (.*.).
   Proof.
     intros x ? y [??]. destruct (_ : x ∊ R⁻). split. apply _.
     rewrite_on R <- (mult_0_r x).
     apply (flip_nonpos_mult_l 0 y x). solve_propholds.
   Qed.
 
-  Lemma nonneg_nonpos_mult : Closed (R⁺ ==> R⁻ ==> R⁻) (.*.).
+  Lemma nonneg_nonpos_mult : Closed (R⁺ ⇀ R⁻ ⇀ R⁻) (.*.).
   Proof.
     intros x [??] y ?. destruct (_ : y ∊ R⁻). split. apply _.
     rewrite_on R <- (mult_0_l y).
@@ -227,10 +235,10 @@ Section strict_semiring_order.
   Lemma plus_lt_compat_l x `{x ∊ R} y `{y ∊ R} z `{z ∊ R₊} : x < y → x < z + y.
   Proof. rewrite_on R -> (commutativity (+) z y). exact (plus_lt_compat_r x y z). Qed.
 
-  Lemma neg_plus_compat : Closed (R₋ ==> R₋ ==> R₋) (+).
+  Lemma neg_plus_compat : Closed (R₋ ⇀ R₋ ⇀ R₋) (+).
   Proof. intros x [??] y [??]. split. apply _. rewrite_on R <-(plus_0_r 0). now apply (plus_lt_compat x 0 y 0). Qed.
 
-  Instance pos_plus_compat : Closed (R₊ ==> R₊ ==> R₊) (+).
+  Instance pos_plus_compat : Closed (R₊ ⇀ R₊ ⇀ R₊) (+).
   Proof. intros x ? y ?. split. apply _. apply (plus_lt_compat_l 0 y x); firstorder. Qed.
 
   Lemma compose_lt x `{x ∊ R} y `{y ∊ R} z `{z ∊ R₊} : y = x + z → x < y.
@@ -309,21 +317,21 @@ Section strict_semiring_order.
     now rewrite_on R <- Ea, (mult_0_r b), (plus_0_r (x*z)).
   Qed.
 
-  Lemma neg_mult : Closed (R₋ ==> R₋ ==> R₊) (.*.).
+  Lemma neg_mult : Closed (R₋ ⇀ R₋ ⇀ R₊) (.*.).
   Proof.
     intros x ? y [??]. destruct (_ : x ∊ R₋). split. apply _.
     rewrite_on R <- (mult_0_r x).
     apply (flip_neg_mult_l y 0 x). solve_propholds.
   Qed.
 
-  Lemma neg_pos_mult : Closed (R₋ ==> R₊ ==> R₋) (.*.).
+  Lemma neg_pos_mult : Closed (R₋ ⇀ R₊ ⇀ R₋) (.*.).
   Proof.
     intros x ? y [??]. destruct (_ : x ∊ R₋). split. apply _.
     rewrite_on R <- (mult_0_r x).
     apply (flip_neg_mult_l 0 y x). solve_propholds.
   Qed.
 
-  Lemma pos_neg_mult : Closed (R₊ ==> R₋ ==> R₋) (.*.).
+  Lemma pos_neg_mult : Closed (R₊ ⇀ R₋ ⇀ R₋) (.*.).
   Proof.
     intros x [??] y ?. destruct (_ : y ∊ R₋). split. apply _.
     rewrite_on R <- (mult_0_l y).
@@ -338,17 +346,17 @@ Hint Extern 8 (_ * _ ∊ _₊) => eapply @neg_mult : typeclass_instances.
 Hint Extern 8 (_ * _ ∊ _₋) => eapply @neg_pos_mult : typeclass_instances. 
 Hint Extern 8 (_ * _ ∊ _₋) => eapply @pos_neg_mult : typeclass_instances. 
 
-Lemma pos_nonzero `{PseudoSemiRingOrder (R:=R)} : R₊ ⊆ R ₀.
+Lemma pos_nonzero `{PseudoSemiRingOrder (R:=R)} : SubsetOf R₊ (R ₀).
 Proof. intros x [??]. split. apply _. unfold PropHolds in *.
   apply (apart_iff_total_lt _ _); tauto.
 Qed. 
-Hint Extern 5 (_₊ ⊆ _ ₀) => eapply @pos_nonzero : typeclass_instances.
+Hint Extern 5 (SubsetOf _₊ (_ ₀)) => eapply @pos_nonzero : typeclass_instances.
 
-Lemma neg_nonzero `{PseudoSemiRingOrder (R:=R)} : R₋ ⊆ R ₀.
+Lemma neg_nonzero `{PseudoSemiRingOrder (R:=R)} : SubsetOf R₋ (R ₀).
 Proof. intros x [??]. split. apply _. unfold PropHolds in *.
   apply (apart_iff_total_lt _ _); tauto.
 Qed. 
-Hint Extern 5 (_₋ ⊆ _ ₀) => eapply @neg_nonzero : typeclass_instances.
+Hint Extern 5 (SubsetOf _₋ (_ ₀)) => eapply @neg_nonzero : typeclass_instances.
 
 Hint Extern 15 (?x ∊ ?R ₀) => match goal with
   | el : x ∊ R₊  |- _ => eapply (pos_nonzero (R:=R) x el)
@@ -367,14 +375,17 @@ Section pseudo_semiring_order.
     now apply pseudo_srorder_pos_mult_compat.
   Qed.
 
-  Global Instance: StrongSetoid_Binary_Morphism R R R (+).
+  Instance: Strong_Binary_Morphism R R R (+).
   Proof.
-    assert (∀ `{z ∊ R}, StrongSetoid_Morphism R R (z +)).
+    assert (∀ `{z ∊ R}, Strong_Morphism R R (z +)).
      intros. apply pseudo_order_embedding_ext.
-    now apply strong_binary_setoid_morphism_commutative.
+    exact (strong_binary_morphism_commutative (+) _ _).
   Qed.
 
- Global Instance: ∀ `{z ∊ R}, StrongLeftCancellation (+) z R.
+  Instance pseudo_sring_order_strong_rng_ops: StrongRngOps R.
+  Proof. repeat (split; try apply _). Qed.
+
+  Global Instance: ∀ `{z ∊ R}, StrongLeftCancellation (+) z R.
   Proof.
     intros z ? x ? y ?.
     rewrite !apart_iff_total_lt; try apply _.
@@ -391,14 +402,14 @@ Section pseudo_semiring_order.
     destruct Ex; [left | right]; now split.
   Qed.
 
-  Global Instance strong_mult_nonzero: StrongSetoid_Binary_Morphism (R ₀) (R ₀) (R ₀) (.*.).
+  Global Instance strong_mult_nonzero: Strong_Binary_Morphism (R ₀) (R ₀) (R ₀) (.*.).
   Proof. split; try apply _.
   + intros x ? y ?; destruct (decompose_nonzero x), (decompose_nonzero y).
       apply pos_nonzero, _.
       apply neg_nonzero, _.
       apply neg_nonzero, _.
       apply pos_nonzero, _.
-  + intros x₁ ? y₁ ? x₂ ? y₂ ?. exact (strong_binary_extensionality (.*.) x₁ y₁ x₂ y₂).
+  + rewrite strong_ext_equiv_2. intros. now apply (strong_binary_extensionality (.*.)).
   Qed.
 
   Lemma neg_mult_decompose x `{x ∊ R} y `{y ∊ R} `{x * y ∊ R₋} : (x ∊ R₋ ∧ y ∊ R₊) ∨ (x ∊ R₊ ∧ y ∊ R₋).
@@ -421,7 +432,7 @@ Section pseudo_semiring_order.
     apply (not_lt_apart_lt_flip _ _).
      intros E2. apply (lt_flip _ _ E1).
      now apply (strictly_order_preserving (z *.)).
-    apply (strong_extensionality (z *.) _ _).
+    apply (strong_extensionality (z *.)).
     now apply (pseudo_order_lt_apart_flip _ _).
   Qed.
 
@@ -431,7 +442,7 @@ Section pseudo_semiring_order.
     apply (not_lt_apart_lt_flip _ _).
      intros E2. apply (lt_flip _ _ E1).
      now apply (strictly_order_preserving (.* z)).
-    apply (strong_extensionality (.* z) _ _).
+    apply (strong_extensionality (.* z)).
     now apply (pseudo_order_lt_apart_flip _ _).
   Qed.
 
@@ -458,10 +469,10 @@ Section pseudo_semiring_order.
   Qed.
 
   Global Instance: ∀ `{z ∊ R ₀}, LeftCancellation (.*.) z R.
-  Proof. intros. now apply _. Qed.
+  Proof. intros. apply _. Qed.
 
   Global Instance: ∀ `{z ∊ R ₀}, RightCancellation (.*.) z R.
-  Proof. intros. now apply _. Qed.
+  Proof. intros. apply _. Qed.
 
   Lemma square_pos x `{x ∊ R ₀} : x * x ∊ R₊ .
   Proof. destruct (decompose_nonzero x); apply _. Qed.
@@ -509,12 +520,24 @@ Section pseudo_semiring_order.
 
   Instance apart_0_2 : PropHolds (2 ≠ 0).
   Proof. red. subsymmetry. apply (pseudo_order_lt_apart _ _), lt_0_2. Qed.
+
+  Lemma gt_1_mult_compat x `{x ∊ R} y `{y ∊ R} : 1 < x → 1 < y → 1 < x * y.
+  Proof.
+    intros. assert (x ∊ R₊) by (split; [ apply _ | subtransitivity 1; exact lt_0_1 ]).
+    now apply (gt_1_mult_lt_compat_r _).
+  Qed.
+
 End pseudo_semiring_order.
+
+Hint Extern 5 (StrongRngOps _) => eapply @pseudo_sring_order_strong_rng_ops : typeclass_instances.
 
 Hint Extern 7 (PropHolds (0 < 1)) => eapply @lt_0_1 : typeclass_instances.
 Hint Extern 7 (PropHolds (0 < 2)) => eapply @lt_0_2 : typeclass_instances.
 Hint Extern 7 (PropHolds (0 < 3)) => eapply @lt_0_3 : typeclass_instances.
 Hint Extern 7 (PropHolds (0 < 4)) => eapply @lt_0_4 : typeclass_instances.
+Hint Extern 7 (PropHolds (1 < 2)) => eapply @lt_1_2 : typeclass_instances.
+Hint Extern 7 (PropHolds (1 < 3)) => eapply @lt_1_3 : typeclass_instances.
+Hint Extern 7 (PropHolds (1 < 4)) => eapply @lt_1_4 : typeclass_instances.
 Hint Extern 7 (PropHolds (2 ≠ 0)) => eapply @apart_0_2 : typeclass_instances.
 
 Section full_pseudo_semiring_order.
@@ -541,11 +564,23 @@ Section full_pseudo_semiring_order.
   Lemma not_pos_nonpos x `{x ∊ R} : ¬ x ∊ R₊ → x ∊ R⁻.
   Proof. split. apply _. apply (le_iff_not_lt_flip _ _). firstorder. Qed.
 
-  Lemma pos_nonneg : R₊ ⊆ R⁺ .
+  Lemma pos_nonneg : SubsetOf R₊ R⁺ .
   Proof. intros x ?. pose proof (Pos_subset). apply (not_neg_nonneg x), (pos_not_neg x). Qed.
 
-  Lemma neg_nonpos : R₋ ⊆ R⁻ .
+  Lemma neg_nonpos : SubsetOf R₋ R⁻ .
   Proof. intros x ?. pose proof (Neg_subset). apply (not_pos_nonpos x), (neg_not_pos x). Qed.
+
+  Lemma nonneg_nonzero_pos x `{x ∊ R⁺} `{x ∊ R ₀} : x ∊ R₊ .
+  Proof. destruct (decompose_nonzero x). trivial. pose proof (nonneg_not_neg x). contradiction. Qed.
+
+  Lemma nonpos_nonzero_neg x `{x ∊ R⁻} `{x ∊ R ₀} : x ∊ R₋ .
+  Proof. destruct (decompose_nonzero x); [| trivial]. pose proof (nonpos_not_pos x). contradiction. Qed.
+
+  Lemma nonneg_or_neg `{!StandardUnEq R} `{!SubDecision R R (=)} x `{x ∊ R} : x ∊ R⁺ ∨ x ∊ R₋ .
+  Proof. destruct (le_or_lt 0 x); [left|right]; firstorder. Qed.
+
+  Lemma pos_or_nonpos `{!StandardUnEq R} `{!SubDecision R R (=)} x `{x ∊ R} : x ∊ R₊ ∨ x ∊ R⁻ .
+  Proof. destruct (le_or_lt x 0); [right|left]; firstorder. Qed.
 
   Global Instance: SemiRingOrder R.
   Proof. split. apply _. apply _.
@@ -563,11 +598,11 @@ Section full_pseudo_semiring_order.
     apply (nonneg_not_neg y _).
   Qed.
 
-  Global Instance: ∀ `{z ∊ R₊}, OrderReflecting R R (z *.).
-  Proof. intros. now apply full_pseudo_order_reflecting. Qed.
+  Global Instance: ∀ `{z ∊ R₊}, OrderEmbedding R R (z *.).
+  Proof. split. pose proof pos_nonneg z _. apply _. now apply full_pseudo_order_reflecting. Qed.
 
-  Global Instance: ∀ `{z ∊ R₊}, OrderReflecting R R (.* z).
-  Proof. intros. now apply full_pseudo_order_reflecting. Qed.
+  Global Instance: ∀ `{z ∊ R₊}, OrderEmbedding R R (.* z).
+  Proof. split. pose proof pos_nonneg z _. apply _. now apply full_pseudo_order_reflecting. Qed.
 
   Lemma plus_lt_le_compat x₁ `{x₁ ∊ R} y₁ `{y₁ ∊ R} x₂ `{x₂ ∊ R} y₂ `{y₂ ∊ R}
     : x₁ < y₁ → x₂ ≤ y₂ → x₁ + x₂ < y₁ + y₂.
@@ -686,8 +721,8 @@ Section full_pseudo_semiring_order.
 
 End full_pseudo_semiring_order.
 
-Hint Extern 5 (_₊ ⊆ _⁺) => eapply @pos_nonneg : typeclass_instances.
-Hint Extern 5 (_₋ ⊆ _⁻) => eapply @neg_nonpos : typeclass_instances.
+Hint Extern 5 (SubsetOf _₊ _⁺) => eapply @pos_nonneg : typeclass_instances.
+Hint Extern 5 (SubsetOf _₋ _⁻) => eapply @neg_nonpos : typeclass_instances.
 
 Hint Extern 15 (?x ∊ ?R⁺) => match goal with
   | el : x ∊ R₊  |- _ => eapply (pos_nonneg (R:=R) x el)
@@ -713,12 +748,12 @@ Section nonneg.
     | |- Setoid _ => apply _
     | |- mon_unit ∊ R⁺ => eexact (_ : 0 ∊ R⁺)
     | |- 1 ∊ R⁺ => apply _
-    | |- Setoid_Binary_Morphism _ _ _ (@sg_op _ ?op) =>
+    | |- Morphism _ (@sg_op _ ?op) =>
          let op := match op with
          | plus_is_sg_op => constr:(plus)
          | mult_is_sg_op => constr:(mult)
-         end in change (Setoid_Binary_Morphism R⁺ R⁺ R⁺ op);
-         split; try apply _; intros ?? E1 ?? E2; unfold_sigs; red_sig;
+         end in change (Morphism (R⁺ ⇒ R⁺ ⇒ R⁺) op);
+         apply binary_morphism_proper_back; intros ?? E1 ?? E2; unfold_sigs; red_sig;
          now rewrite_on R -> E1,E2
     | |- _ => split
     | |- _ => rewrite (_:R⁺ ⊆ R); apply _
@@ -732,13 +767,13 @@ Section nonneg.
   Proof. rewrite (_:R⁺ ⊆ R); apply _. Qed.
 
   Instance: PseudoSemiRingOrder R⁺.
-  Proof. split; try apply _.
+  Proof. split. apply _. apply _.
   + intros x ? y ? E. exact (decompose_le (not_lt_le_flip _ _ E)).
   + intros z ?. split; (split; [split;apply _|]); intros x ? y ?.
     exact (strictly_order_preserving (z+) x y).
     exact (strictly_order_reflecting (z+) x y).
-  + split; try apply _. intros x₁ ? y₁ ? x₂ ? y₂ ? .
-    exact (strong_binary_extensionality _ _ _ _ _).
+  + split. apply _. rewrite strong_ext_equiv_2. intros.
+    now apply (strong_binary_extensionality (.*.)).
   + intros x xe y ye.
     rewrite nonneg_pos_is_pos in xe.
     rewrite nonneg_pos_is_pos in ye.
@@ -748,6 +783,17 @@ Section nonneg.
 
   Instance nonneg_semiring_order : FullPseudoSemiRingOrder R⁺.
   Proof. split. apply _. intros x ? y ?. exact (le_iff_not_lt_flip _ _). Qed.
+
+  Lemma semiring_mor_nonneg_mor `{SemiRing (R:=R2)} (f : R ⇀ R2) `{!SemiRing_Morphism R R2 f}
+  : SemiRing_Morphism R⁺ R2 f.
+  Proof. apply semiring_morphism_alt; try apply _.
+  + rewrite <- (_ : SubsetOf (R ⇒ R2) (R⁺ ⇒ R2)). apply _.
+  + intros x ? y ?. exact (preserves_plus x y).
+  + intros x ? y ?. exact (preserves_mult x y).
+  + exact preserves_0.
+  + exact preserves_1.
+  Qed.
+
 End nonneg.
 Hint Extern 5 (SemiRing _⁺) => eapply @nonneg_semiring : typeclass_instances.
 Hint Extern 5 (CommutativeSemiRing _⁺) => eapply @nonneg_comsemiring : typeclass_instances.
@@ -780,7 +826,7 @@ Section dec_semiring_order.
       pose proof (_ : x * y ∊ R⁺). firstorder.
     * assert (x ∊ R ₀) by (split; [| red; subsymmetry]; firstorder).
       assert (y ∊ R ₀) by (split; [| red; subsymmetry]; firstorder).
-      pose proof (_ : x * y ∊ R ₀). subsymmetry. firstorder.
+      pose proof (dec_mult_nonzero x _ y _). subsymmetry. firstorder.
   Qed.
 
   Instance dec_full_pseudo_srorder: FullPseudoSemiRingOrder R.
@@ -793,7 +839,7 @@ End dec_semiring_order.
 Section another_semiring.
   Context `{SemiRingOrder (R:=R1)}.
 
-  Lemma projected_srorder `{SemiRing B (R:=R2)} `{Le B} (f : R2 ⇀ R1)
+  Lemma projected_srorder `{SemiRing (R:=R2)} `{Le _} (f : R2 ⇀ R1)
       `{!SemiRing_Morphism R2 R1 f} `{!Injective R2 R1 f} :
     (∀ `{x ∊ R2} `{y ∊ R2}, x ≤ y ↔ f x ≤ f y) 
   → (∀ `{x ∊ R2} `{y ∊ R2}, x ≤ y → ∃ `{z ∊ R2}, y = x + z) → SemiRingOrder R2.
@@ -801,10 +847,10 @@ Section another_semiring.
     intros P ?. pose proof (projected_partial_order f P).
     split. apply _. apply _. assumption.
     split; (split; [split; apply _ |]); intros; apply (P _ _ _ _).
-    + rewrite_on R1 -> (preserves_plus z x), (preserves_plus z y).
+    + rewrite 2!(R1 $ preserves_plus _ _).
       now apply (order_preserving _ _ _), P.
     + apply (order_reflecting (f z +) _ _).
-      rewrite_on R1 <- (preserves_plus z x), <- (preserves_plus z y).
+      rewrite <- 2!(R1 $ preserves_plus _ _).
       now apply (P _ _ _ _).
     + intros x ? y ?.
       cut (f x * f y ∊ R1⁺).
@@ -815,22 +861,43 @@ Section another_semiring.
       apply _.
    Qed.
 
-  Context `{SemiRingOrder (R:=R2)} {f : R1 ⇀ R2} `{!SemiRing_Morphism R1 R2 f}.
+  Context `{SemiRingOrder (R:=R2)} (f : R1 ⇀ R2).
+
+  Section preserves_sign.
+    Context `{!AdditiveMonoid_Morphism R1 R2 f}.
+
+    Instance preserves_nonneg `{!OrderPreserving R1 R2 f} x `{x ∊ R1⁺} : f x ∊ R2⁺ .
+    Proof. split. apply _. rewrite_on R2 <- preserves_0. apply (order_preserving f _ _). firstorder. Qed.
+
+    Instance preserves_nonpos `{!OrderPreserving R1 R2 f} x `{x ∊ R1⁻} : f x ∊ R2⁻ .
+    Proof. destruct (_:x ∊ R1⁻). split. apply _. rewrite_on R2 <- preserves_0. now apply (order_preserving f _ _). Qed.
+
+    Instance reflects_nonneg `{!OrderReflecting R1 R2 f} x `{x ∊ R1} `{f x ∊ R2⁺} : x ∊ R1⁺.
+    Proof. split. apply _. apply (order_reflecting f _ _). rewrite_on R2 ->preserves_0. firstorder. Qed.
+
+    Instance reflects_nonpos `{!OrderReflecting R1 R2 f} x `{x ∊ R1} `{f x ∊ R2⁻} : x ∊ R1⁻ .
+    Proof. split. apply _. apply (order_reflecting f _ _). rewrite_on R2 ->preserves_0. firstorder. Qed.
+
+    Lemma embeds_nonneg `{!OrderEmbedding R1 R2 f} x `{x ∊ R1} : x ∊ R1⁺ ↔ f x ∊ R2⁺ .
+    Proof. split; intro; apply _. Qed.
+
+    Lemma embeds_nonpos `{!OrderEmbedding R1 R2 f} x `{x ∊ R1} : x ∊ R1⁻ ↔ f x ∊ R2⁻ .
+    Proof. split; intro; apply _. Qed.
+
+  End preserves_sign.
+
+  Context `{!SemiRing_Morphism R1 R2 f}.
+
+  Existing Instance closed_range.
 
   (* If a morphism agrees on the positive cone then it is order preserving *)
-  Lemma preserving_preserves_nonneg : Closed (R1⁺ ==> R2⁺) f → OrderPreserving R1 R2 f.
+  Lemma preserving_preserves_nonneg `{!Closed (R1⁺ ⇀ R2⁺) f} : OrderPreserving R1 R2 f.
   Proof.
-    intro. repeat (split; try apply _). intros x ? y ? F.
+    repeat (split; try apply _). intros x ? y ? F.
     destruct (decompose_le F) as [z [? Ez]].
     apply (compose_le _ _ (f z)).
     rewrite_on R1 -> Ez. now rewrite_on R2 -> (preserves_plus x z).
   Qed.
-
-  Instance preserves_nonneg `{!OrderPreserving R1 R2 f} x `{x ∊ R1⁺} : f x ∊ R2⁺ .
-  Proof. split. apply _. rewrite_on R2 <- preserves_0. apply (order_preserving f _ _). firstorder. Qed.
-
-  Instance preserves_nonpos `{!OrderPreserving R1 R2 f} x `{x ∊ R1⁻} : f x ∊ R2⁻ .
-  Proof. destruct (_:x ∊ R1⁻). split. apply _. rewrite_on R2 <- preserves_0. now apply (order_preserving f _ _). Qed.
 
   Lemma preserves_ge_1 `{!OrderPreserving R1 R2 f} x `{x ∊ R1} : 1 ≤ x → 1 ≤ f x.
   Proof. intros. rewrite_on R2 <- preserves_1. now apply (order_preserving f _ _). Qed.
@@ -842,18 +909,18 @@ End another_semiring.
 Section another_semiring_strict.
   Context `{StrictSemiRingOrder (R:=R1)}. 
 
-  Lemma projected_strict_srorder `{SemiRing B (R:=R2)} `{Lt B} (f : R2 ⇀ R1)
+  Lemma projected_strict_srorder `{SemiRing (R:=R2)} `{Lt _} (f : R2 ⇀ R1)
       `{!SemiRing_Morphism R2 R1 f} :
     (∀ `{x ∊ R2} `{y ∊ R2}, x < y ↔ f x < f y) 
   → (∀ `{x ∊ R2} `{y ∊ R2}, x < y → ∃ `{z ∊ R2}, y = x + z) → StrictSemiRingOrder R2.
   Proof.
-    intros P ?. pose proof (projected_sub_strict_order f P).
+    intros P ?. pose proof (projected_strict_order f P).
     split. apply _. apply _. assumption.
     split; (split; [split; apply _ |]); intros; apply (P _ _ _ _).
-    + rewrite_on R1 -> (preserves_plus z x), (preserves_plus z y).
+    + rewrite 2!(R1 $ preserves_plus _ _).
       now apply (strictly_order_preserving _ _ _), P.
     + apply (strictly_order_reflecting (f z +) _ _).
-      rewrite_on R1 <- (preserves_plus z x), <- (preserves_plus z y).
+      rewrite <- 2!(R1 $ preserves_plus _ _).
       now apply (P _ _ _ _).
     + intros x ? y ?.
       cut (f x * f y ∊ R1₊).
@@ -864,21 +931,42 @@ Section another_semiring_strict.
       apply _.
   Qed.
 
-  Context `{StrictSemiRingOrder (R:=R2)} (f : R1 ⇀ R2) `{!SemiRing_Morphism R1 R2 f}.
+  Context `{StrictSemiRingOrder (R:=R2)} (f : R1 ⇀ R2).
 
-  Lemma strictly_preserving_preserves_pos : Closed (R1₊ ==> R2₊) f → StrictlyOrderPreserving R1 R2 f.
+  Section preserves_sign.
+    Context `{!AdditiveMonoid_Morphism R1 R2 f}.
+
+    Instance preserves_pos `{!StrictlyOrderPreserving R1 R2 f} x `{x ∊ R1₊} : f x ∊ R2₊ .
+    Proof. split. apply _. rewrite_on R2 <- preserves_0. apply (strictly_order_preserving f _ _). firstorder. Qed.
+
+    Instance preserves_neg `{!StrictlyOrderPreserving R1 R2 f} x `{x ∊ R1₋} : f x ∊ R2₋ .
+    Proof. destruct (_:x ∊ R1₋). split. apply _. rewrite_on R2 <- preserves_0. now apply (strictly_order_preserving f _ _). Qed.
+
+    Instance reflects_pos `{!StrictlyOrderReflecting R1 R2 f} x `{x ∊ R1} `{f x ∊ R2₊} : x ∊ R1₊ .
+    Proof. split. apply _. apply (strictly_order_reflecting f _ _). rewrite_on R2 ->preserves_0. firstorder. Qed.
+
+    Instance reflects_neg `{!StrictlyOrderReflecting R1 R2 f} x `{x ∊ R1} `{f x ∊ R2₋} : x ∊ R1₋ .
+    Proof. split. apply _. apply (strictly_order_reflecting f _ _). rewrite_on R2 ->preserves_0. firstorder. Qed.
+
+    Lemma embeds_pos `{!StrictOrderEmbedding R1 R2 f} x `{x ∊ R1} : x ∊ R1₊ ↔ f x ∊ R2₊ .
+    Proof. split; intro; apply _. Qed.
+
+    Lemma embeds_neg `{!StrictOrderEmbedding R1 R2 f} x `{x ∊ R1} : x ∊ R1₋ ↔ f x ∊ R2₋ .
+    Proof. split; intro; apply _. Qed.
+
+  End preserves_sign.
+
+  Context `{!SemiRing_Morphism R1 R2 f}.
+
+  Existing Instance closed_range.
+
+  Lemma strictly_preserving_preserves_pos `{!Closed (R1₊ ⇀ R2₊) f} : StrictlyOrderPreserving R1 R2 f.
   Proof.
-    intro. repeat (split; try apply _). intros x ? y ? F.
+    repeat (split; try apply _). intros x ? y ? F.
     destruct (decompose_lt F) as [z [? Ez]].
     apply (compose_lt _ _ (f z)).
     rewrite_on R1 -> Ez. now rewrite_on R2 -> (preserves_plus x z).
   Qed.
-
-  Instance preserves_pos `{!StrictlyOrderPreserving R1 R2 f} x `{x ∊ R1₊} : f x ∊ R2₊ .
-  Proof. split. apply _. rewrite_on R2 <- preserves_0. apply (strictly_order_preserving f _ _). firstorder. Qed.
-
-  Instance preserves_neg `{!StrictlyOrderPreserving R1 R2 f} x `{x ∊ R1₋} : f x ∊ R2₋ .
-  Proof. destruct (_:x ∊ R1₋). split. apply _. rewrite_on R2 <- preserves_0. now apply (strictly_order_preserving f _ _). Qed.
 
   Lemma preserves_gt_1 `{!StrictlyOrderPreserving R1 R2 f} x `{x ∊ R1} : 1 < x → 1 < f x.
   Proof. intros. rewrite_on R2 <- preserves_1. now apply (strictly_order_preserving f _ _). Qed.
@@ -888,13 +976,25 @@ Section another_semiring_strict.
 
 End another_semiring_strict.
 
-(* Due to bug #2528 *)
+Ltac preserves_sign_tac lem:= 
+  match goal with |- ?f ?x ∊ _ => match type of f with
+  | elt_type (_ ⇀ _) => eapply lem
+  end end.
+
+Hint Extern 7 (_ ∊ _⁺) => preserves_sign_tac @preserves_nonneg : typeclass_instances.
+Hint Extern 7 (_ ∊ _₊) => preserves_sign_tac @preserves_pos : typeclass_instances.
+Hint Extern 7 (_ ∊ _⁻) => preserves_sign_tac @preserves_nonpos : typeclass_instances.
+Hint Extern 7 (_ ∊ _₋) => preserves_sign_tac @preserves_neg : typeclass_instances.
+
 (*
-Hint Extern 15 (PropHolds (_ ≤ _ _)) => eapply @preserves_nonneg : typeclass_instances.
-Hint Extern 15 (PropHolds (_ < _ _)) => eapply @preserves_pos : typeclass_instances.
+Section another_semiring_pseudo.
+  Context `{PseudoSemiRingOrder (R:=R1)} `{PseudoSemiRingOrder (R:=R2)}.
+  Context (f : R1 ⇀ R2) `{!SemiRing_Morphism R1 R2 f}.
+
+  Instance preserves_nonzero `{!StrictlyOrderPreserving R1 R2 f} x `{x ∊ R1 ₀} : f x ∊ R2 ₀.
+  Proof. destruct (decompose_nonzero x); [ apply pos_nonzero | apply neg_nonzero ]; apply _. Qed.
+End another_semiring_pseudo.
 *)
-(* Oddly enough, the above hints do not work for goals of the following shape? *)
 (*
-Hint Extern 15 (PropHolds (_ ≤ '_)) => eapply @preserves_nonneg : typeclass_instances.
-Hint Extern 15 (PropHolds (_ < '_)) => eapply @preserves_pos : typeclass_instances.
+Hint Extern 15 (_ _ ∊ _ ₀) => eapply @preserves_nonzero : typeclass_instances.
 *)

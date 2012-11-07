@@ -3,9 +3,21 @@ Require
   theory.nat_distance.
 Require Import
   interfaces.naturals abstract_algebra natpair_integers
-  theory.setoids misc.quote.
+  theory.setoids misc.quote theory.integral_domains.
 Require Export
   interfaces.integers.
+
+Section integers_to_ring_hints.
+  Context `{Integers (Z:=Z)} `{CommutativeRing (R:=R)}.
+  Existing Instance integers_to_ring_mor.
+  Instance integers_to_ring_morphism : Morphism (Z ⇒ R) (integers_to_ring Z R) := _.
+End integers_to_ring_hints.
+Hint Extern 2 (Morphism _ (integers_to_ring _ _)) => class_apply @integers_to_ring_morphism : typeclass_instances.
+Hint Extern 2 (Rng_Morphism _ _ (integers_to_ring _ _)) => class_apply @ringmor_rngmor : typeclass_instances.
+Hint Extern 2 (SemiRng_Morphism _ _ (integers_to_ring _ _)) => class_apply @sringmor_srng_mor : typeclass_instances.
+Hint Extern 2 (AdditiveMonoid_Morphism _ _ (integers_to_ring _ _)) => class_apply @srngmor_plus_mor : typeclass_instances.
+Hint Extern 2 (AdditiveSemiGroup_Morphism _ _ (integers_to_ring _ _)) => class_apply @rngmor_plus_mor : typeclass_instances.
+Hint Extern 2 (MultiplicativeSemiGroup_Morphism _ _ (integers_to_ring _ _)) => class_apply @rngmor_mult_mor : typeclass_instances.
 
 Lemma to_ring_unique `{Integers (Z:=Z)} `{CommutativeRing (R:=R)} (f:Z ⇀ R) `{!Ring_Morphism Z R f} x `{x ∊ Z} :
   f x = integers_to_ring Z R x.
@@ -34,7 +46,7 @@ Proof to_ring_unique_alt (f ∘ g) h x.
 Lemma to_ring_self `{Integers (Z:=Z)} (f:Z ⇀ Z) `{!Ring_Morphism Z Z f} x `{x ∊ Z} : f x = x.
 Proof to_ring_unique_alt f id x.
 
-(* A ring morphism from integers to another ring is injective if there's an injection in the other direction: *)
+(** A ring morphism from integers to another ring is injective if there's an injection in the other direction: *)
 Lemma to_ring_injective `{Integers (Z:=Z)} `{CommutativeRing (R:=R)}
    (f:R ⇀ Z) (g:Z ⇀ R) `{!Ring_Morphism R Z f} `{!Ring_Morphism Z R g}: Injective Z R g.
 Proof.
@@ -69,19 +81,19 @@ Section retract_is_int.
   Program Instance retract_is_int: Integers Z2 (U:=retract_is_int_to_ring).
   Next Obligation. unfold integers_to_ring, retract_is_int_to_ring. apply _. Qed.
   Next Obligation. unfold integers_to_ring, retract_is_int_to_ring.
-    intros x y F. unfold_sigs. red_sig. rewrite_on Z2 <- F.
-    subtransitivity ((h ∘ (f ∘ f⁻¹)) x); unfold compose.
-      now rewrite_on Z2 -> (jections.surjective_applied f x).
+    intros x y F. unfold_sigs. red_sig. rewrite_on Z2 -> F.
+    subtransitivity ((h ∘ (f ∘ f⁻¹)) y); unfold compose.
+      now rewrite_on Z2 -> (jections.surjective_applied f y).
     exact (to_ring_unique (h ∘ f) _).
   Qed.
 End retract_is_int.
 
 Section contents.
-Context `{Integers A (Z:=Z)}.
+Context `{Integers (Z:=Z)}.
 Notation nat := (every nat).
 Notation Z_to_natp := (integers_to_ring Z (SRpair nat)).
 
-Global Program Instance: SubDecision Z Z (=) | 10 := λ x _ y _,
+Global Program Instance: StrongSubDecision Z Z (=) | 10 := λ x y,
   match decide_sub (=) (Z_to_natp x) (Z_to_natp y) with
   | left E => left _
   | right E => right _
@@ -104,9 +116,9 @@ Next Obligation. pose proof p _ as [? E]. clear dependent p. split. apply _.
   exact (naturals.to_semiring_twice _ _ _ _).
 Qed.
 
-Context `{UnEq A} `{!StandardUnEq Z}.
+Context `{UnEq _} `{!StandardUnEq Z}.
 
-Instance: PropHolds ((1:A) ≠ 0).
+Instance: PropHolds ((1:Z) ≠ 0).
 Proof. generalize naturals.nat_nontrivial. rewrite 2!(standard_uneq _ _). intro E. mc_contradict E.
   apply (injective (naturals_to_semiring nat Z) _ _). now preserves_simplify (naturals_to_semiring nat Z).
 Qed.
@@ -119,5 +131,5 @@ Proof. intros x ? y ? E.
     apply (injective Z_to_natp _ _); now preserves_simplify (Z_to_natp).
 Qed.
 
-Global Instance: IntegralDomain Z := {}.
+Global Instance: IntegralDomain Z := dec_intdom.
 End contents.

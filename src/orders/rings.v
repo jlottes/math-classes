@@ -3,12 +3,12 @@ Require Import
 Require Export
   orders.semirings.
 
-Lemma ring_partial_minus `{Ring A (R:=R)} (l:relation A) x `{x ∊ R} y `{y ∊ R} : l x y → ∃ `{z ∊ R}, y = x + z.
+Lemma ring_partial_minus `{Ring (R:=R)} (l:relation _) x `{x ∊ R} y `{y ∊ R} : l x y → ∃ `{z ∊ R}, y = x + z.
 Proof. intro. exists_sub (- x + y).
   now rewrite_on R -> (associativity (+) x (-x) y), (plus_negate_r x), (plus_0_l y).
 Qed.
 
-Lemma ring_embedding `{Ring A (R:=R)} (l:relation A) `{!Proper ((R,=)==>(R,=)==>iff) l}
+Lemma ring_embedding `{Ring (R:=R)} (l:relation _) `{!Proper ((R,=)==>(R,=)==>iff) l}
   (plus_spec : ∀ `{z ∊ R} `{x ∊ R} `{y ∊ R}, l x y → l (z + x) (z + y))
   z `{z ∊ R} x `{x ∊ R} y `{y ∊ R} : l (z + x) (z + y) → l x y.
 Proof.
@@ -19,43 +19,43 @@ Proof.
 Qed.
 
 Lemma from_ring_order
- `{Ring A (R:=R)} `{Le A} `{!PartialOrder R}
+ `{Ring (R:=R)} `{Le _} `{!PartialOrder R}
   (plus_spec : ∀ `{z ∊ R}, OrderPreserving R R (z +))
-  (mult_spec : Closed (R⁺ ==> R⁺ ==> R⁺) (.*.))
+  (mult_spec : Closed (R⁺ ⇀ R⁺ ⇀ R⁺) (.*.))
   : SemiRingOrder R.
 Proof. intros. repeat (split; try apply _). apply ring_partial_minus.
   exact (ring_embedding (≤) (λ z (_:z ∊ R), order_preserving (z+)) z).
 Qed.
 
 Lemma from_strict_ring_order
- `{Ring A (R:=R)} `{Lt A} `{!StrictSetoidOrder R}
+ `{Ring (R:=R)} `{Lt _} `{!StrictSetoidOrder R}
   (plus_spec : ∀ `{z ∊ R}, StrictlyOrderPreserving R R (z +))
-  (mult_spec : Closed (R₊ ==> R₊ ==> R₊) (.*.))
+  (mult_spec : Closed (R₊ ⇀ R₊ ⇀ R₊) (.*.))
   : StrictSemiRingOrder R.
 Proof. intros. repeat (split; try apply _). apply ring_partial_minus.
   exact (ring_embedding (<) (λ z (_:z ∊ R), strictly_order_preserving (z+)) z).
 Qed.
 
 Lemma from_pseudo_ring_order
- `{Ring A (R:=R)} `{UnEq A} `{Lt A} `{!PseudoOrder R}
+ `{Ring (R:=R)} `{UnEq _} `{Lt _} `{!PseudoOrder R}
   (plus_spec : ∀ `{z ∊ R}, StrictlyOrderPreserving R R (z +))
-  (mult_ext : StrongSetoid_Binary_Morphism R R R (.*.))
-  (mult_spec : Closed (R₊ ==> R₊ ==> R₊) (.*.))
+  (mult_ext : Strong_Binary_Morphism R R R (.*.))
+  (mult_spec : Closed (R₊ ⇀ R₊ ⇀ R₊) (.*.))
   : PseudoSemiRingOrder R.
 Proof. intros. repeat (split; try apply _). apply ring_partial_minus.
   exact (ring_embedding (<) (λ z (_:z ∊ R), strictly_order_preserving (z+)) z).
 Qed.
 
 Lemma from_full_pseudo_ring_order
- `{Ring A (R:=R)} `{UnEq A} `{Le A} `{Lt A} `{!FullPseudoOrder R}
+ `{Ring (R:=R)} `{UnEq _} `{Le _} `{Lt _} `{!FullPseudoOrder R}
   (plus_spec : ∀ `{z ∊ R}, StrictlyOrderPreserving R R (z +))
-  (mult_ext : StrongSetoid_Binary_Morphism R R R (.*.))
-  (mult_spec : Closed (R₊ ==> R₊ ==> R₊) (.*.))
+  (mult_ext : Strong_Binary_Morphism R R R (.*.))
+  (mult_spec : Closed (R₊ ⇀ R₊ ⇀ R₊) (.*.))
   : FullPseudoSemiRingOrder R.
 Proof. split. now apply from_pseudo_ring_order. now apply le_iff_not_lt_flip. Qed.
 
 Section ring_order.
-  Context `{Ring A (R:=R)} `{Le A} `{!SemiRingOrder R}.
+  Context `{Ring (R:=R)} `{Le _} `{!SemiRingOrder R}.
 
   Lemma flip_le_negate x `{x ∊ R} y `{y ∊ R} : -y ≤ -x ↔ x ≤ y.
   Proof. cut (∀ `{a ∊ R} `{b ∊ R}, a ≤ b → -b ≤ -a). intro P.
@@ -79,7 +79,7 @@ Hint Extern 4 (-_ ∊ _⁻) => eapply @nonneg_negate : typeclass_instances.
 Hint Extern 4 (-_ ∊ _⁺) => eapply @nonpos_negate : typeclass_instances.
 
 Section more_ring_order.
-  Context `{Ring A (R:=R)} `{Le A} `{!SemiRingOrder R}.
+  Context `{Ring (R:=R)} `{Le _} `{!SemiRingOrder R}.
 
   Lemma negate_nonpos_nonneg x `{x ∊ R} : -x ∊ R⁻ → x ∊ R⁺.
   Proof. intro. rewrite_on R <- (negate_involutive x). apply _. Qed.
@@ -127,7 +127,7 @@ Section more_ring_order.
   Qed.
 
   Lemma nonneg_minus_compat_back x `{x ∊ R} y `{y ∊ R} z `{z ∊ R⁺} : x ≤ y - z → x ≤ y.
-  Proof. intros. subtransitivity (y-z). apply (nonneg_minus_compat _ _ _). subreflexivity. Qed.
+  Proof. intros. subtransitivity (y-z). now apply (nonneg_minus_compat _ _ _). Qed.
 
   Lemma between_nonneg x `{x ∊ R⁺} : -x ≤ x.
   Proof. pose proof (nonneg_negate x). subtransitivity 0; firstorder. Qed.
@@ -135,7 +135,7 @@ Section more_ring_order.
 End more_ring_order.
 
 Section strict_ring_order.
-  Context `{Ring A (R:=R)} `{Lt A} `{!StrictSemiRingOrder R}.
+  Context `{Ring (R:=R)} `{Lt _} `{!StrictSemiRingOrder R}.
 
   Lemma flip_lt_negate x `{x ∊ R} y `{y ∊ R} : -y < -x ↔ x < y.
   Proof. cut (∀ `{a ∊ R} `{b ∊ R}, a < b → -b < -a). intro P.
@@ -159,7 +159,7 @@ Hint Extern 4 (-_ ∊ _₋) => eapply @pos_negate : typeclass_instances.
 Hint Extern 4 (-_ ∊ _₊) => eapply @neg_negate : typeclass_instances.
 
 Section more_strict_ring_order.
-  Context `{Ring A (R:=R)} `{Lt A} `{!StrictSemiRingOrder R}.
+  Context `{Ring (R:=R)} `{Lt _} `{!StrictSemiRingOrder R}.
 
   Lemma negate_neg_pos x `{x ∊ R} : -x ∊ R₋ → x ∊ R₊.
   Proof. intro. rewrite_on R <- (negate_involutive x). apply _. Qed.
@@ -239,31 +239,30 @@ End another_strict_ring_order.
 
 Section another_pseudo_ring_order.
   Context `{Ring A (R:=R1)} `{UnEq A} `{Lt A} `{!PseudoSemiRingOrder R1}
-          `{Ring B (R:=R2)} `{UnEq B} `{Lt B}.
+          `{Ring B (R:=R2)} `{UnEq B} `{Lt B} `{!StrongSetoid R2}.
 
   Existing Instance pseudo_order_setoid.
 
   Lemma projected_pseudo_ring_order (f:R2 ⇀ R1) `{!Ring_Morphism R2 R1 f} `{!StrongInjective R2 R1 f} :
     (∀ `{x ∊ R2} `{y ∊ R2}, x < y ↔ f x < f y) → PseudoSemiRingOrder R2.
   Proof.
-    intros P. pose proof (projected_pseudo_order f P).
+    intros P.
+    pose proof (projected_pseudo_order f P).
     pose proof (projected_strict_ring_order f P).
     apply from_pseudo_ring_order. apply _.
-    (*pose proof (pseudo_order_setoid : StrongSetoid R1).
-    pose proof (pseudo_order_setoid : StrongSetoid R2).*)
     pose proof (strong_injective_mor f).
-    repeat (split; try apply _).
+    repeat (split; try apply _). rewrite strong_ext_equiv_2.
     intros x₁ ? y₁ ? x₂ ? y₂ ? E.
     apply (strong_injective f _ _) in E.
     rewrite 2!(R1 $ preserves_mult _ _) in E.
-    destruct (strong_binary_extensionality (.*.) _ _ _ _ E); [left | right]; now apply (strong_extensionality f).
+    destruct (strong_binary_extensionality (.*.) E); [left | right]; now apply (strong_extensionality f).
     exact pos_mult_compat.
   Qed.
 End another_pseudo_ring_order.
 
 Section another_full_pseudo_ring_order.
   Context `{Ring A (R:=R1)} `{UnEq A} `{Le A} `{Lt A} `{!FullPseudoSemiRingOrder R1}
-          `{Ring B (R:=R2)} `{UnEq B} `{Le B} `{Lt B}.
+          `{Ring B (R:=R2)} `{UnEq B} `{Le B} `{Lt B} `{!StrongSetoid R2}.
 
   Lemma projected_full_pseudo_ring_order (f:R2 ⇀ R1) `{!Ring_Morphism R2 R1 f} `{!StrongInjective R2 R1 f} :
       (∀ `{x ∊ R2} `{y ∊ R2}, x ≤ y ↔ f x ≤ f y)

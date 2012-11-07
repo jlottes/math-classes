@@ -1,7 +1,7 @@
 Require Import
   abstract_algebra interfaces.naturals interfaces.orders
   theory.setoids theory.common_props theory.naturals theory.rings peano_naturals.
-Require Import Ring stdlib_ring misc.quote.
+Require Import stdlib_ring misc.quote.
 Require Export
   orders.semirings.
 
@@ -13,14 +13,28 @@ In particular, we show that given another non trivial pseudo semiring order
 (that not necessarily has to satisfy the biinduction principle, for example
 the rationals or the reals), any morphism to it is an order embedding.
 *)
-Lemma to_semiring_nonneg `{FullPseudoSemiRingOrder (R:=N)}
-  `{!NaturalsToSemiRing N} `{!Naturals N} `{FullPseudoSemiRingOrder (R:=R)}
-  {f: N ⇀ R} `{!SemiRing_Morphism N R f} n `{n ∊ N} : f n ∊ R⁺.
-Proof.
-  pose proof pseudo_srorder_semiring (R:=R).
-  generalize dependent n. apply naturals.induction; [ solve_proper |..];
-  intros; preserves_simplify f; apply _.
-Qed.
+Section to_semiring_nonneg.
+  Context `{Naturals (N:=N)} `{FullPseudoSemiRingOrder (R:=R)}
+    {f: N ⇀ R} `{!SemiRing_Morphism N R f}.
+
+  Existing Instance pseudo_srorder_semiring.
+
+  Instance to_semiring_nonneg n `{n ∊ N} : f n ∊ R⁺.
+  Proof.
+    pose proof pseudo_srorder_semiring (R:=R).
+    generalize dependent n. apply naturals.induction; [ solve_proper |..];
+    intros; preserves_simplify f; apply _.
+  Qed.
+
+  Lemma to_semiring_nonneg_mor : SemiRing_Morphism N R⁺ f.
+  Proof. apply semiring_morphism_alt; try apply _.
+  + intros ?? E. unfold_sigs. red_sig. now rewrite_on N -> E.
+  + exact preserves_plus.
+  + exact preserves_mult.
+  + exact preserves_0.
+  + firstorder.
+  Qed.
+End to_semiring_nonneg.
 
 Section nat_int_order.
 Context `{FullPseudoSemiRingOrder (R:=R)} `{!CommutativeSemiRing R} `{!Biinduction R} `{PropHolds (1 ≠ 0)}.
@@ -31,7 +45,6 @@ Existing Instance to_semiring_nonneg.
 
 (* Hmm, can we avoid using nat here? *)
 Notation nat := (every nat).
-Local Coercion subset_to_type: Subset >-> Sortclass.
 
 Ltac pres_simp := preserves_simplify (naturals_to_semiring nat R).
 
@@ -133,3 +146,5 @@ Section another_semiring.
   Proof. split; try apply _. apply full_pseudo_order_reflecting. Qed.
 End another_semiring.
 End nat_int_order.
+
+Hint Extern 5 (naturals_to_semiring _ _ _ ∊ _⁺) => eapply @to_semiring_nonneg : typeclass_instances.

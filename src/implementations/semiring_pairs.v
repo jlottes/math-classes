@@ -1,14 +1,18 @@
 Require Import
-  abstract_algebra interfaces.orders theory.strong_setoids theory.common_props theory.rings orders.rings.
-Require Import Ring stdlib_ring.
+  Ring abstract_algebra interfaces.orders theory.strong_setoids theory.common_props
+  theory.rings orders.rings stdlib_ring.
 
 Inductive SRpairT (A : Type) := C { pos : A ; neg : A }.
 Arguments C {A} _ _.
 Arguments pos {A} _.
 Arguments neg {A} _.
 
-Definition SRpair {A} SR : Subset (SRpairT A) :=  λ f, let (a,b) := f in a ∊ SR ∧ b ∊ SR.
-Hint Extern 10 (Subset (SRpairT _)) => eapply @SRpair : typeclass_instances.
+Definition SRpair `(SR:Subset) : @Subset (SRpairT _) :=  λ f, let (a,b) := f in a ∊ SR ∧ b ∊ SR.
+Hint Extern 10 (@Subset (SRpairT _)) => eapply @SRpair : typeclass_instances.
+
+Lemma SRpair_every {A} : ∀ x, x ∊ SRpair (every A).
+Proof. intros [??]. split; apply _. Qed.
+Hint Extern 1 (_ ∊ SRpair (every _)) => eapply @SRpair_every : typeclass_instances.
 
 Section ops.
   Context `{CommutativeSemiRing A (R:=SR)}.
@@ -30,7 +34,9 @@ End ops.
 Global Existing Instance SRpair_inject.
 
 Hint Extern 0 (Equiv   (SRpairT _)) => eapply @SRpair_equiv  : typeclass_instances.
+Hint Extern 0 (Equiv   (elt_type (SRpair _))) => eapply @SRpair_equiv  : typeclass_instances.
 Hint Extern 0 (UnEq    (SRpairT _)) => eapply @SRpair_uneq   : typeclass_instances.
+Hint Extern 0 (UnEq    (elt_type (SRpair _))) => eapply @SRpair_uneq  : typeclass_instances.
 Hint Extern 0 (Le      (SRpairT _)) => eapply @SRpair_le     : typeclass_instances.
 Hint Extern 0 (Lt      (SRpairT _)) => eapply @SRpair_lt     : typeclass_instances.
 Hint Extern 0 (Zero    (SRpairT _)) => eapply @SRpair_zero   : typeclass_instances.
@@ -75,15 +81,15 @@ Section ring.
   Ltac dispatch2 E := change E; intros [??][??][??][??]; reduce; subring SR.
   Ltac dispatch3 E := change E; intros [??][??][??][??][??][??]; reduce; subring SR.
 
-  Instance: Setoid_Binary_Morphism R R R (+).
-  Proof.
-    split; try apply _. intros [a1 b1] [a2 b2] [[[??][??]]E1] [c1 d1] [c2 d2] [[[??][??]]E2]. reduce_sig.
+  Instance: Morphism (R ⇒ R ⇒ R) (+).
+  Proof. apply binary_morphism_proper_back.
+    intros [a1 b1] [a2 b2] [[[??][??]]E1] [c1 d1] [c2 d2] [[[??][??]]E2]. reduce_sig.
     subtransitivity (a1+b2+(c1+d2)). subring SR. rewrite_on SR -> E1,E2. subring SR.
   Qed.
 
-  Instance: Setoid_Morphism R R (-).
+  Instance: Morphism (R ⇒ R) (-).
   Proof.
-    split; try apply _. intros [a1 b1] [a2 b2] [[[??][??]]E1]. reduce_sig.
+    intros [a1 b1] [a2 b2] [[[??][??]]E1]. reduce_sig.
     rewrite_on SR -> (commutativity (+) b1 a2), (commutativity (+) b2 a1). subsymmetry.
   Qed.
 
@@ -102,8 +108,8 @@ Section ring.
   Instance: ∀ `{x ∊ R} `{y ∊ R}, x*y ∊ R.
   Proof. intros [??][??][??][??]. split; apply _. Qed.
 
-  Instance: Setoid_Binary_Morphism R R R (.*.).
-  Proof. split; try apply _.
+  Instance: Morphism (R ⇒ R ⇒ R) (.*.).
+  Proof. apply binary_morphism_proper_back.
     intros x1 y1 [[??]E1] x2 y2 [[??]E2]. split. split; apply _.
     apply (subtransitivity (S:=R) _ (x1 * y2) _).
     exact (mult_proper_r _ _ _ E2).
@@ -125,20 +131,18 @@ Section ring.
   + dispatch3 (LeftDistribute (.*.) (+) R).
   Qed.
 
-  Instance: Setoid_Morphism SR R (cast SR R).
-  Proof. split; try apply _. intros ?? [[??]E]. reduce_sig. now rewrite_on SR -> E. Qed.
+  Instance: Morphism (SR ⇒ R) (').
+  Proof. intros ?? [[??]E]. reduce_sig. now rewrite_on SR -> E. Qed.
 
-  Global Instance: SemiRing_Morphism SR R (cast SR R).
-  Proof with try apply _. split... split... split...
-  + split... intros x ? y ?. unfold cast, SRpair_inject. reduce.
-    replace (x & y) with (x+y) by easy. subring SR.
-  + change (cast SR R 0 = 0). subreflexivity.
-  + split... intros x ? y ?. unfold cast, SRpair_inject. reduce.
-    replace (x & y) with (x*y) by easy. subring SR.
+  Global Instance: SemiRing_Morphism SR R (').
+  Proof. apply (semiring_morphism_alt (') _).
+  + intros x ? y ?. unfold cast, SRpair_inject. reduce. subring SR.
+  + intros x ? y ?. unfold cast, SRpair_inject. reduce. subring SR.
+  + subreflexivity.
   + subreflexivity.
   Qed.
 
-  Global Instance: Injective SR R (cast SR R).
+  Global Instance: Injective SR R (').
   Proof. split; try apply _. intros ?????. reduce. now rewrite_on SR <- (plus_0_r x), <- (plus_0_r y). Qed.
 
   Lemma SRpair_splits n `{n ∊ SR} m `{m ∊ SR} : C n m = cast SR R n + - cast SR R m.
@@ -146,17 +150,49 @@ Section ring.
 End ring.
 
 Section dec.
-  Global Instance SRpair_std_uneq `{UnEq A} `{!StandardUnEq SR} : StandardUnEq R.
+  Instance SRpair_std_uneq `{UnEq _} `{!StandardUnEq SR} : StandardUnEq R.
   Proof. intros [??][??][??][??]. unfold equiv, SRpair_equiv, uneq, SRpair_uneq.
     exact (standard_uneq _ _).
   Qed.
 
-  Global Instance SRpair_dec `{!SubDecision SR SR (=)}: SubDecision R R (=).
+  Instance SRpair_dec_eq `{∀ (x y:A), Decision (x=y)} (x y : SRpairT A) : Decision (x=y).
+  Proof. destruct x, y. unfold equiv, SRpair_equiv. exact (decide_rel (=) _ _). Defined.
+
+  Instance SRpair_dec_le `{Le _} `{∀ (x y:A), Decision (x≤y)} (x y : SRpairT A) : Decision (x≤y).
+  Proof. destruct x, y. unfold le, SRpair_le. exact (decide_rel (≤) _ _). Defined.
+
+  Ltac strong_subdec_tac_aux x y :=
+    destruct x as [a b], y as [c d]; unfold equiv, le, SRpair_equiv, SRpair_le;
+    repeat match goal with H : _ ∊ R |- _ => destruct H end; simpl in *;
+    pose proof (_ : a + d ∊ SR); pose proof (_ : c + b ∊ SR); auto.
+
+  Ltac strong_subdec_tac := match goal with
+    | |-   ?Rel ?x ?y =>  strong_subdec_tac_aux x y
+    | |- ¬ ?Rel ?x ?y =>  strong_subdec_tac_aux x y
+  end.
+
+  Program Instance SRpair_strong_subdec_eq `{!StrongSubDecision SR SR (=)} : StrongSubDecision R R (=)
+    := λ x y, match decide_sub_strong (=) (pos x + neg y) (pos y + neg x) with
+       | left _ => left _
+       | right _ => right _
+       end.
+  Next Obligation. strong_subdec_tac. Qed.
+  Next Obligation. strong_subdec_tac. Qed.
+
+  Program Instance SRpair_strong_subdec_le `{Le _} `{!StrongSubDecision SR SR (≤)} : StrongSubDecision R R (≤)
+    := λ x y, match decide_sub_strong (≤) (pos x + neg y) (pos y + neg x) with
+       | left _ => left _
+       | right _ => right _
+       end.
+  Next Obligation. strong_subdec_tac. Qed.
+  Next Obligation. strong_subdec_tac. Qed.
+
+  Instance SRpair_subdec_eq `{!SubDecision SR SR (=)}: SubDecision R R (=).
   Proof. intros [??][??][??][??]. unfold equiv, SRpair_equiv.
     exact (decide_sub (=) _ _).
   Defined.
 
-  Global Instance SRpair_le_dec `{Le A} `{!SubDecision SR SR (≤)}: SubDecision R R (≤).
+  Instance SRpair_subdec_le `{Le _} `{!SubDecision SR SR (≤)}: SubDecision R R (≤).
   Proof. intros [??][??][??][??]. unfold le, SRpair_le.
     exact (decide_sub (≤) _ _).
   Defined.
@@ -164,7 +200,7 @@ Section dec.
 End dec.
 
 Section with_semiring_order.
-  Context `{Le A} `{!SemiRingOrder SR}.
+  Context `{Le _} `{!SemiRingOrder SR}.
 
   Instance: Proper ((R,=) ==> (R,=) ==> impl) (≤).
   Proof.
@@ -190,7 +226,7 @@ Section with_semiring_order.
   + intros [??][??][??][??] ??. reduce. now apply (subantisymmetry (≤) _ _).
   Qed.
 
-  Global Instance: OrderEmbedding SR R (cast SR R).
+  Global Instance: OrderEmbedding SR R (').
   Proof. split; (split; [split;apply _ |]); intros x ? y ? E; reduce.
     now rewrite !(SR $ plus_0_r _).
     now rewrite !(SR $ plus_0_r _) in E.
@@ -205,20 +241,20 @@ Section with_semiring_order.
     now apply (order_preserving _ _ _).
   Qed.
 
-  Instance: Closed (R⁺ ==> R⁺ ==> R⁺) (.*.).
+  Instance: Closed (R⁺ ⇀ R⁺ ⇀ R⁺) (.*.).
   Proof. intros x [elx E1] y [ely E2]. split. apply _. unfold PropHolds in *.
     destruct x as [xp xn], y as [yp yn], elx as [??], ely as [??]. reduce.
     rewrite (SR $ plus_0_l _), (SR $ plus_0_r _) in E1.
     rewrite (SR $ plus_0_l _), (SR $ plus_0_r _) in E2.
     destruct (decompose_le E1) as [a [? Ea]], (decompose_le E2) as [b [? Eb]].
     rewrite_on SR -> Ea,Eb. apply (compose_le _ _ (a*b)). subring SR.
-  Qed. 
+  Qed.
 
   Global Instance: SemiRingOrder R := from_ring_order _ _.
 End with_semiring_order.
 
 Section with_strict_semiring_order.
-  Context `{Lt A} `{!StrictSemiRingOrder SR}.
+  Context `{Lt _} `{!StrictSemiRingOrder SR}.
 
   Instance: Proper ((R,=) ==> (R,=) ==> impl) (<).
   Proof.
@@ -250,20 +286,20 @@ Section with_strict_semiring_order.
     now apply (strictly_order_preserving _ _ _).
   Qed.
 
-  Instance: Closed (R₊ ==> R₊ ==> R₊) (.*.).
+  Instance: Closed (R₊ ⇀ R₊ ⇀ R₊) (.*.).
   Proof. intros x [elx E1] y [ely E2]. split. apply _. unfold PropHolds in *.
     destruct x as [xp xn], y as [yp yn], elx as [??], ely as [??]. reduce.
     rewrite (SR $ plus_0_l _), (SR $ plus_0_r _) in E1.
     rewrite (SR $ plus_0_l _), (SR $ plus_0_r _) in E2.
     destruct (decompose_lt E1) as [a [? Ea]], (decompose_lt E2) as [b [? Eb]].
     rewrite_on SR -> Ea,Eb. apply (compose_lt _ _ (a*b)). subring SR.
-  Qed. 
+  Qed.
 
   Global Instance: StrictSemiRingOrder R := from_strict_ring_order _ _.
 End with_strict_semiring_order.
 
 Section with_full_pseudo_semiring_order.
-  Context `{UnEq A} `{Le A} `{Lt A} `{!FullPseudoSemiRingOrder SR}.
+  Context `{UnEq _} `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder SR}.
 
   Instance: StrongSetoid SR := pseudo_order_setoid.
 
@@ -274,9 +310,9 @@ Section with_full_pseudo_semiring_order.
   + intros [xp xn][??] [yp yn][??] E [zp zn][??]. reduce.
     apply (strong_left_cancellation (+) zn SR _ _) in E.
     destruct (subcotransitivity E (zp+xn+yn)); [left|right]; reduce.
-    apply (strong_extensionality (+ yn) _ _).
+    apply (strong_extensionality (+ yn)).
       now mc_replace (xp + zn + yn) with (zn + (xp + yn)) on SR by subring SR.
-    apply (strong_extensionality (+ xn) _ _).
+    apply (strong_extensionality (+ xn)).
       mc_replace (zp + yn + xn) with (zp + xn + yn) on SR by subring SR.
       now mc_replace (yp + zn + xn) with (zn + (yp + xn)) on SR by subring SR.
   + intros [??][??][??][??]. rapply tight_apart.
@@ -297,21 +333,32 @@ Section with_full_pseudo_semiring_order.
   + intros [??][??][??][??]. rapply le_iff_not_lt_flip.
   Qed.
 
-  Instance: ∀ `{z ∊ R}, StrongSetoid_Morphism R R (z *.).
-  Proof. intros z zel. split; try apply _. destruct z as [zp zn], zel as [??]. intros [xp xn][??] [yp yn][??] E1. reduce.
-    destruct (strong_binary_extensionality (+)
-       (zp * (xp + yn)) (zn * (yp + xn)) (zp * (yp + xn)) (zn * (xp + yn))).
-    mc_replace (zp * (xp + yn) + zn * (yp + xn)) with (zp * xp + zn * xn + (zp * yn + zn * yp)) on SR by subring SR.
-    mc_replace (zp * (yp + xn) + zn * (xp + yn)) with (zp * yp + zn * yn + (zp * xn + zn * xp)) on SR by subring SR. assumption.
-    now apply (strong_extensionality (zp *.) _ _).
-    subsymmetry. now apply (strong_extensionality (zn *.) _ _).
+  Instance: ∀ `{z ∊ R}, Strong_Morphism R R (z *.).
+  Proof. intros z zel.
+    split. apply _. rewrite strong_ext_equiv_1.
+    destruct z as [zp zn], zel as [??]. intros [xp xn][??] [yp yn][??] E1. reduce.
+    assert (zp * (xp + yn) + zn * (yp + xn) ≠ zp * (yp + xn) + zn * (xp + yn)) as E.
+      mc_replace (zp * (xp + yn) + zn * (yp + xn)) with (zp * xp + zn * xn + (zp * yn + zn * yp)) on SR by subring SR.
+      mc_replace (zp * (yp + xn) + zn * (xp + yn)) with (zp * yp + zn * yn + (zp * xn + zn * xp)) on SR by subring SR.
+      assumption.
+    destruct (strong_binary_extensionality (+) E).
+    now apply (strong_extensionality (zp *.)).
+    subsymmetry. now apply (strong_extensionality (zn *.)).
   Qed.
 
-  Instance: StrongSetoid_Binary_Morphism R R R (.*.) := strong_binary_setoid_morphism_commutative.
+  Instance: Strong_Binary_Morphism R R R (.*.) := strong_binary_morphism_commutative _ _ _.
 
   Global Instance: FullPseudoSemiRingOrder R := from_full_pseudo_ring_order _ _ _.
 End with_full_pseudo_semiring_order.
 End contents.
+
+Hint Extern 2 (StandardUnEq (SRpair _)) => eapply @SRpair_std_uneq : typeclass_instances.
+Hint Extern 2 (Decision (@equiv _ SRpair_equiv _ _)) => eapply @SRpair_dec_eq : typeclass_instances.
+Hint Extern 2 (Decision (@le _ SRpair_le _ _)) => eapply @SRpair_dec_le : typeclass_instances.
+Hint Extern 2 (StrongSubDecision (SRpair _) (SRpair _) (=)) => eapply @SRpair_strong_subdec_eq : typeclass_instances.
+Hint Extern 2 (StrongSubDecision (SRpair _) (SRpair _) (≤)) => eapply @SRpair_strong_subdec_le : typeclass_instances.
+Hint Extern 2 (SubDecision (SRpair _) (SRpair _) (=)) => eapply @SRpair_subdec_eq : typeclass_instances.
+Hint Extern 2 (SubDecision (SRpair _) (SRpair _) (≤)) => eapply @SRpair_subdec_le : typeclass_instances.
 
 Typeclasses Opaque SRpair_equiv.
 Typeclasses Opaque SRpair_le.

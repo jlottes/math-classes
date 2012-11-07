@@ -4,17 +4,16 @@
   more easily. In particular, it lets us use initiality of the natural numbers to prove initiality
   of these integers. *)
 
-Require
- theory.naturals.
+Require theory.naturals.
 Require Import
  abstract_algebra interfaces.naturals interfaces.integers theory.setoids theory.rings.
 Require Import
- Ring stdlib_ring misc.quote.
+ stdlib_ring misc.quote.
 Require Export
  implementations.semiring_pairs.
 
 Section contents.
-Context `{Naturals A (N:=N)}.
+Context `{Naturals (N:=N)}.
 Add Ring N : (stdlib_semiring_theory N).
 
 Notation Z := (SRpair N).
@@ -31,7 +30,7 @@ Section for_another_ring.
   Notation n_to_sr := (naturals_to_semiring N R).
   Notation z_to_r := (integers_to_ring Z R).
 
-  Instance: Proper ((Z,=) ==> (R,=)) z_to_r.
+  Instance: Morphism (Z ⇒ R) z_to_r.
   Proof. intros [xp xn][yp yn] [[[??][??]]E]. change (xp + yn = yp + xn) in E.
     unfold integers_to_ring, SRpair_to_ring. split. split; apply _.
     apply (equal_by_zero_sum _ _).
@@ -59,7 +58,7 @@ Section for_another_ring.
     repeat (split; try apply _).
     exact preserves_plus.
     exact preserves_mult.
-    exists_sub (1:SRpairT A). exact preserves_1.
+    exists_sub (1:SRpairT N). exact preserves_1.
   Qed.
 
   Section for_another_morphism.

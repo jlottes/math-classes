@@ -2,7 +2,7 @@ Require Import abstract_algebra.
 
 Section orders.
 
-  Context `{Ae : Equiv A} {Ale : Le A} {Alt : Lt A}.
+  Context `{Ae : Equiv A} {Ale : Le A} {Alt : Lt A} `{Meet A} `{Join A}.
 
   Class PartialOrder P : Prop :=
     { po_setoid : Setoid P
@@ -15,6 +15,36 @@ Section orders.
   Class TotalOrder S : Prop :=
     { total_order_po :> PartialOrder S
     ; total_order_total :> TotalRelation S (≤)
+    }.
+
+  (*
+  We define a variant of the order theoretic definition of meet and join
+  semilattices. Notice that we include a meet operation instead of the
+  more common:
+    ∀ x y, ∃ m, m ≤ x ∧ m ≤ y ∧ ∀ z, z ≤ x → z ≤ y → m ≤ z
+  Our definition is both stronger and more convenient than the above.
+  This is needed to prove equavalence with the algebraic definition. We
+  do this in orders.lattices.
+  *)
+  Class MeetSemiLatticeOrder L : Prop :=
+    { meet_sl_order :>> PartialOrder L
+    ; meet_closed : Closed (L ⇀ L ⇀ L) (⊓)
+    ; meet_lb_l x `{x ∊ L} y `{y ∊ L} : x ⊓ y ≤ x
+    ; meet_lb_r x `{x ∊ L} y `{y ∊ L} : x ⊓ y ≤ y
+    ; meet_glb x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : z ≤ x → z ≤ y → z ≤ x ⊓ y
+    }.
+
+  Class JoinSemiLatticeOrder L : Prop :=
+    { join_sl_order :>> PartialOrder L
+    ; join_closed : Closed (L ⇀ L ⇀ L) (⊔)
+    ; join_ub_l x `{x ∊ L} y `{y ∊ L} : x ≤ x ⊔ y
+    ; join_ub_r x `{x ∊ L} y `{y ∊ L} : y ≤ x ⊔ y
+    ; join_lub x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ≤ z → y ≤ z → x ⊔ y ≤ z
+    }.
+
+  Class LatticeOrder L : Prop :=
+    { lattice_order_meet :>> MeetSemiLatticeOrder L
+    ; lattice_order_join :>> JoinSemiLatticeOrder L
     }.
 
   Class StrictSetoidOrder S : Prop :=
@@ -55,17 +85,17 @@ End orders.
 
 Section order_maps.
   Context {A B} {Ae: Equiv A} {Ale: Le A} {Alt: Lt A} {Be: Equiv B} {Ble: Le B} {Blt: Lt B}.
-  Context (S:Subset A) (T:Subset B) (f : A → B).
+  Context (S:@Subset A) (T:@Subset B) (f : A → B).
 
   (* An Order_Morphism is just the factoring out of the common parts of
     OrderPreserving and OrderReflecting *)
   Class Order_Morphism :=
-    { order_morphism_mor : Setoid_Morphism S T f
+    { order_morphism_mor : Morphism (S ⇒ T) f
     ; order_morphism_po_a : PartialOrder S
     ; order_morphism_po_b : PartialOrder T }.
 
   Class StrictOrder_Morphism :=
-    { strict_order_morphism_mor : Setoid_Morphism S T f
+    { strict_order_morphism_mor : Morphism (S ⇒ T) f
     ; strict_order_morphism_so_a : StrictSetoidOrder S
     ; strict_order_morphism_so_b : StrictSetoidOrder T }.
 
@@ -80,6 +110,9 @@ Section order_maps.
   Class OrderEmbedding :=
     { order_embedding_preserving :> OrderPreserving
     ; order_embedding_reflecting :> OrderReflecting }.
+
+  Lemma order_embedding `{!OrderEmbedding} `{x ∊ S} `{y ∊ S} : x ≤ y ↔ f x ≤ f y.
+  Proof. split. now apply order_preserving. now apply order_reflecting. Qed.
 
   Class OrderIsomorphism `{!Inverse (f:S ⇀ T)} :=
     { order_iso_embedding :> OrderEmbedding
@@ -96,14 +129,18 @@ Section order_maps.
   Class StrictOrderEmbedding :=
     { strict_order_embedding_preserving :> StrictlyOrderPreserving
     ; strict_order_embedding_reflecting :> StrictlyOrderReflecting }.
+
+  Lemma strictly_order_embedding `{!StrictOrderEmbedding} `{x ∊ S} `{y ∊ S} : x < y ↔ f x < f y.
+  Proof. split. now apply strictly_order_preserving. now apply strictly_order_reflecting. Qed.
 End order_maps.
-Arguments order_morphism_mor {A B _ _ _ _ S T} f {_}.
+Arguments order_morphism_mor {A B _ _ _ _ S T} f {_} _ _ _.
 Arguments order_preserving {A B _ _ _ _ S T} f {_} x {_} y {_} _.
 Arguments order_reflecting {A B _ _ _ _ S T} f {_} x {_} y {_} _.
-Arguments strict_order_morphism_mor {A B _ _ _ _ S T} f {_}.
+Arguments order_embedding  {A B _ _ _ _ S T} f {_} x {_} y {_}.
+Arguments strict_order_morphism_mor {A B _ _ _ _ S T} f {_} _ _ _.
 Arguments strictly_order_preserving {A B _ _ _ _ S T} f {_} x {_} y {_} _.
 Arguments strictly_order_reflecting {A B _ _ _ _ S T} f {_} x {_} y {_} _.
-
+Arguments strictly_order_embedding  {A B _ _ _ _ S T} f {_} x {_} y {_}.
 
 Hint Extern 4 (?f _ ≤ ?f _) => apply (order_preserving f).
 Hint Extern 4 (?f _ < ?f _) => apply (strictly_order_preserving f).
@@ -121,7 +158,7 @@ Class SemiRingOrder `{Equiv A} `{Plus A} `{Mult A}
   ; srorder_semiring : SemiRing R
   ; srorder_partial_minus x `{x ∊ R} y `{y ∊ R} : x ≤ y → ∃ `{z ∊ R}, y = x + z
   ; srorder_plus z `{z ∊ R} :> OrderEmbedding R R (z +)
-  ; nonneg_mult_compat : Closed (R⁺ ==> R⁺ ==> R⁺) (.*.) }.
+  ; nonneg_mult_compat : Closed (R⁺ ⇀ R⁺ ⇀ R⁺) (.*.) }.
 
 Class StrictSemiRingOrder `{Equiv A} `{Plus A} `{Mult A}
     `{Zero A} `{One A} {Alt : Lt A} R :=
@@ -129,7 +166,7 @@ Class StrictSemiRingOrder `{Equiv A} `{Plus A} `{Mult A}
   ; strict_srorder_semiring : SemiRing R
   ; strict_srorder_partial_minus x `{x ∊ R} y `{y ∊ R} : x < y → ∃ `{z ∊ R}, y = x + z
   ; strict_srorder_plus z `{z ∊ R} :> StrictOrderEmbedding R R (z +)
-  ; pos_mult_compat : Closed (R₊ ==> R₊ ==> R₊) (.*.) }.
+  ; pos_mult_compat : Closed (R₊ ⇀ R₊ ⇀ R₊) (.*.) }.
 
 Class PseudoSemiRingOrder `{Equiv A} `{UnEq A} `{Plus A}
     `{Mult A} `{Zero A} `{One A} {Alt : Lt A} R :=
@@ -137,8 +174,8 @@ Class PseudoSemiRingOrder `{Equiv A} `{UnEq A} `{Plus A}
   ; pseudo_srorder_semiring : SemiRing R
   ; pseudo_srorder_partial_minus x `{x ∊ R} y `{y ∊ R} : ¬y < x → ∃ `{z ∊ R}, y = x + z
   ; pseudo_srorder_plus z `{z ∊ R} :> StrictOrderEmbedding R R (z +)
-  ; pseudo_srorder_mult_ext :> StrongSetoid_Binary_Morphism R R R (.*.)
-  ; pseudo_srorder_pos_mult_compat : Closed (R₊ ==> R₊ ==> R₊) (.*.) }.
+  ; pseudo_srorder_mult_ext :> Strong_Binary_Morphism R R R (.*.)
+  ; pseudo_srorder_pos_mult_compat : Closed (R₊ ⇀ R₊ ⇀ R₊) (.*.) }.
 
 Class FullPseudoSemiRingOrder `{Equiv A} `{UnEq A} `{Plus A}
     `{Mult A} `{Zero A} `{One A} {Ale : Le A} {Alt : Lt A} R :=
@@ -147,8 +184,18 @@ Class FullPseudoSemiRingOrder `{Equiv A} `{UnEq A} `{Plus A}
 
 Hint Extern 4 (_ * _ ∊ _⁺) => eapply @nonneg_mult_compat : typeclass_instances. 
 Hint Extern 4 (_ * _ ∊ _₊) => eapply @pos_mult_compat    : typeclass_instances. 
-Hint Extern 20 (Closed (?R⁺ ==> ?R⁺ ==> ?R⁺) (.*.)) => eapply @nonneg_mult_compat : typeclass_instances. 
-Hint Extern 20 (Closed (?R₊ ==> ?R₊ ==> ?R₊) (.*.)) => eapply @pos_mult_compat    : typeclass_instances. 
+Hint Extern 20 (Closed (?R⁺ ⇀ ?R⁺ ⇀ ?R⁺) (.*.)) => eapply @nonneg_mult_compat : typeclass_instances. 
+Hint Extern 20 (Closed (?R₊ ⇀ ?R₊ ⇀ ?R₊) (.*.)) => eapply @pos_mult_compat    : typeclass_instances. 
+
+(* Absolute value for ring orders, useful only for total orders *)
+Local Open Scope mc_abs_scope.
+Class DecAbs `{Equiv A} `{Negate A} `{Zero A} `{Le A} `{Abs A} R :=
+  { abs_closed : Closed (R ⇀ R) |·|
+  ; abs_nonneg x `{x ∊ R⁺} : |x| = x
+  ; abs_nonpos x `{x ∊ R⁻} : |x| = -x
+  }.
+Hint Extern 20 (Closed _ _ abs) => eapply @abs_closed : typeclass_instances.
+Hint Extern 5 (abs _ ∊ _) => eapply @abs_closed : typeclass_instances.
 
 (* Due to bug #2528 *)
 (*

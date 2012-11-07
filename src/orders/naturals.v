@@ -8,7 +8,7 @@ Require Export
   orders.nat_int.
 
 Section naturals_order.
-Context `{Naturals A (N:=N)} `{UnEq A} `{Le A} `{Lt A} `{!StandardUnEq N} `{!FullPseudoSemiRingOrder N}.
+Context `{Naturals (N:=N)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq N} `{!FullPseudoSemiRingOrder N}.
 
 Instance nat_nonneg x `{x ∊ N} : x ∊ N⁺.
 Proof. now apply (to_semiring_nonneg (f:=id)). Qed.
@@ -48,7 +48,7 @@ Proof. intro E. pose proof ge_1_pos x E. apply _. Qed.
 Global Instance: ∀ `{z ∊ N ₀}, OrderReflecting N N (z *.).
 Proof. intros z ?. pose proof nat_ne_0_pos z. apply _. Qed.
 
-Global Program Instance slow_nat_le_dec: SubDecision N N (≤) | 10 := λ x xe y ye,
+Global Program Instance slow_nat_le_dec: StrongSubDecision N N (≤) | 10 := λ x y,
   match decide (naturals_to_semiring N (every nat) x ≤ naturals_to_semiring N (every nat) y) with
   | left E => left _
   | right E => right _
@@ -72,11 +72,11 @@ End naturals_order.
 Hint Extern 20 (_ ∊ _⁺) => eapply @nat_nonneg : typeclass_instances.
 
 (* A default order on the naturals *)
-Instance nat_le `{Naturals A (N:=N)} : Le A | 11 :=  λ x y, ∃ `{z ∊ N}, x + z = y.
+Instance nat_le `{Naturals (N:=N)} : Le _ | 11 :=  λ x y, ∃ `{z ∊ N}, x + z = y.
 Instance nat_lt `{Naturals A (N:=N)} `{UnEq A} : Lt A | 11 := dec_lt.
 
 Section default_order.
-Context `{Naturals A (N:=N)} `{UnEq A} `{!StandardUnEq N}.
+Context `{Naturals (N:=N)} `{UnEq _} `{!StandardUnEq N}.
 
 Instance: Proper ((N,=) ==> (N,=) ==> impl) (≤).
 Proof.

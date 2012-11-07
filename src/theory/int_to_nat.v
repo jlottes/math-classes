@@ -2,13 +2,13 @@ Require Import
   interfaces.naturals abstract_algebra interfaces.orders
   orders.nat_int theory.setoids theory.integers theory.rings orders.rings.
 
-Lemma int_to_nat_el `{IntAbs A B (Z:=Z) (N:=N)} `{Zero B} `{0 ∊ N} x `{x ∊ Z} : int_to_nat Z N x ∊ N.
+Lemma int_to_nat_el `{IntAbs (Z:=Z) (N:=N)} `{Zero _} `{0 ∊ N} x `{x ∊ Z} : int_to_nat Z N x ∊ N.
 Proof. unfold int_to_nat. destruct (int_abs_sig Z N x) as [[z p]|[z p]]; tauto. Qed.
-
-Local Existing Instance int_to_nat_el.
 
 Section proper.
 Context `{Integers (Z:=Z)} `{Naturals (N:=N)}.
+
+Hint Extern 5 (int_to_nat _ _ _ ∊ _) => eapply @int_to_nat_el : typeclass_instances.
 
 Notation N_to_Z := (naturals_to_semiring N Z).
 
@@ -35,19 +35,17 @@ Lemma int_to_nat_unique {a b: IntAbs Z N} z `{z ∊ Z} :
   int_to_nat Z N (ia:=a) z = int_to_nat Z N (ia:= b) z.
 Proof. apply int_to_nat_unique_respectful; now red_sig. Qed.
 
-Lemma int_to_nat_proper `{!IntAbs Z N} : Setoid_Morphism Z N (int_to_nat Z N).
-Proof. split; try apply _. exact int_to_nat_unique_respectful. Qed.
+Lemma int_to_nat_proper `{!IntAbs Z N} : Morphism (Z ⇒ N) (int_to_nat Z N).
+Proof int_to_nat_unique_respectful.
 
 End proper.
 
-Hint Extern 0 (Setoid_Morphism _ _ (int_to_nat _ _)) => eapply @int_to_nat_proper : typeclass_instances.
+Hint Extern 0 (Morphism _ (int_to_nat _ _)) => eapply @int_to_nat_proper : typeclass_instances.
 
 Section contents.
-Context {A B} {Z:Subset A} {N:Subset B} {f : N ⇀ Z}.
-Context `{Integers A (Z:=Z)} `{UnEq A} `{Le A} `{Lt A} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
-Context `{Naturals B (N:=N)} `{!SemiRing_Morphism N Z f} `{!IntAbs Z N}.
-
-Existing Instance to_semiring_nonneg.
+Context `{Z:Subset} `{N:Subset} {f : N ⇀ Z}.
+Context `{Integers _ (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
+Context `{Naturals _ (N:=N)} `{!SemiRing_Morphism N Z f} `{!IntAbs Z N}.
 
 Lemma int_to_nat_spec x `{x ∊ Z} :
   { x ∊ Z⁺ ∧ f (int_to_nat Z N x) = x } + { x ∊ Z⁻ ∧ f (int_to_nat Z N x) = 0 }.
@@ -56,6 +54,8 @@ Proof.
   left. split; rewrite_on Z <- E. apply _. exact (naturals.to_semiring_unique _ _).
   right. split. apply (negate_nonneg_nonpos _). rewrite_on Z <- E. apply _. exact preserves_0.
 Qed.
+
+Existing Instance to_semiring_nonneg.
 
 Lemma int_to_nat_nat n `{n ∊ N} :
   int_to_nat Z N (f n) = n.
@@ -122,7 +122,7 @@ Proof. rewrite (Z $ commutativity (.*.) x y), (N $ commutativity (.*.) _ _).
   exact (int_to_nat_mult_nonneg_l y x).
 Qed.
 
-Context `{UnEq B} `{Le B} `{Lt B} `{!StandardUnEq N} `{!FullPseudoSemiRingOrder N}.
+Context `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq N} `{!FullPseudoSemiRingOrder N}.
 
 (*
 Global Instance int_to_nat_nonneg x :

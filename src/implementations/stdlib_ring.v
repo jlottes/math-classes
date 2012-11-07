@@ -6,8 +6,8 @@ Section semiring.
 
   Global Instance : SubsetSig_Closed R 0 := _ : 0 ∊ R.
   Global Instance : SubsetSig_Closed R 1 := _ : 1 ∊ R.
-  Global Instance : SubsetSig_Closed (R==>R==>R) (+)   := _ : Closed (R==>R==>R) (+).
-  Global Instance : SubsetSig_Closed (R==>R==>R) (.*.) := _ : Closed (R==>R==>R) (.*.).
+  Global Instance : SubsetSig_Closed (R⇀R⇀R) (+)   := _ : Closed (R⇀R⇀R) (+).
+  Global Instance : SubsetSig_Closed (R⇀R⇀R) (.*.) := _ : Closed (R⇀R⇀R) (.*.).
 
   Notation R' := (every (SubsetSig R)).
 
@@ -34,7 +34,7 @@ Section ring.
 
   Context `{CommutativeRing (R:=R)}.
 
-  Global Instance : SubsetSig_Closed (R==>R) (-) := _ : Closed (R==>R) (-).
+  Global Instance : SubsetSig_Closed (R⇀R) (-) := _ : Closed (R⇀R) (-).
 
   Notation R' := (every (SubsetSig R)).
 

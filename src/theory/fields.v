@@ -1,20 +1,25 @@
 Require Import
   abstract_algebra theory.strong_setoids theory.common_props
-  theory.subgroups theory.subrings
-  theory.strong_groups theory.strong_rings.
+  theory.subgroups theory.subrings theory.strong_groups.
+Require Export
+  theory.integral_domains.
 
 Local Open Scope grp_scope. (* notation for inverse *)
 
-(* Existing Instance NonZero_subset. *)
-
 Lemma field_proper: Find_Proper_Signature (@Field) 0
-  (∀ A Ae Aplus Amult Azero Aone Anegate Ainv Aue,
-   Proper ((=)==>impl) (@Field A Ae Aplus Amult Azero Aone Anegate Ainv Aue)).
-Proof. structure_proper. Qed.
+  (∀ A Aplus Amult Azero Aone Anegate Ainv Ae Aue,
+   Proper ((=)==>impl) (@Field A Aplus Amult Azero Aone Anegate Ainv Ae Aue)).
+Proof. structure_proper.
+  match goal with E : ?X = ?Y |- Morphism (?Y ₀ ⇒ ?Y ₀) (⁻¹) =>
+    assert (SubsetOf (X ₀) (Y ₀)) by (rewrite E; apply _);
+    assert (SubsetOf (Y ₀) (X ₀)) by (rewrite E; apply _);
+    now rewrite <-(_ : SubsetOf (X ₀ ⇒ X ₀) (Y ₀ ⇒ Y ₀))
+  end.
+Qed.
 Hint Extern 0 (Find_Proper_Signature (@Field) 0 _) => eexact field_proper : typeclass_instances.
 
 Lemma mult_inv_closed `{Field (F:=F)} x `{x ∊ F ₀} : x⁻¹ ∊ F ₀.
-Proof _.
+Proof. apply (closed_range (F ₀)); apply _. Qed.
 Hint Extern 4 (_⁻¹ ∊ _ ₀) => eapply @mult_inv_closed : typeclass_instances. 
 
 Lemma mult_inv_closed2 `{Field (F:=F)} x `{x ∊ F ₀} : x⁻¹ ∊ F.
@@ -25,90 +30,138 @@ Hint Extern 6 (_⁻¹ ∊ _) => eapply @mult_inv_closed2 : typeclass_instances.
 Section props.
   Context `{Field (F:=F)}.
 
+  Existing Instance field_nontrivial.
+
   Lemma field_inv_r x `{x ∊ F ₀} : x / x = 1.
   Proof. rewrite (F $ commutativity (.*.) _ _). exact (field_inv_l x). Qed.
 
   Lemma field_units : RingUnits F = F ₀.
   Proof. intro x. split.
   + intros [?[y[?[E ?]]]]. split. apply _.
-    apply (strong_extensionality (.* y) _ _). rewrite_on F -> E, (mult_0_l y).
+    apply (strong_extensionality (.* y)). rewrite_on F -> E, (mult_0_l y).
     solve_propholds.
   + intros ?. split. apply _. exists_sub (x⁻¹).
     split; [ exact (field_inv_r x) | exact (field_inv_l x) ].
   Qed.
 
+  Instance: ∀ `{x ∊ F ₀}, x ∊ RingUnits F.
+  Proof. intros. now apply field_units. Qed.
+
   Global Instance field_multgroup : MultiplicativeAbGroup (F ₀).
-  Proof. rewrite <- field_units. apply RingUnits_abgroup; rewrite field_units; apply _. Qed.
-
-  Instance field_mult_nonzero: Closed (F ₀ ==> F ₀ ==> F ₀) (.*.) := _.
-
-  Instance strong_mult_nonzero: StrongSetoid_Binary_Morphism (F ₀) (F ₀) (F ₀) (.*.).
-  Proof. split; try apply _.
-    intros x₁ ? y₁ ? x₂ ? y₂ ?. exact (strong_binary_extensionality (.*.) x₁ y₁ x₂ y₂).
+  Proof. rewrite <- field_units. apply RingUnits_abgroup.
+    pose proof field_units. rewrite <- (_ : SubsetOf (F ₀ ⇒ F ₀) (RingUnits F ⇒ RingUnits F)).
+    apply _. rewrite field_units; apply _.
   Qed.
+
+  Global Instance : IntegralDomain F := {}.
+
+  (*Instance field_mult_nonzero: Closed (F ₀ ==> F ₀ ==> F ₀) (.*.) := _.*)
+  (*Instance field_strong_mult_nonzero: StrongSemiGroupOp (op:=mult_is_sg_op) (F ₀) := _.*)
+
+  (*Instance mult_inv_strong_inj: StrongInjective (F ₀) (F ₀) (⁻¹) := _.
+  Instance mult_inv_strong: StrongSetoid_Morphism (F ₀) (F ₀) (⁻¹) := _.*)
 
   Lemma mult_inv_involutive x `{x ∊ F ₀} : (x⁻¹)⁻¹ = x. Proof involutive (S:=(F ₀)) x.
 
-  (* We have the following instances from strong_groups: *)
-  
-  Instance: StrongInjective F F (-) := _.
-  Instance: StrongInjective (F ₀) (F ₀) (⁻¹) := _.
+  Lemma mult_inv_1 : 1⁻¹ = 1. Proof inv_mon_unit (G:=(F ₀)).
+  Lemma mult_inv_distr x `{x ∊ F ₀} y `{y ∊ F ₀}: (x * y)⁻¹ = x⁻¹ * y⁻¹. Proof abgroup_inv_distr (G:=(F ₀)) x y.
 
-  Global Instance : IntegralDomain F.
-  Proof. split; try apply _.
-    intros z el. rewrite <- field_units in el.
-    exact (RingUnit_left_cancellation z).
+  Lemma mult_inv_negate x `{x ∊ F ₀} : (-x)⁻¹ = - x⁻¹.
+  Proof. apply (left_cancellation (.*.) (-x) F _ _).
+    now rewrite (F $ negate_mult_negate _ _), !(F $ field_inv_r _).
+  Qed.
+
+  Lemma mult_inv_cancel_l z `{z ∊ F ₀} x `{x ∊ F} y `{y ∊ F} : x = y * z ↔ x / z = y.
+  Proof. split.
+  + intro. apply (right_cancellation (.*.) z F _ _).
+    now rewrite <- (F $ associativity (.*.) _ _ _), (F $ field_inv_l z), (F $ mult_1_r _).
+  + intro.  apply (right_cancellation (.*.) z⁻¹ F _ _).
+    now rewrite <- (F $ associativity (.*.) _ _ _), (F $ field_inv_r z), (F $ mult_1_r _).
+  Qed.
+
+  Lemma mult_inv_cancel_r z `{z ∊ F ₀} x `{x ∊ F} y `{y ∊ F} : x * z = y ↔ x = y / z.
+  Proof. split.
+  + intro. apply (right_cancellation (.*.) z F _ _).
+    now rewrite <- (F $ associativity (.*.) _ _ _), (F $ field_inv_l z), (F $ mult_1_r _).
+  + intro.  apply (right_cancellation (.*.) z⁻¹ F _ _).
+    now rewrite <- (F $ associativity (.*.) _ _ _), (F $ field_inv_r z), (F $ mult_1_r _).
+  Qed.
+
+  Lemma mult_inv_cancel_both  a `{a ∊ F} b `{b ∊ F ₀} c `{c ∊ F} d `{d ∊ F ₀}
+    : a*d = b*c ↔ a/b = c/d.
+  Proof. rewrite (mult_inv_cancel_r _ _ _).
+    rewrite <- (F $ associativity (.*.) b c (inv d)).
+    rewrite (F $ commutativity (.*.) b (c/d)).
+    exact (mult_inv_cancel_l _ _ _).
+  Qed.
+
+  Lemma mult_inv_strong_cancel_l z `{z ∊ F ₀} x `{x ∊ F} y `{y ∊ F} : x ≠ y * z ↔ x / z ≠ y.
+  Proof. split; intro E.
+  + apply (strong_right_cancellation (.*.) z⁻¹ F _ _) in E.
+    now rewrite <- (F $ associativity (.*.) _ _ _), (F $ field_inv_r z), (F $ mult_1_r _) in E.
+  + apply (strong_right_cancellation (.*.) z F _ _) in E.
+    now rewrite <- (F $ associativity (.*.) _ _ _), (F $ field_inv_l _), (F $ mult_1_r _) in E.
+  Qed.
+
+  Lemma mult_inv_strong_cancel_r z `{z ∊ F ₀} x `{x ∊ F} y `{y ∊ F} : x * z ≠ y ↔ x ≠ y / z.
+  Proof. split; intro E.
+  + apply (strong_right_cancellation (.*.) z⁻¹ F _ _) in E.
+    now rewrite <- (F $ associativity (.*.) _ _ _), (F $ field_inv_r z), (F $ mult_1_r _) in E.
+  + apply (strong_right_cancellation (.*.) z F _ _) in E.
+    now rewrite <- (F $ associativity (.*.) _ _ _), (F $ field_inv_l _), (F $ mult_1_r _) in E.
+  Qed.
+
+  Lemma mult_inv_strong_cancel_both  a `{a ∊ F} b `{b ∊ F ₀} c `{c ∊ F} d `{d ∊ F ₀}
+    : a*d ≠ b*c ↔ a/b ≠ c/d.
+  Proof. rewrite (mult_inv_strong_cancel_r _ _ _).
+    rewrite <- (F $ associativity (.*.) b c (inv d)).
+    rewrite (F $ commutativity (.*.) b (c/d)).
+    exact (mult_inv_strong_cancel_l _ _ _).
   Qed.
 
 End props.
 
-Hint Extern 4 (_ * _ ∊ _ ₀) => eapply @field_mult_nonzero : typeclass_instances.
+(* Hint Extern 5 (AbGroup (_ ₀)) => eapply @field_multgroup : typeclass_instances. *)
+
+(*
+Check fun `{Field (F:=F)} => _ : StrongInjective F F (-).
+Check fun `{Field (F:=F)} `{z ∊ F ₀} => _ : StrongRightCancellation (.*.) z F.
+Check fun `{Field (F:=F)} => _ : StrongInjective (F ₀) (F ₀) (⁻¹).
+*)
 
 Section dec_field.
   Context `{CommutativeRing A (R:=F)} `{Inv A}.
   Context `{UnEq A} `{!StandardUnEq F} `{!SubDecision F F (=)}.
 
-  Lemma dec_field `{!PropHolds (1 ≠ 0)}
-    : Setoid_Morphism (F ₀) (F ₀) (⁻¹)
+  Lemma dec_field
+    : Morphism (F ₀ ⇒ F ₀) (⁻¹)
+    → PropHolds (1 ≠ 0)
     → LeftInverse (.*.) (⁻¹) 1 (F ₀)
     → Field F.
-  Proof. pose proof dec_strong_setoid. split; try apply _.
+  Proof with try apply _. pose proof dec_strong_setoid. split... split...
     exact (dec_strong_binary_morphism (+)).
     exact (dec_strong_binary_morphism (.*.)).
   Qed.
 End dec_field.
 
-(*
-Section subfield_test.
+Section morphisms.
+  Context `{Field (F:=F1)} `{Field (F:=F2)} {f:F1 ⇀ F2} `{!Strong_Morphism F1 F2 f}
+          `{!Ring_Morphism F1 F2 f}.
 
-  Context `{Field (F:=F)} `{∀ x y, Decision (x=y)}.
-
-  Existing Instance field_nontrivial.
-
-  Lemma subfield_test (S:Subset A) `{!SubSetoid S} {sub: S ⊆ F} : 
-      (∃ x : A, x ∊ S ₀)
-    ∧ (∀ a `{!a ∊ S} b `{!b ∊ S}, a - b ∊ S) 
-    ∧ (∀ a `{!a ∊ S} b `{!b ∊ S ₀}, a / b ∊ S) ↔ Field S.
-  Proof with try apply _. split.
-  + intros [[x[? xn0]] [Cm Cd]]. 
-    assert (1 ∊ S). rewrite <- (mult_inv_r x). exact (Cd x _ x _).
-    assert (∀ a, a ∊ S ₀ → a⁻¹ ∊ S ₀) as Ci. intros a [??]. split.
-      rewrite <- (mult_1_l a⁻¹). exact (Cd 1 _ a _). now destruct (_:a⁻¹ ∊ F ₀).
-    assert (Rng S). apply (subrng_test F S).
-      split. now exists x. intros a ? b ?. split. exact (Cm a _ b _).
-      destruct (decide (b=0)) as [E|bn0].
-        rewrite_on F -> E. rewrite (right_absorb a), <- (plus_negate_r a). exact (Cm a _ a _).
-        change (PropHolds (b ≠ 0)) in bn0.
-        assert (b⁻¹ ∊ S ₀). split. rewrite <- (mult_1_l b⁻¹). exact (Cd 1 _ b _).
-          now destruct (_:b⁻¹ ∊ F ₀).
-        rewrite_on F <- (mult_inv_involutive b). exact (Cd a _ b⁻¹ _).
-    split... split... split... split...
-    rewrite sub... rewrite sub... rewrite sub...
-    split... intros a b E. destruct E as [[[??][??]] E]. split.
-      split. exact (Ci a _). exact (Ci b _).
-      now rewrite_on (F ₀) -> E.
-    rewrite sub...
-  + intro. split. exists 1... split; intros; apply _.
+  Instance field_mor_nonzero: Strong_Morphism (F1 ₀) (F2 ₀) f.
+  Proof. split; try apply _.
+  + intros x ?. apply (mult_apart_zero_l _ (f (x⁻¹))).
+    rewrite <- (F2 $ preserves_mult _ _), (F1 $ field_inv_r _), (F2 $ preserves_1). apply _.
+  + rewrite strong_ext_equiv_1. intros. now apply (strong_extensionality f).
   Qed.
-End subfield_test.
-*)
+
+  Global Instance: StrongInjective F1 F2 f.
+  Proof. apply strong_injective_preserves_0. apply _. Qed.
+
+  Global Instance field_multgroup_mor: MultiplicativeSemiGroup_Morphism (F1 ₀) (F2 ₀) f.
+  Proof. split; try apply _. intros. exact (preserves_mult _ _). Qed.
+
+  Lemma preserves_mult_inv x `{x ∊ F1 ₀} : f x⁻¹ = (f x)⁻¹.
+  Proof preserves_inverse (G1:=(F1 ₀)) (G2:=(F2 ₀)) x.
+End morphisms.
+

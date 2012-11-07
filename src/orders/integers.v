@@ -9,10 +9,9 @@ Require Export
   orders.nat_int.
 
 Local Notation nat := (every nat).
-Local Coercion subset_to_type: Subset >-> Sortclass.
 
 Section integers.
-Context `{Integers A (Z:=Z)} `{UnEq A} `{Le A} `{Lt A} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
+Context `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
 
 Notation nat_to_Z := (naturals_to_semiring nat Z).
 
@@ -34,22 +33,6 @@ Proof.
   now apply (Psuc2 _ _).
 Qed.
 
-(*
-Lemma induction_nonneg
-  (P: Z → Prop) `{!Proper ((=) ==> iff) P}:
-  P 0 → (∀ n, 0 ≤ n → P n → P (1 + n)) → ∀ n, 0 ≤ n → P n.
-Proof.
-  intros P0 PS. rapply induction; auto.
-   solve_proper.
-  intros n E1 ? E2.
-  destruct (rings.is_ne_0 1).
-  apply (antisymmetry (≤)).
-   apply (order_reflecting ((n - 1) +)). ring_simplify. now transitivity 0.
-  transitivity (n - 1). easy. apply (order_reflecting (1 +)). ring_simplify.
-  transitivity 0. easy. apply semirings.le_0_2.
-Qed.
-*)
-
 Global Instance: Biinduction Z.
 Proof.
   intros P ? P0 Psuc. apply induction; trivial.
@@ -57,9 +40,25 @@ Proof.
   intros n ??. apply (Psuc _ _). now rewrite_on Z -> (plus_negate_r_split_alt 1 n).
 Qed.
 
+Lemma int_neg_0_or_pos x `{x ∊ Z} : x ∊ Z₋ ∨ x = 0 ∨ x ∊ Z₊.
+Proof.
+  destruct (trichotomy (<) x 0) as [?|[?|?]]; [left | right;left | right;right ]; firstorder.
+Qed.
+
+Lemma int_pos_minus_1_nonneg x `{x ∊ Z₊} : x - 1 ∊ Z⁺.
+Proof. split. apply _. apply (order_reflecting (+ 1) _ _).
+  rewrite_on Z -> (plus_0_l 1), (plus_plus_negate_l x 1).
+  exact (pos_ge_1 x).
+Qed.
+
+Lemma int_pos_decompose x `{x ∊ Z₊} : ∃ `{n ∊ Z⁺}, x = 1 + n.
+Proof. exists (x-1) (int_pos_minus_1_nonneg x).
+  subsymmetry. exact (plus_negate_r_split_alt 1 x).
+Qed.
+
 Notation Z_to_natp := (integers_to_ring Z (SRpair nat)).
 
-Global Program Instance: SubDecision Z Z (≤) | 10 := λ x xe y ye,
+Global Program Instance: StrongSubDecision Z Z (≤) | 10 := λ x y,
   match decide_sub (≤) (Z_to_natp x) (Z_to_natp y) with
   | left E => left _
   | right E => right _
@@ -72,7 +71,7 @@ Instance int_le `{Integers A (Z:=Z)} : Le A | 10 :=  λ x y, ∃ z, y = x + natu
 Instance int_lt `{Integers A (Z:=Z)} `{UnEq A} : Lt A | 10 := dec_lt.
 
 Section default_order.
-Context `{Integers A (Z:=Z)} `{UnEq A} `{!StandardUnEq Z}.
+Context `{Integers (Z:=Z)} `{UnEq _} `{!StandardUnEq Z}.
 
 Notation nat_to_Z := (naturals_to_semiring nat Z).
 
