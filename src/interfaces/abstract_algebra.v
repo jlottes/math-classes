@@ -21,8 +21,9 @@ Hint Extern 2 (SubApartness _ (≠)) => eapply @strongsetoid_apart: typeclass_in
 Class SubSetoid `{Ae: Equiv A} S T : Prop :=
   { subsetoid_b : Setoid T
   ; subsetoid_regular : Proper ((T,=) ==> impl) (∊ S)
-  ; subsetoid_subset :> SubsetOf S T
+  ; subsetoid_subset : SubsetOf S T
   }.
+Hint Extern 4 (SubsetOf _ _) => eapply @subsetoid_subset : typeclass_instances.
 Notation "S ⊆ T" := (SubSetoid S T) (at level 70) : mc_scope.
 Notation "(⊆)" := (SubSetoid) (only parsing) : mc_scope.
 Notation "( S ⊆)" := (SubSetoid S) (only parsing) : mc_scope.
@@ -31,22 +32,24 @@ Notation "(⊆ T )" := (λ S, S ⊆ T) (only parsing) : mc_scope.
 Hint Extern 2 (?x ⊆ ?y) => auto_trans : typeclass_instances. *)
 Notation " ( S ,⊆) " := (restrict_rel S (⊆)) : signature_scope.
 
+Hint Extern 2 (Equiv (elt_type (⊆ _))) => eapply @subset_equiv : typeclass_instances.
+
+
 Definition morphism {A B} (X:Subset) (Y:Subset) `{Equiv X} `{Equiv Y} : @Subset (A → B) := λ f, (@equiv (X ⇀ Y) _) f f.
 Infix "⇒" := morphism (at level 65, right associativity) : mc_scope.
 Class Morphism `(S:Subset) f := morphism_prf : f ∊ S.
 Hint Extern 0 (_ ∊ _ ⇒ _) => eapply @morphism_prf : typeclass_instances.
 Hint Extern 0 (Equiv (elt_type (?X ⇒ ?Y))) => eapply (@ext_equiv _ X _ Y) : typeclass_instances.
 
+Class Strong_Morphism {A B} `{UnEq A} `{UnEq B} (X:@Subset A) (Y:@Subset B) f : Prop :=
+  { strong_morphism_closed : Closed (X ⇀ Y) f
+  ; strong_morphism_proper : strong_ext_equiv f f
+  }.
 
-Definition strong_morphism
-  `(S:Subset) `{!Uncurry S} `{UnEq (uncurried_domain S)} `{UnEq (uncurried_range S)} : Subset
-  := λ f, Closed S f ∧ strong_ext_equiv S f f.
-
-Class Strong_Morphism {A B} `{UnEq A} `{UnEq B} (X:@Subset A) (Y:@Subset B) f
-  := strong_unary_morphism : strong_morphism (X ⇀ Y) f.
-Class Strong_Binary_Morphism {A B C} `{UnEq A} `{UnEq B} `{UnEq C} (X:@Subset A) (Y:@Subset B) (Z:@Subset C) f
-  := strong_binary_morphism : strong_morphism (X ⇀ Y ⇀ Z) f.
-
+Class Strong_Binary_Morphism {A B C} `{UnEq A} `{UnEq B} `{UnEq C} (X:@Subset A) (Y:@Subset B) (Z:@Subset C) f : Prop :=
+  { strong_binary_morphism_closed : Closed (X ⇀ Y ⇀ Z) f
+  ; strong_binary_morphism_proper : strong_ext_equiv (uncurry f) (uncurry f)
+  }.
 
 Section groups.
 
@@ -153,6 +156,8 @@ Hint Extern 5 (⊤ ∊ _) => eapply (@monoid_unit_exists _ meet_is_sg_op top_is_
 Hint Extern 5 (⊥ ∊ _) => eapply (@monoid_unit_exists _ join_is_sg_op bottom_is_mon_unit) : typeclass_instances.
 Hint Extern 0 (LeftIdentity  (⊔) _ _) => eapply (@monoid_left_id  _ join_is_sg_op bottom_is_mon_unit) : typeclass_instances.
 Hint Extern 0 (RightIdentity (⊔) _ _) => eapply (@monoid_right_id _ join_is_sg_op bottom_is_mon_unit) : typeclass_instances.
+Hint Extern 0 (LeftIdentity  (⊓) _ _) => eapply (@monoid_left_id  _ meet_is_sg_op top_is_mon_unit) : typeclass_instances.
+Hint Extern 0 (RightIdentity (⊓) _ _) => eapply (@monoid_right_id _ meet_is_sg_op top_is_mon_unit) : typeclass_instances.
 
 Hint Extern 0 (Absorption (⊔) (⊓) _ _) => class_apply @join_meet_absorption : typeclass_instances.
 Hint Extern 0 (Absorption (⊓) (⊔) _ _) => class_apply @meet_join_absorption : typeclass_instances.
@@ -228,14 +233,14 @@ Section rings.
   Class IntegralDomain D : Prop :=
     { intdom_comring :>> CommutativeRing D
     ; intdom_strong :>> StrongRngOps D
-    ; intdom_nontrivial : PropHolds (1 ≠ 0)
+    ; intdom_nontrivial : 1 ∊ D ₀
     ; intdom_nozeroes : Closed (D ₀ ⇀ D ₀ ⇀ D ₀) (.*.)
     }.
 
   Class Field F : Prop :=
     { field_cring :>> CommutativeRing F
     ; field_strong :>> StrongRngOps F
-    ; field_nontrivial : PropHolds (1 ≠ 0)
+    ; field_nontrivial : 1 ∊ F ₀
     ; field_inv_proper : Morphism (F ₀ ⇒ F ₀) (⁻¹)
     ; field_inv_l      : LeftInverse (.*.) (⁻¹) 1 (F ₀)
     }.
@@ -262,7 +267,7 @@ Hint Extern 0 (RightDistribute (.*.) (+) _) => eapply @plus_mult_distr_r : typec
 Hint Extern 0 (LeftAbsorb  (.*.) _ _) => eapply @mult_0_l : typeclass_instances.
 Hint Extern 0 (RightAbsorb (.*.) _ _) => eapply @mult_0_r : typeclass_instances.
 
-Hint Extern 4 (PropHolds (1 ≠ 0)) => eapply @intdom_nontrivial : typeclass_instances.
+Hint Extern 4 (1 ∊ _ ₀) => eapply @intdom_nontrivial : typeclass_instances.
 Hint Extern 4  (_ * _ ∊ _ ₀) => eapply @intdom_nozeroes : typeclass_instances.
 Hint Extern 10 (Closed (?D ₀ ⇀ ?D ₀ ⇀ ?D ₀) (.*.)) => eapply @intdom_nozeroes : typeclass_instances.
 
@@ -313,6 +318,12 @@ Class BoundedJoinSemiLattice_Morphism {A B Ajoin Bjoin Abottom Bbottom Ae Be} L 
   { bounded_join_slmor_a : @BoundedSemiLattice A (@join_is_sg_op _ Ajoin) (@bottom_is_mon_unit _ Abottom) Ae L
   ; bounded_join_slmor_b : @BoundedSemiLattice B (@join_is_sg_op _ Bjoin) (@bottom_is_mon_unit _ Bbottom) Be K
   ; bounded_join_slmor_monmor :>> @Monoid_Morphism A B join_is_sg_op join_is_sg_op bottom_is_mon_unit bottom_is_mon_unit Ae Be L K f
+  }.
+
+Class BoundedMeetSemiLattice_Morphism {A B Ameet Bmeet Atop Btop Ae Be} L K f :=
+  { bounded_meet_slmor_a : @BoundedSemiLattice A (@meet_is_sg_op _ Ameet) (@top_is_mon_unit _ Atop) Ae L
+  ; bounded_meet_slmor_b : @BoundedSemiLattice B (@meet_is_sg_op _ Bmeet) (@top_is_mon_unit _ Btop) Be K
+  ; bounded_meet_slmor_monmor :>> @Monoid_Morphism A B meet_is_sg_op meet_is_sg_op top_is_mon_unit top_is_mon_unit Ae Be L K f
   }.
 
 Class Lattice_Morphism {A B Ajoin Bjoin Ameet Bmeet Ae Be} L K f :=

@@ -268,6 +268,31 @@ Lemma monoid_morphism_proper2: Find_Proper_Signature (@Monoid_Morphism) 1
 Proof. now structure_mor_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@Monoid_Morphism) 1 _) => eexact monoid_morphism_proper2 : typeclass_instances. 
 
+Hint Extern 0 (?S ∊ SemiGroup) => red; apply _ : typeclass_instances.
+Hint Extern 0 (?S ∊ Monoid)    => red; apply _ : typeclass_instances.
+
+Ltac structure_mor_proper3 EX EY :=
+  red; intros; unfold flip; intros X X' EX Y Y' EY f ? Ef ?; rewrite <-Ef; unfold_sigs;
+  repeat match goal with H : ?X ∊ ?S |- _ => change (S X) in H end;
+  split; trivial.
+
+Lemma semigroup_morphism_proper3: Find_Proper_Signature (@SemiGroup_Morphism) 2
+  (∀ A Ae B Be Sop Top, Proper ((SemiGroup,⊆) --> (SemiGroup,⊆) ++> eq ==> impl) (@SemiGroup_Morphism A Ae B Be Sop Top)).
+Proof. structure_mor_proper3 EX EY.
+  rewrite <- (_ : SubsetOf (X ⇒ Y) (X' ⇒ Y')). apply _.
+  intros ?? ??. apply preserves_sg_op; now apply EX.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@SemiGroup_Morphism) 2 _) => eexact semigroup_morphism_proper3 : typeclass_instances. 
+
+Lemma monoid_morphism_proper3: Find_Proper_Signature (@Monoid_Morphism) 2
+  (∀ A Ae B Be Sunit Tunit Sop Top,
+   Proper ((Monoid,⊆) --> (Monoid,⊆) ++> eq ==> impl) (@Monoid_Morphism A Ae B Be Sunit Tunit Sop Top)).
+Proof. structure_mor_proper3 EX EY.
+  rewrite (SemiGroup $ EX), <-(SemiGroup $ EY). apply _.
+  exact preserves_mon_unit.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@Monoid_Morphism) 2 _) => eexact monoid_morphism_proper3 : typeclass_instances. 
+
 
 Local Existing Instance closed_range.
 Local Existing Instance closed_binary.

@@ -22,8 +22,8 @@ Class NatDistance `{Equiv A} `{Plus A} (N:@Subset A)
 
 Definition nat_distance `{nd : NatDistance (N:=N)} : N ⇀ N ⇀ N := λ x y,
   match nat_distance_sig x y with
-  | inl (exist n _) => n
-  | inr (exist n _) => n
+  | inl (exist _ n _) => n
+  | inr (exist _ n _) => n
   end.
 Instance: Params (@nat_distance_sig) 5.
 Instance: Params (@nat_distance) 5.

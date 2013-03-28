@@ -125,7 +125,7 @@ from more general [Element] instances, to speed instance resolution.
 Also, because of the implicit coercion [elt_type] of a [Subset] to its underlying [Type],
 we can write [ f : X ⇀ Y ⇀ ... ⇀ Z ]. While the [Subset]s are discarded by the coercion,
 they can be used for implicit argument resolution, essentially acting as "hints" that
-the domains and codomain of [f] are be the specified [Subset]s.
+the domains and codomain of [f] are the specified [Subset]s.
 *)
 
 Definition closed_fun {A B} X Y : @Subset (A → B) := λ f, ∀ x, x ∊ X → (f x) ∊ Y.
@@ -135,48 +135,27 @@ Hint Extern 0 (_ ∊ _ ⇀ _) => eapply @closed_prf : typeclass_instances.
 
 Definition compose `{X:Subset} `{Y:Subset} `{Z:Subset} (g:Y ⇀ Z) (f:X ⇀ Y) : X ⇀ Z  := λ x, g (f x).
 Infix "∘" := compose : mc_scope.
+Notation "( f ∘)" := (λ g, f ∘ g) (only parsing) : mc_scope.
+Notation "(∘ f )" := (λ g, g ∘ f) (only parsing) : mc_scope.
 Typeclasses Transparent compose.
+
+Definition uncurry `{X:Subset} `{Y:Subset} `{Z:Subset} (f:X ⇀ Y ⇀ Z) : X * Y ⇀ Z := 
+  λ p, match p with (x,y) => f x y end.
+
+Definition curry `{X:Subset} `{Y:Subset} `{Z:Subset} (f:X * Y ⇀ Z) : X ⇀ Y ⇀ Z := λ x y, f (x,y).
 
 Definition ext_equiv `{X:Subset} `{Y:Subset} `{Equiv X} `{Equiv Y}
   : Equiv (X ⇀ Y) := ((X,=)==>(Y,=))%signature.
 Hint Extern 2 (Equiv (elt_type (?X ⇀ ?Y))) => eapply (ext_equiv (X:=X) (Y:=Y)) : typeclass_instances.
 Hint Extern 5 (Equiv (_ → _)) => eapply @ext_equiv : typeclass_instances.
 
+Definition strong_ext_equiv `{X:Subset} `{Y:Subset} `{UnEq X} `{UnEq Y} : Equiv (X ⇀ Y)
+  := λ f g, ∀ x `{x ∊ X} y `{y ∊ X}, f x ≠ g y → x ≠ y.
 
 Definition TypedSubset := { A : Type & @Subset A }.
 Definition unpack_subset : ∀ S : TypedSubset, @Subset (projT1 S) := λ S, projT2 S.
 Definition pack_subset `(S:Subset A) : TypedSubset := existT (@Subset) A S.
 Coercion unpack_subset: TypedSubset >-> Subset.
-
-(** A little Typeclass computation that gives the
-      uncurry function for [X ⇀ Y ⇀ ... ⇀ Z], together
-      with the uncurried domain [ ... * Y * X]  and range [Z]. *)
-Class Uncurry `(S:Subset) := uncurry_sig :
-  { D : TypedSubset & { R : TypedSubset & elt_type S → elt_type (D ⇀ R) }}.
-Arguments uncurry_sig {_} S {_}.
-Instance uncurried_base `(X:@Subset A) `(Y:@Subset B) : Uncurry (X ⇀ Y) | 30.
-Proof. red. exists (pack_subset X). exists (pack_subset Y). exact id. Defined.
-Instance uncurried_chain `(X:@Subset A) `(Y:Subset) `(Z:Subset) {U:Uncurry (Y ⇀ Z)}
- : Uncurry (X ⇀ Y ⇀ Z).
-Proof. destruct U as [D[R u]].
-  exists (pack_subset (D*X)%subset). exists R.
-  intros f x. destruct x as [b a]. exact (u (f a) b).
-Defined.
-Definition uncurried_domain `(S:Subset) `{!Uncurry S} : Subset := projT1 (uncurry_sig S).
-Definition uncurried_range  `(S:Subset) `{!Uncurry S} : Subset := projT1 (projT2 (uncurry_sig S)).
-Definition uncurried_type   `(S:Subset) `{!Uncurry S} := uncurried_domain S ⇀ uncurried_range S.
-Definition uncurry `{S:Subset} `{!Uncurry S} : S ⇀ uncurried_type S := projT2 (projT2 (uncurry_sig S)).
-
-(** [Uncurry] permits us to define strong extensionality for general airities. *)
-Definition strong_ext_equiv `(S:Subset) `{!Uncurry S}
-  `{UnEq (uncurried_domain S)} `{UnEq (uncurried_range S)} f g :=
-  ∀ x `{x ∊ uncurried_domain S} `{y ∊ uncurried_domain S},
-    (uncurry f) x ≠ (uncurry g) y → x ≠ y.
-
-Hint Extern 10 (Equiv (elt_type (uncurried_domain _))) =>
-  lazy; match goal with |- ?T -> ?T -> Prop => change (Equiv T) end; apply _ : typeclass_instances.
-Hint Extern 10 (UnEq (elt_type (uncurried_domain _))) =>
-  lazy; match goal with |- ?T -> ?T -> Prop => change (UnEq T) end; apply _ : typeclass_instances.
 
 Definition image     `{X:Subset} `{Y:Subset} `{Equiv Y} (f:X ⇀ Y) S : Subset := λ y, y ∊ Y ∧ ∃ `{x ∊ S}, f x = y.
 Definition inv_image `{X:Subset} `{Y:Subset}            (f:X ⇀ Y) T : Subset := λ x, x ∊ X ∧ f x ∊ T.
@@ -211,6 +190,8 @@ Typeclasses Transparent Meet Join Top Bottom.
 Class Le A := le: relation A.
 Class Lt A := lt: relation A.
 Typeclasses Transparent Le Lt.
+
+Class Infty A := infty : A.
 
 Class Abs A := abs : A → A.
 Typeclasses Transparent Abs.
@@ -302,6 +283,8 @@ Notation "x ≤ y < z" := (x ≤ y ∧ y < z) (at level 70, y at next level) : m
 Notation "x < y < z" := (x < y ∧ y < z) (at level 70, y at next level) : mc_scope.
 Notation "x < y ≤ z" := (x < y ∧ y ≤ z) (at level 70, y at next level) : mc_scope.
 
+Notation "∞" := infty : mc_scope.
+
 Notation "{{ x }}" := (subset_singleton _ x) : mc_scope.
 Notation "{{ x | S }}" := (subset_singleton S x) (only parsing) : mc_scope.
 
@@ -312,6 +295,16 @@ Notation "|·|" := abs (only parsing) : mc_abs_scope.
 Notation "(→)" := (λ x y, x → y) : mc_scope.
 (* Notation "t $ r" := (t r) (at level 65, right associativity, only parsing) : mc_scope. *)
 Notation "(∘)" := compose (only parsing) : mc_scope.
+
+(* The "&" notation for sg op clobbers these notations *)
+(*
+Notation "{ x  |  P }" := (sig (fun x => P)) : mc_scope.
+Notation "{ x : A  |  P }" := (sig (fun x:A => P)) : mc_scope.
+Notation "{ x | P && Q }" := (sig2 (fun x => P) (fun x => Q)) : mc_scope.
+Notation "{ x : A | P && Q }" := (sig2 (fun x:A => P) (fun x:A => Q)) : mc_scope.
+Notation "{ x : A && P }" := (sigT (fun x:A => P)) : mc_scope.
+Notation "{ x : A && P && Q }" := (sigT2 (fun x:A => P) (fun x:A => Q)) : mc_scope.
+*)
 
 Hint Extern 2 (?x ≤ ?y) => reflexivity.
 Hint Extern 4 (?x ≤ ?z) => auto_trans.

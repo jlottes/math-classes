@@ -87,8 +87,8 @@ Context `{!NatDistance N}.
 
 Global Program Instance SRpair_abs: IntAbs Z N := λ x,
   match nat_distance_sig (pos x) (neg x) with
-  | inl (exist n p) => inr n
-  | inr (exist n p) => inl n
+  | inl (exist _ n p) => inr n
+  | inr (exist _ n p) => inl n
   end.
 Next Obligation.
   destruct x as [a b]. match goal with H : _ ∊ Z |- _ => pose proof H; destruct H end.

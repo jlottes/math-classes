@@ -266,14 +266,14 @@ Section join_order_preserving.
   Lemma join_sl_mor_preserving: OrderPreserving L K f.
   Proof.
     repeat (split; try apply _).
-    intros ?? ??. rewrite 2!(join_sl_le_spec _ _), <-(K $ preserves_join _ _).
+    intros ?? ??. rewrite 2!(join_sl_le_spec _ _), <-(K $ preserves_join f _ _).
     intros E. now rewrite (L $ E).
   Qed.
 
   Lemma join_sl_mor_reflecting `{!Injective L K f}: OrderReflecting L K f.
   Proof.
     repeat (split; try apply _).
-    intros ?? ??. rewrite 2!(join_sl_le_spec _ _), <-(K $ preserves_join _ _).
+    intros ?? ??. rewrite 2!(join_sl_le_spec _ _), <-(K $ preserves_join f _ _).
     intros. now apply (injective f _ _).
   Qed.
 End join_order_preserving.
@@ -285,14 +285,14 @@ Section meet_order_preserving.
   Lemma meet_sl_mor_preserving: OrderPreserving L K f.
   Proof.
     repeat (split; try apply _).
-    intros ?? ??. rewrite 2!(meet_sl_le_spec _ _), <-(K $ preserves_meet _ _).
+    intros ?? ??. rewrite 2!(meet_sl_le_spec _ _), <-(K $ preserves_meet f _ _).
     intros E. now rewrite (L $ E).
   Qed.
 
   Lemma meet_sl_mor_reflecting `{!Injective L K f}: OrderReflecting L K f.
   Proof.
     repeat (split; try apply _).
-    intros ?? ??. rewrite 2!(meet_sl_le_spec _ _), <-(K $ preserves_meet _ _).
+    intros ?? ??. rewrite 2!(meet_sl_le_spec _ _), <-(K $ preserves_meet f _ _).
     intros. now apply (injective f _ _).
   Qed.
 End meet_order_preserving.
@@ -326,3 +326,22 @@ Section order_preserving_meet_sl_mor.
     + rewrite (L $ meet_r _ _ E). subsymmetry. apply (meet_r _ _). now apply (order_preserving _).
   Qed.
 End order_preserving_meet_sl_mor.
+
+Section full_total_order.
+  Context `{MeetSemiLatticeOrder (L:=L)} `{Lt _} `{UnEq _}
+    `{!FullPartialOrder L} `{!TotalOrder L}.
+
+  Lemma total_meet_lt x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : z < x → z < y → z < x ⊓ y.
+  Proof.
+    destruct (total (≤) x y) as [E|E];
+    [ rewrite (_ $ meet_l _ _ E) | rewrite (_ $ meet_r _ _ E) ]; tauto.
+  Qed.
+
+  Context `{Zero _} `{0 ∊ L}.
+
+  Lemma total_meet_pos x `{x ∊ L₊} y `{y ∊ L₊} : x ⊓ y ∊ L₊ .
+  Proof. split. apply _. apply (total_meet_lt _ _ _); firstorder. Qed.
+End full_total_order.
+
+Hint Extern 5 (_ ⊓ _ ∊ _₊) => eapply @total_meet_pos : typeclass_instances.
+

@@ -4,6 +4,9 @@ Require Import
 
 Local Open Scope mc_abs_scope.
 
+Hint Extern 20 (Closed _ _ abs) => eapply abs_closed : typeclass_instances.
+Hint Extern 5 (abs ?x ∊ _) => eapply (abs_closed x) : typeclass_instances.
+
 Local Ltac abs_case R x := destruct (nonneg_or_nonpos x);
   [ rewrite (R $ abs_nonneg x) | rewrite (R $ abs_nonpos x) ].
 
@@ -13,12 +16,16 @@ Proof. intros x ?. abs_case R x; apply _. Qed.
 Hint Extern 10 (Closed (_ ⇀ _⁺) |·|) => eapply @abs_closed_nonneg : typeclass_instances.
 Hint Extern 2 (abs _ ∊ _⁺) => eapply @abs_closed_nonneg : typeclass_instances.
 
+Lemma abs_unique_respectful `{Ring (R:=R)} `{Le _} `{!TotalOrder R} `{!SemiRingOrder R}
+ `{!DecAbs R (a:=a1)} `{!DecAbs R (a:=a2)} : (abs (Abs:=a1) : R ⇀ R⁺) = abs (Abs:=a2).
+Proof. intros x y E. unfold_sigs. red_sig.
+  abs_case R x; subsymmetry; rewrite (R $ E);
+  [ apply abs_nonneg | apply abs_nonpos ]; now rewrite <-(R $ E).
+Qed.
+
 Lemma abs_morphism_nonneg `{Ring (R:=R)} `{Le _} `{!TotalOrder R} `{!SemiRingOrder R}
   `{Abs _} `{!DecAbs R} : Morphism (R ⇒ R⁺) |·|.
-Proof. intros x y E. unfold_sigs. red_sig.
-  abs_case R y;
-    rewrite <- (R $ E); [ apply abs_nonneg | apply abs_nonpos ]; now rewrite (R $ E).
-Qed.
+Proof abs_unique_respectful.
 Hint Extern 2 (Morphism (_ ⇒ _⁺) abs) => eapply @abs_morphism_nonneg : typeclass_instances.
 
 Lemma abs_morphism `{Ring (R:=R)} `{Le _} `{!TotalOrder R} `{!SemiRingOrder R}
@@ -84,10 +91,17 @@ Proof abs_nonneg 1.
 
 End contents.
 
+Definition default_abs {A} {Ale:Le A} `{Zero A} `{Negate A} {R} `{!StrongSubDecision R R (≤)}
+  : Abs A := λ x, if (decide_sub_strong (≤) 0 x) then x else -x.
+
+(* force instance resolution to pick the relation {Le A} before looking for the decision procedure *)
+Hint Extern 20 (Abs ?A) =>
+  let H := constr:(_ : PartialOrder (A:=A) _) in
+  match type of H with PartialOrder (Ale:=?l) ?R =>
+    eapply (default_abs (Ale:=l) (R:=R)) end : typeclass_instances.
+
 Section default_abs.
   Context `{Ring A (R:=R)} `{Le A} `{!PartialOrder R} `{!StrongSubDecision R R (≤)}.
-
-  Global Instance default_abs : Abs A | 20 := λ x, if (decide_sub_strong (≤) 0 x) then x else -x.
 
   Instance default_abs_spec : DecAbs R.
   Proof. split; unfold abs, default_abs; intros x ?;
@@ -102,8 +116,8 @@ End default_abs.
 Hint Extern 2 (@DecAbs _ _ _ _ _ default_abs _) => eapply @default_abs_spec : typeclass_instances.
 
 Section order_preserving.
-  Context `{Ring (R:=R1)} `{Le _} `{!TotalOrder R1} `{!SemiRingOrder R1} `{Abs _} `{!DecAbs R1}.
-  Context `{Ring (R:=R2)} `{Le _} `{!TotalOrder R2} `{!SemiRingOrder R2} `{Abs _} `{!DecAbs R2}.
+  Context `{Ring (R:=R1)} {le1:Le _} `{!TotalOrder R1} `{!SemiRingOrder R1} {a1:Abs _} `{!DecAbs R1}.
+  Context `{Ring (R:=R2)} {le2:Le _} `{!TotalOrder R2} `{!SemiRingOrder R2} {a2:Abs _} `{!DecAbs R2}.
   Context (f: R1 ⇀ R2) `{!OrderPreserving R1 R2 f} `{!Ring_Morphism R1 R2 f}.
 
   Lemma preserves_abs x `{x ∊ R1} : f (|x|) = |f x|.

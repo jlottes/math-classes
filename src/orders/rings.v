@@ -129,10 +129,17 @@ Section more_ring_order.
   Lemma nonneg_minus_compat_back x `{x ∊ R} y `{y ∊ R} z `{z ∊ R⁺} : x ≤ y - z → x ≤ y.
   Proof. intros. subtransitivity (y-z). now apply (nonneg_minus_compat _ _ _). Qed.
 
-  Lemma between_nonneg x `{x ∊ R⁺} : -x ≤ x.
+  Lemma nonneg_between x `{x ∊ R⁺} : -x ≤ x.
   Proof. pose proof (nonneg_negate x). subtransitivity 0; firstorder. Qed.
 
 End more_ring_order.
+
+Lemma between_nonneg `{Ring (R:=R)} `{Le _} `{Lt _} `{UnEq _} `{!FullPseudoSemiRingOrder R}
+  `{1 ∊ R ₀}  x `{x ∊ R} : -x ≤ x → x ∊ R⁺.
+Proof. intro E. apply (reflects_nonneg (2*.)). apply _.
+  rewrite (_ $ mult_2_plus_l _). rewrite <-(_ $ negate_involutive x) at 2.
+  now rewrite (flip_nonneg_minus _ _).
+Qed.
 
 Section strict_ring_order.
   Context `{Ring (R:=R)} `{Lt _} `{!StrictSemiRingOrder R}.
@@ -199,10 +206,18 @@ Section more_strict_ring_order.
     exact (pos_plus_lt_compat_r _ _).
   Qed.
 
-  Lemma between_pos x `{x ∊ R₊} : -x < x.
+  Lemma pos_between x `{x ∊ R₊} : -x < x.
   Proof. pose proof (pos_negate x). subtransitivity 0; firstorder. Qed.
 
 End more_strict_ring_order.
+
+Lemma between_pos `{Ring (R:=R)} `{Le _} `{Lt _} `{UnEq _} `{!FullPseudoSemiRingOrder R}
+  `{1 ∊ R ₀}  x `{x ∊ R} : -x < x → x ∊ R₊ .
+Proof. intro E. apply (reflects_pos (2*.)). apply _.
+  rewrite (_ $ mult_2_plus_l _). rewrite <-(_ $ negate_involutive x) at 2.
+  now rewrite (flip_pos_minus _ _).
+Qed.
+
 
 Section another_ring_order.
   Context `{Ring A (R:=R1)} `{Le A} `{!SemiRingOrder R1} `{Ring B (R:=R2)} `{Le B}.

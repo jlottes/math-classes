@@ -93,8 +93,7 @@ Section morphisms_semirngs.
   Proof. split; try apply _.
   + intros x [? E]. split. apply _. red. rewrite_on R2 <- preserves_0.
     exact (strong_injective _ _ _ E).
-  + rewrite strong_ext_equiv_1.
-    intros x ? y ? E. destruct inj. now apply (strong_extensionality f).
+  + intros x ? y ? E. destruct inj. now apply (strong_extensionality f).
   Qed.
 End morphisms_semirngs.
 

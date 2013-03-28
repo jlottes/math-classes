@@ -22,14 +22,14 @@ Section specializable.
 
   Definition int_abs `{ia : IntAbs} : Z ⇀ N := λ x,
     match int_abs_sig x with
-    | inl (exist n _) => n
-    | inr (exist n _) => n
+    | inl (exist _ n _) => n
+    | inr (exist _ n _) => n
     end.
 
   Definition int_to_nat `{Zero _} `{ia : IntAbs} : Z ⇀ N := λ x,
     match int_abs_sig x with
-    | inl (exist n _) => n
-    | inr (exist n _) => 0
+    | inl (exist _ n _) => n
+    | inr (exist _ n _) => 0
     end.
 
 End specializable.

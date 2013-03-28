@@ -45,6 +45,13 @@ Proof. pose proof nat_ne_0_pos x. exact (pos_ge_1 x). Qed.
 Lemma nat_ge_1_ne_0 x `{x ∊ N} : 1 ≤ x → x ∊ N ₀.
 Proof. intro E. pose proof ge_1_pos x E. apply _. Qed.
 
+Lemma nat_ne_0_1_or_gt_1 x `{x ∊ N ₀} : x = 1 ∨ 1 < x.
+Proof. destruct (decompose_le (nat_ne_0_ge_1 x)) as [z[? E]].
+  destruct (nat_0_or_pos z) as [Ez|?].
+  + left. now rewrite (_ $ E), (_ $ Ez), (_ $ plus_0_r _).
+  + right. rewrite (_ $ E). exact (pos_plus_lt_compat_r _ _).
+Qed.
+
 Global Instance: ∀ `{z ∊ N ₀}, OrderReflecting N N (z *.).
 Proof. intros z ?. pose proof nat_ne_0_pos z. apply _. Qed.
 
@@ -65,9 +72,11 @@ Section another_ring.
   Proof nonneg_negate _.
 
   Lemma between_to_ring n `{n ∊ N} : -f n ≤ f n.
-  Proof between_nonneg _.
+  Proof nonneg_between _.
 End another_ring.
 End naturals_order.
+
+Hint Extern 2 (- (naturals_to_semiring _ _ _) ∊ _⁻) => eapply @negate_to_ring_nonpos : typeclass_instances.
 
 Hint Extern 20 (_ ∊ _⁺) => eapply @nat_nonneg : typeclass_instances.
 

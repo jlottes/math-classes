@@ -56,8 +56,8 @@ Next Obligation. split. apply _. rewrite (N $ commutativity (+) _ _). now apply 
 Local Notation nat := (every nat).
 Global Program Instance natdistance_default `{Naturals (N:=N)} : NatDistance N | 10 := λ x y,
   match nat_distance_sig (naturals_to_semiring N nat x) (naturals_to_semiring N nat y) with
-  | inl (exist n p) => inl (naturals_to_semiring nat N n)
-  | inr (exist n p) => inr (naturals_to_semiring nat N n)
+  | inl (exist _ n p) => inl (naturals_to_semiring nat N n)
+  | inr (exist _ n p) => inr (naturals_to_semiring nat N n)
   end.
 Next Obligation. pose proof p _ _ as [? E]. clear dependent p. split. apply _.
   rewrite <- ( N $ naturals.to_semiring_involutive N nat y ), <- E.

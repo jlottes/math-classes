@@ -194,7 +194,7 @@ Program Instance Z_abs: IntAbs Z Z⁺ := λ x,
   | Zpos p => inl x
   | Zneg p => inr (Zpos p)
   end.
-Next Obligation. split. exact (_:0 ∊ Z⁺). reflexivity. Qed.
+Next Obligation. split. exact (_:0 ∊ Z⁺). symmetry. exact (naturals.to_semiring_unique (id:Z⁺ ⇀ Z) 0). Qed.
 Next Obligation. split. apply _. symmetry. exact (naturals.to_semiring_unique (id:Z⁺ ⇀ Z) _). Qed.
 Next Obligation. split. apply _. now rewrite <- (naturals.to_semiring_unique (id:Z⁺ ⇀ Z) _). Qed.
 

@@ -25,6 +25,12 @@ Class IntPowSpec {A B} F Z (pow : Pow A B) `{Equiv A} `{Equiv B} `{UnEq A} `{Le 
 
 Hint Extern 5 (Morphism _ (^)  ) => class_apply @nat_pow_proper : typeclass_instances.
 
+Class NatLogSpec {A} N b log `{Equiv A} `{Le A} `{Lt A} `{Zero A} `{One A} `{Plus A} `{Mult A} :=
+  { nat_log_proper :>> Morphism (N₊ ⇒ N⁺) log
+  ; nat_log_base : b ∊ N₊
+  ; nat_log_spec {pw} `{!NatPowSpec N N⁺ pw} x `{x ∊ N₊} : b^(log x) ≤ x < b^(1+log x)
+  }.
+
 Class ShiftL A B := shiftl: A → B → A.
 Infix "≪" := shiftl (at level 33, left associativity).
 Notation "(≪)" := shiftl (only parsing).

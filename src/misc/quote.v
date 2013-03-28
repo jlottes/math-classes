@@ -34,6 +34,34 @@ Section quote.
     Qed.
   End strong_setoid.
 
+  Section partial_order.
+    Context `{Equiv A} `{Le A} `{Le B} `{!PartialOrder R1} `{!PartialOrder R2}.
+
+    Existing Instance order_morphism_mor.
+    Existing Instance po_proper.
+    Existing Instance po_setoid.
+
+    Lemma quote_le `{!OrderEmbedding R1 R2 f} `(Ex : Quote x x2) `(Ey : Quote y y2) : x ≤ y ↔ x2 ≤ y2.
+    Proof. destruct Ex as [[?[??]] Ex], Ey as [[?[??]] Ey].
+      split. intro. rewrite <-(R2 $ Ey), <-(R2 $ Ex). now apply (order_preserving f).
+      intro. apply (order_reflecting f _ _). now rewrite (R2 $ Ey), (R2 $ Ex).
+    Qed.
+  End partial_order.
+
+  Section strict_setoid_order.
+    Context `{Equiv A} `{Lt A} `{Lt B} `{!StrictSetoidOrder R1} `{!StrictSetoidOrder R2}.
+
+    Existing Instance strict_order_morphism_mor.
+    Existing Instance so_proper.
+    Existing Instance so_setoid.
+
+    Lemma quote_lt `{!StrictOrderEmbedding R1 R2 f} `(Ex : Quote x x2) `(Ey : Quote y y2) : x < y ↔ x2 < y2.
+    Proof. destruct Ex as [[?[??]] Ex], Ey as [[?[??]] Ey].
+      split. intro. rewrite <-(R2 $ Ey), <-(R2 $ Ex). now apply (strictly_order_preserving f).
+      intro. apply (strictly_order_reflecting f _ _). now rewrite (R2 $ Ey), (R2 $ Ex).
+    Qed.
+  End strict_setoid_order.
+
   Ltac quote_tac :=
     repeat match goal with E : Quote _ _ |- _ => destruct E as [[?[??]] E] end;
     split; [ intuition (apply _) |].
@@ -95,6 +123,13 @@ Proof quote_equiv id Ex Ey.
 Lemma quote_uneq_id `{StrongSetoid (S:=X)} `(Ex:Quote id x x2) `(Ey:Quote id y y2) : x ≠ y ↔ x2 ≠ y2.
 Proof quote_uneq id Ex Ey.
 
+Lemma quote_le_id `{PartialOrder (P:=X)} `(Ex:Quote id x x2) `(Ey:Quote id y y2) : x ≤ y ↔ x2 ≤ y2.
+Proof. assert (OrderEmbedding X X id). split; split; try tauto; split; apply _. exact (quote_le id Ex Ey). Qed.
+
+Lemma quote_lt_id `{StrictSetoidOrder (S:=X)} `(Ex:Quote id x x2) `(Ey:Quote id y y2) : x < y ↔ x2 < y2.
+Proof. assert (StrictOrderEmbedding X X id). split; split; try tauto; split; apply _. exact (quote_lt id Ex Ey). Qed.
+
+
 Lemma quote_id `{R1:Subset} `{Setoid (S:=R2)} (f:R1 ⇀ R2)
   `(E:Quote f x y) : Quote id (f x) y.
 Proof. destruct E as [[?[??]] E]. split. intuition (apply _). trivial. Qed.
@@ -111,6 +146,8 @@ Ltac quote_expr f quote :=
     | ?P ?x => match P with
                | @equiv _ _ _ => fail 1
                | @uneq  _ _ _ => fail 1
+               | @le    _ _ _ => fail 1
+               | @lt    _ _ _ => fail 1
                | _ => match type of P with _ -> Prop =>
                  let qx := q x in constr:(quote_pred f P qx) end
                end
@@ -144,6 +181,8 @@ Ltac quote_inj_expr f :=
     match expr with
     | @equiv _ _ ?x ?y => let qx := q x in let qy := q y in constr:(quote_equiv f qx qy)
     | @uneq  _ _ ?x ?y => let qx := q x in let qy := q y in constr:(quote_uneq  f qx qy)
+    | @le    _ _ ?x ?y => let qx := q x in let qy := q y in constr:(quote_le    f qx qy)
+    | @lt    _ _ ?x ?y => let qx := q x in let qy := q y in constr:(quote_lt    f qx qy)
     | _ => prop_quote q expr
     end
   in quote_expr f q'.
@@ -163,6 +202,8 @@ Ltac preserves_simplify_expr f :=
           constr:(quote_id f qfx)
       | @equiv _ _ ?x ?y => let qx := q x in let qy := q y in constr:(quote_equiv_id qx qy)
       | @uneq  _ _ ?x ?y => let qx := q x in let qy := q y in constr:(quote_uneq_id  qx qy)
+      | @le    _ _ ?x ?y => let qx := q x in let qy := q y in constr:(quote_le_id    qx qy)
+      | @lt    _ _ ?x ?y => let qx := q x in let qy := q y in constr:(quote_lt_id    qx qy)
       | _ => prop_quote q expr
       end
     in quote_expr (id:R2⇀R2) qb

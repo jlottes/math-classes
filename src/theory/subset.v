@@ -1,5 +1,20 @@
 Require Import abstract_algebra interfaces.orders.
 
+Definition subset_empty        {A} : Bottom (@Subset A) := λ x, False.
+Definition subset_intersection {A} : Meet (@Subset A) := λ S T x, x ∊ S ∧ x ∊ T.
+Definition subset_union        {A} : Join (@Subset A) := λ S T x, x ∊ S ∨ x ∊ T.
+Hint Extern 2 (Bottom Subset) => eapply @subset_empty : typeclass_instances.
+Hint Extern 2 (Meet Subset) => eapply @subset_intersection : typeclass_instances.
+Hint Extern 2 (Join Subset) => eapply @subset_union : typeclass_instances.
+Hint Extern 10 (Top Subset) => eapply @every : typeclass_instances.
+Hint Extern 10 (Meet (_ → Prop)) => eapply @subset_intersection : typeclass_instances.
+Hint Extern 10 (Join (_ → Prop)) => eapply @subset_union : typeclass_instances.
+
+Hint Extern 2 (_ ∊ _ ⊓ _) => split; trivial; apply _ : typeclass_instances.
+Hint Extern 2 (_ ∊ _ ⊔ _) => first [ left; trivial; apply _
+                                   | right; trivial; apply _ ] : typeclass_instances.
+
+
 Ltac subreflexivity    := first [ apply (subreflexivity _) | rapply (subreflexivity)]; trivial.
 Ltac subsymmetry       := first [ apply (subsymmetry _ _)  | rapply (subsymmetry)   ]; trivial.
 Ltac subtransitivity y := apply (subtransitivity _ y _); trivial.
@@ -83,6 +98,26 @@ end : typeclass_instances.
 
 Lemma subset_partialorder A : PartialOrder (Ale:=@SubsetOf A) (every Subset).
 Proof. split; try apply _. firstorder. Qed.
+Hint Extern 2 (PartialOrder (every Subset)) => eapply @subset_partialorder : typeclass_instances.
+
+Lemma subset_lattice_order {A} : LatticeOrder (Ale:=SubsetOf) (every (@Subset A)).
+Proof. split; (split; [ apply _ | intros ????; apply _ | firstorder..]). Qed.
+Hint Extern 2 (LatticeOrder (every Subset)) => eapply @subset_lattice_order : typeclass_instances.
+Hint Extern 2 (MeetSemiLatticeOrder (every Subset)) => eapply @lattice_order_meet : typeclass_instances.
+Hint Extern 2 (JoinSemiLatticeOrder (every Subset)) => eapply @lattice_order_join : typeclass_instances.
+
+Lemma subset_bounded_meet_semilattice {A} : BoundedMeetSemiLattice (every (@Subset A)).  Proof. firstorder. Qed.
+Lemma subset_bounded_join_semilattice {A} : BoundedJoinSemiLattice (every (@Subset A)).  Proof. firstorder. Qed.
+Hint Extern 2 (BoundedMeetSemiLattice (every Subset)) => eapply @subset_bounded_meet_semilattice : typeclass_instances.
+Hint Extern 2 (BoundedJoinSemiLattice (every Subset)) => eapply @subset_bounded_meet_semilattice : typeclass_instances.
+
+Lemma subset_dist_lattice {A} : DistributiveLattice (every (@Subset A)). Proof. firstorder. Qed.
+Hint Extern 2 (DistributiveLattice (every Subset)) => eapply @subset_dist_lattice : typeclass_instances.
+
+Hint Extern 2 (SubsetOf (?X ⊓ ?Y) ?X) => apply (meet_lb_l (L:=every Subset) _ _) : typeclass_instances.
+Hint Extern 2 (SubsetOf (?X ⊓ ?Y) ?Y) => apply (meet_lb_r (L:=every Subset) _ _) : typeclass_instances.
+Hint Extern 2 (SubsetOf ?X (?X ⊔ ?Y)) => apply (join_ub_l (L:=every Subset) _ _) : typeclass_instances.
+Hint Extern 2 (SubsetOf ?Y (?X ⊔ ?Y)) => apply (join_ub_r (L:=every Subset) _ _) : typeclass_instances.
 
 Instance: ∀ A, subrelation (=) (@SubsetOf A). Proof. firstorder. Qed.
 Instance: ∀ A, Find_Proper_PrePartialOrder (=) (@SubsetOf A).
@@ -243,8 +278,20 @@ Instance: ∀ `(R : A → B → Prop) S T `{!SubDecision S T R}, (∀ `{x ∊ S}
 Proof. intros. pose proof decide_sub R x y. apply _. Qed.
 
 Ltac exists_sub x :=
-  let S := match goal with |- ex (fun x => ex (fun (y:x ∊ ?S) => _)) => S end
-  in exists x (_:x ∊ S).
+  exists x;
+  let S := match goal with |- ex (fun (y:x ∊ ?S) => _) => S end
+  in exists (_:x ∊ S).
+
+Tactic Notation "exists_sub" constr(x) := exists_sub x.
+Tactic Notation "exists_sub" constr(x) constr(y) := exists_sub x; exists_sub y.
+Tactic Notation "exists_sub" constr(x) constr(y) constr (z) := exists_sub x; exists_sub y z.
+Tactic Notation "exists_sub" constr(x) constr(y) constr (z) constr(w)
+  := exists_sub x; exists_sub y z w.
+Tactic Notation "exists_sub" constr(x) constr(y) constr (z) constr(w) constr(u)
+  := exists_sub x; exists_sub y z w u.
+Tactic Notation "exists_sub" constr(x) constr(y) constr (z) constr(w) constr(u)
+  constr(v) := exists_sub x; exists_sub y z w u v.
+
 
 Lemma SubReflexive_proper : Find_Proper_Signature (@SubReflexive) 0 (∀ A, Proper (SubsetOf-->subrelation++>impl) (@SubReflexive A)).
 Proof. red; intros; intros S1 S2 ES R1 R2 ER P ?; intros; unfold flip in *; apply ER; apply P; apply _. Qed.
