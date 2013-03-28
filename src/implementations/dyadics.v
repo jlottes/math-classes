@@ -122,8 +122,8 @@ Section contents.
 
   Section with_rationals.
 
-    Instance: Pow A A := nat_pow_default (N:=Z⁺).
-    Instance: NatPowSpec Z Z⁺ _ := nat_pow_default_spec.
+    Instance: Pow A A := _.
+    Instance: NatPowSpec Z Z⁺ _ := _.
 
     Context `{Rationals (Q:=Q)} `{!IntPowSpec Q Z ipw} `{!Ring_Morphism Z Q (ZtoQ: Z ⇀ Q)}
       `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder Q}.
@@ -230,8 +230,8 @@ Section contents.
   Notation ZtoStdQ := (integers.integers_to_ring Z StdQ).
   Notation DtoStdQ := (DtoQ_slow ZtoStdQ).
 
-  Instance: Pow QArith_base.Q A := int_pow_default.
-  Instance: IntPowSpec StdQ Z _ := int_pow_default_spec.
+  Instance: Pow QArith_base.Q A := _.
+  Instance: IntPowSpec StdQ Z _ := _.
 
   Existing Instance DtoQ_slow_closed.
   Existing Instance DtoQ_slow_morphism.
@@ -363,14 +363,14 @@ Section contents.
 
   Existing Instance strong_injective_nonzero.
 
-  Instance: PropHolds (1 ≠ (0:Dyadic)).
-  Proof. intro E.
+  Instance: 1 ∊ Dyadic ₀.
+  Proof. split. apply _. intro E.
     rewrite (DtoQ_slow_preserves_equiv (ZtoQ:=ZtoStdQ) 1 0),
             (StdQ $ DtoQ_slow_preserves_0), (StdQ $ DtoQ_slow_preserves_1) in E.
-    now destruct (_ : PropHolds (1 ≠ (0:StdQ))).
+    revert E. now destruct (_ : 1 ∊ StdQ ₀).
   Qed.
 
-  Global Instance dy_intdom: IntegralDomain Dyadic.
+  Instance dy_intdom: IntegralDomain Dyadic.
   Proof. split. apply _. apply _. apply _. intros x ? y ?.
     split. apply _. intro E.
     destruct (_ : DtoStdQ x * DtoStdQ y ∊ StdQ ₀) as [_ E2]; destruct E2.
@@ -451,9 +451,6 @@ Section contents.
 
     Hint Extern 2 (@shiftl _ _ dy_shiftl _ _ ∊ Dyadic) => eapply @dy_shiftl_closed : typeclass_instances.
 
-    Instance: ShiftL StdQ Z := shiftl_default_int.
-    Instance: ShiftLSpec StdQ Z _ := shiftl_default_int_spec.
-
     Lemma DtoStdQ_preserves_shiftl x `{x ∊ Dyadic} n `{n ∊ Z}
       : DtoStdQ (x ≪ n) = DtoStdQ x ≪ n.
     Proof. unfold shiftl at 1, dy_shiftl, DtoQ_slow. simpl.
@@ -474,14 +471,19 @@ Section contents.
     Qed.
   End shiftl.
 
+  Lemma dyadic_decompose x `{elx:x ∊ Dyadic} : x = '(mant x) ≪ expo x.
+  Proof. destruct x as [xm xe], elx. unfold cast, dy_inject, shiftl, dy_shiftl. simpl.
+    now rewrite (Z $ plus_0_r _).
+  Qed.
+
   Section embed_rationals.
     Context `{Rationals B (Q:=Q)} `{!Ring_Morphism Z Q (ZtoQ: Z ⇀ Q)}.
 
     Notation DtoQ' := (DtoQ ZtoQ).
     Notation DtoQ_slow' := (DtoQ_slow ZtoQ).
 
-    Instance: Pow B A := int_pow_default.
-    Instance: IntPowSpec Q Z _ := int_pow_default_spec.
+    Instance: Pow B A := _.
+    Instance: IntPowSpec Q Z _ := _.
 
     Instance: StrongInjective Z Q ZtoQ := int_to_rat_strong_inj _.
 
@@ -526,7 +528,40 @@ Section contents.
     Proof. rewrite DtoQ_correct. repeat (split; try apply _); intros;
       now apply (DtoQ_slow_preserves_le _ _).
     Qed.
+
+    Lemma DtoQ_unique (f:Dyadic ⇀ Q) `{!Ring_Morphism Dyadic Q f} : f = DtoQ'.
+    Proof. intros x y [[elx ?]E]. red_sig.
+      rewrite <- (Dyadic $ E). clear dependent y.
+      rewrite (Dyadic $ dyadic_decompose x). destruct x as [xm xe], elx; simpl.
+      rewrite 2!(Q $ preserves_shiftl (N:=Z) _ _).
+      apply (binary_morphism_proper _); red_sig. 2:easy.
+      exact (integers.to_ring_unique_alt (f ∘ (cast Z Dyadic)) (DtoQ' ∘ (cast Z Dyadic)) _).
+    Qed.
   End embed_rationals.
 
 End contents.
 
+Hint Extern 2 (IntegralDomain (Dyadic _)) => eapply @dy_intdom : typeclass_instances.
+Hint Extern 2 (StrongRngOps (Dyadic _)) => class_apply @intdom_strong : typeclass_instances.
+Hint Extern 2 (CommutativeRing (Dyadic _)) => class_apply @intdom_comring : typeclass_instances.
+Hint Extern 2 (AbGroup (Dyadic _)) => class_apply @comringplus_abgroup : typeclass_instances.
+Hint Extern 2 (CommutativeMonoid (op:=plus_is_sg_op) (Dyadic _)) => class_apply @comsemiplus_monoid : typeclass_instances.
+Hint Extern 2 (CommutativeMonoid (op:=mult_is_sg_op) (Dyadic _)) => class_apply @comringmult_commonoid : typeclass_instances.
+Hint Extern 2 (SemiGroup (op:=mult_is_sg_op) (Dyadic _)) => class_apply @rngmult_semigroup : typeclass_instances.
+Hint Extern 2 (Setoid (Dyadic _)) => eapply (sg_setoid (op:=mult_is_sg_op)) : typeclass_instances.
+
+Require Import orders.integers.
+
+(*
+Section test.
+  Context `{Integers (Z:=Z)}.
+
+  Check _ : IntegralDomain (Dyadic Z).
+  Check _ : CommutativeRing (Dyadic Z).
+  Check _ : CommutativeSemiRing (Dyadic Z).
+  Check _ : MultiplicativeSemiGroup (Dyadic Z).
+  Check _ : AdditiveGroup (Dyadic Z).
+  Check _ : AdditiveMonoid (Dyadic Z).
+  Check _ : Setoid (Dyadic Z).
+End test.
+*)

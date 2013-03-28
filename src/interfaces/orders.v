@@ -2,7 +2,7 @@ Require Import abstract_algebra.
 
 Section orders.
 
-  Context `{Ae : Equiv A} {Ale : Le A} {Alt : Lt A} `{Meet A} `{Join A}.
+  Context `{Ae : Equiv A} {Ale : Le A} {Alt : Lt A} {Ameet: Meet A} {AJoin: Join A}.
 
   Class PartialOrder P : Prop :=
     { po_setoid : Setoid P
@@ -189,13 +189,11 @@ Hint Extern 20 (Closed (?R₊ ⇀ ?R₊ ⇀ ?R₊) (.*.)) => eapply @pos_mult_co
 
 (* Absolute value for ring orders, useful only for total orders *)
 Local Open Scope mc_abs_scope.
-Class DecAbs `{Equiv A} `{Negate A} `{Zero A} `{Le A} `{Abs A} R :=
+Class DecAbs `{Equiv A} `{Negate A} `{Zero A} {l:Le A} {a:Abs A} R :=
   { abs_closed : Closed (R ⇀ R) |·|
   ; abs_nonneg x `{x ∊ R⁺} : |x| = x
   ; abs_nonpos x `{x ∊ R⁻} : |x| = -x
   }.
-Hint Extern 20 (Closed _ _ abs) => eapply @abs_closed : typeclass_instances.
-Hint Extern 5 (abs _ ∊ _) => eapply @abs_closed : typeclass_instances.
 
 (* Due to bug #2528 *)
 (*

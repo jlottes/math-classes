@@ -118,10 +118,12 @@ Qed.
 
 Context `{UnEq _} `{!StandardUnEq Z}.
 
-Instance: PropHolds ((1:Z) ≠ 0).
-Proof. generalize naturals.nat_nontrivial. rewrite 2!(standard_uneq _ _). intro E. mc_contradict E.
+Lemma int_nontrivial: 1 ∊ Z ₀.
+Proof. split. apply _. destruct naturals.nat_nontrivial as [_ P]. generalize P. rewrite 2!(standard_uneq _ _).
+  intro E. mc_contradict E.
   apply (injective (naturals_to_semiring nat Z) _ _). now preserves_simplify (naturals_to_semiring nat Z).
 Qed.
+Hint Extern 6 (1 ∊ _ ₀) => eapply @int_nontrivial : typeclass_instances.
 
 Global Instance: ZeroProduct Z.
 Proof. intros x ? y ? E.

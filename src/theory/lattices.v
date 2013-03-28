@@ -34,21 +34,30 @@ Lemma distr_lattice_proper: Find_Proper_Signature (@DistributiveLattice) 0
 Proof. structure_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@DistributiveLattice) 0 _) => eexact distr_lattice_proper : typeclass_instances.
 
-Instance bounded_sl_mor_is_sl_mor `{H : BoundedJoinSemiLattice_Morphism (L:=L) (K:=K) (f:=f)} :
+Instance bounded_join_sl_mor_is_join_sl_mor `{H : BoundedJoinSemiLattice_Morphism (L:=L) (K:=K) (f:=f)} :
   JoinSemiLattice_Morphism L K f.
 Proof. destruct H. split; apply _. Qed.
 
-Lemma preserves_join `{JoinSemiLattice_Morphism (L:=L) (K:=K) (f:=f)} x `{x ∊ L} y `{y ∊ L} :
-  f (x ⊔ y) = f x ⊔ f y.
+Instance bounded_meet_sl_mor_is_meet_sl_mor `{H : BoundedMeetSemiLattice_Morphism (L:=L) (K:=K) (f:=f)} :
+  MeetSemiLattice_Morphism L K f.
+Proof. destruct H. split; apply _. Qed.
+
+Lemma preserves_join `{L:Subset} `{K:Subset} (f:L ⇀ K) `{JoinSemiLattice_Morphism _ _ (L:=L) (K:=K) (f:=f)}
+  x `{x ∊ L} y `{y ∊ L} : f (x ⊔ y) = f x ⊔ f y.
 Proof preserves_sg_op x y.
 
-Lemma preserves_bottom `{BoundedJoinSemiLattice_Morphism (L:=L) (K:=K) (f:=f)} :
+Lemma preserves_bottom `{L:Subset} `{K:Subset} (f:L ⇀ K) `{BoundedJoinSemiLattice_Morphism _ _ (L:=L) (K:=K) (f:=f)} :
   f ⊥ = ⊥.
 Proof preserves_mon_unit.
 
-Lemma preserves_meet `{MeetSemiLattice_Morphism (L:=L) (K:=K) (f:=f)} x `{x ∊ L} y `{y ∊ L} :
-  f (x ⊓ y) = f x ⊓ f y.
+Lemma preserves_meet  `{L:Subset} `{K:Subset} (f:L ⇀ K) `{MeetSemiLattice_Morphism _ _ (L:=L) (K:=K) (f:=f)}
+ x `{x ∊ L} y `{y ∊ L} : f (x ⊓ y) = f x ⊓ f y.
 Proof preserves_sg_op x y.
+
+Lemma preserves_top `{L:Subset} `{K:Subset} (f:L ⇀ K) `{BoundedMeetSemiLattice_Morphism _ _ (L:=L) (K:=K) (f:=f)} :
+  f ⊤ = ⊤.
+Proof preserves_mon_unit.
+
 
 Section bounded_join_sl_props.
   Context {A} {L:@Subset A} `{Equiv A} `{Join A} `{Bottom A} `{!BoundedJoinSemiLattice L}.
@@ -58,6 +67,16 @@ Section bounded_join_sl_props.
 End bounded_join_sl_props.
 Arguments join_bottom_l {A L _ _ _ _} _ {_}.
 Arguments join_bottom_r {A L _ _ _ _} _ {_}.
+
+Section bounded_meet_sl_props.
+  Context {A} {L:@Subset A} `{Equiv A} `{Meet A} `{Top A} `{!BoundedMeetSemiLattice L}.
+
+  Instance meet_top_l: LeftIdentity (⊓) ⊤ L := _.
+  Instance meet_top_r: RightIdentity (⊓) ⊤ L := _.
+End bounded_meet_sl_props.
+Arguments meet_top_l {A L _ _ _ _} _ {_}.
+Arguments meet_top_r {A L _ _ _ _} _ {_}.
+
 
 Section distributive_lattice_props.
   Context `{DistributiveLattice (L:=L)}.
@@ -114,6 +133,20 @@ Hint Extern 0 (RightAbsorb (⊓) _ _) => class_apply @meet_bottom_r : typeclass_
 Arguments meet_bottom_l {_ _ _ _ L _ _ _} _ {_}.
 Arguments meet_bottom_r {_ _ _ _ L _ _ _} _ {_}.
 
+Section upper_bounded_lattice.
+  Context `{Lattice (L:=L)} `{Top _} `{!BoundedMeetSemiLattice L}.
+
+  Instance join_top_l: LeftAbsorb (⊔) ⊤ L.
+  Proof. intros x ?. now rewrite <-(L $ meet_top_l x), (L $ absorption _ _). Qed.
+  Instance join_top_r: RightAbsorb (⊔) ⊤ L.
+  Proof right_absorb_from_left.
+End upper_bounded_lattice.
+Hint Extern 0 (LeftAbsorb (⊓) _ _) => class_apply @join_top_l : typeclass_instances.
+Hint Extern 0 (RightAbsorb (⊓) _ _) => class_apply @join_top_r : typeclass_instances.
+Arguments join_top_l {_ _ _ _ L _ _ _} _ {_}.
+Arguments join_top_r {_ _ _ _ L _ _ _} _ {_}.
+
+
 (*
 Section from_another_sl.
   Context `{SemiLattice A} `{Setoid B}
@@ -145,8 +178,53 @@ Local Existing Instance meet_slmor_a.
 Local Existing Instance meet_slmor_b.
 Local Existing Instance bounded_join_slmor_a.
 Local Existing Instance bounded_join_slmor_b.
+Local Existing Instance bounded_meet_slmor_a.
+Local Existing Instance bounded_meet_slmor_b.
 Local Existing Instance latticemor_a.
 Local Existing Instance latticemor_b.
+
+Lemma join_sl_morphism_alt
+  `{Join A} `{SemiLattice A (op:=join_is_sg_op) (L:=L)}
+  `{Join B} `{SemiLattice B (op:=join_is_sg_op) (L:=K)}
+  (f:L ⇀ K) :
+  Morphism (L ⇒ K) f
+  → (∀ `{x ∊ L} `{y ∊ L}, f (x ⊔ y) = f x ⊔ f y)
+  → JoinSemiLattice_Morphism L K f.
+Proof. intros ? P. split; try apply _. split; try apply _. exact P. Qed.
+
+Lemma meet_sl_morphism_alt
+  `{Meet A} `{SemiLattice A (op:=meet_is_sg_op) (L:=L)}
+  `{Meet B} `{SemiLattice B (op:=meet_is_sg_op) (L:=K)}
+  (f:L ⇀ K) :
+  Morphism (L ⇒ K) f
+  → (∀ `{x ∊ L} `{y ∊ L}, f (x ⊓ y) = f x ⊓ f y)
+  → MeetSemiLattice_Morphism L K f.
+Proof. intros ? P. split; try apply _. split; try apply _. exact P. Qed.
+
+Lemma bounded_join_sl_morphism_alt
+  `{Join A} `{Bottom A} `{BoundedSemiLattice A (op:=join_is_sg_op) (unit:=bottom_is_mon_unit) (L:=L)}
+  `{Join B} `{Bottom B} `{BoundedSemiLattice B (op:=join_is_sg_op) (unit:=bottom_is_mon_unit) (L:=K)}
+  (f:L ⇀ K) :
+  Morphism (L ⇒ K) f
+  → (∀ `{x ∊ L} `{y ∊ L}, f (x ⊔ y) = f x ⊔ f y)
+  → f ⊥ = ⊥
+  → BoundedJoinSemiLattice_Morphism L K f.
+Proof. intros ? P1 P2. split; try apply _.
+  apply monoid_morphism_alt; try apply _; assumption.
+Qed.
+
+Lemma bounded_meet_sl_morphism_alt
+  `{Meet A} `{Top A} `{BoundedSemiLattice A (op:=meet_is_sg_op) (unit:=top_is_mon_unit) (L:=L)}
+  `{Meet B} `{Top B} `{BoundedSemiLattice B (op:=meet_is_sg_op) (unit:=top_is_mon_unit) (L:=K)}
+  (f:L ⇀ K) :
+  Morphism (L ⇒ K) f
+  → (∀ `{x ∊ L} `{y ∊ L}, f (x ⊓ y) = f x ⊓ f y)
+  → f ⊤ = ⊤
+  → BoundedMeetSemiLattice_Morphism L K f.
+Proof. intros ? P1 P2. split; try apply _.
+  apply monoid_morphism_alt; try apply _; assumption.
+Qed.
+
 
 Lemma join_sl_morphism_proper: Find_Proper_Signature (@JoinSemiLattice_Morphism) 0
   (∀ A B Ajoin Bjoin Ae Be L K, Proper ((@equiv (L ⇀ K) _) ==> impl)
@@ -163,6 +241,12 @@ Hint Extern 0 (Find_Proper_Signature (@MeetSemiLattice_Morphism) 0 _) => eexact 
 Lemma bounded_join_sl_morphism_proper: Find_Proper_Signature (@BoundedJoinSemiLattice_Morphism) 0
   (∀ A B Ajoin Bjoin Abottom Bbottom Ae Be L K, Proper ((@equiv (L ⇀ K) _) ==> impl)
    (@BoundedJoinSemiLattice_Morphism A B Ajoin Bjoin Abottom Bbottom Ae Be L K)).
+Proof. red; intros. intros f g E ?. split; try apply _; rewrite <- E; apply _. Qed.
+Hint Extern 0 (Find_Proper_Signature (@BoundedJoinSemiLattice_Morphism) 0 _) => eexact bounded_join_sl_morphism_proper : typeclass_instances.
+
+Lemma bounded_meet_sl_morphism_proper: Find_Proper_Signature (@BoundedMeetSemiLattice_Morphism) 0
+  (∀ A B Ameet Bmeet Atop Btop Ae Be L K, Proper ((@equiv (L ⇀ K) _) ==> impl)
+   (@BoundedMeetSemiLattice_Morphism A B Ameet Bmeet Atop Btop Ae Be L K)).
 Proof. red; intros. intros f g E ?. split; try apply _; rewrite <- E; apply _. Qed.
 Hint Extern 0 (Find_Proper_Signature (@BoundedJoinSemiLattice_Morphism) 0 _) => eexact bounded_join_sl_morphism_proper : typeclass_instances.
 
@@ -206,6 +290,9 @@ Hint Extern 2 (MeetSemiLattice_Morphism _ _ id) => eapply @id_meet_sl_mor : type
 Lemma id_bounded_join_sl_mor `(L:Subset) K `{!SubsetOf L K} `{Join _} `{Bottom _} `{Equiv _} `{!BoundedJoinSemiLattice L} `{!BoundedJoinSemiLattice K} : BoundedJoinSemiLattice_Morphism L K id. Proof. split; apply _. Qed.
 Hint Extern 2 (BoundedJoinSemiLattice_Morphism _ _ id) => eapply @id_bounded_join_sl_mor : typeclass_instances.
 
+Lemma id_bounded_meet_sl_mor `(L:Subset) K `{!SubsetOf L K} `{Meet _} `{Top _} `{Equiv _} `{!BoundedMeetSemiLattice L} `{!BoundedMeetSemiLattice K} : BoundedMeetSemiLattice_Morphism L K id. Proof. split; apply _. Qed.
+Hint Extern 2 (BoundedMeetSemiLattice_Morphism _ _ id) => eapply @id_bounded_meet_sl_mor : typeclass_instances.
+
 Lemma id_lattice_mor `(L:Subset) K `{!SubsetOf L K} `{Join _} `{Meet _} `{Equiv _} `{!Lattice L} `{!Lattice K} : Lattice_Morphism L K id. Proof. split; apply _. Qed.
 Hint Extern 2 (Lattice_Morphism _ _ id) => eapply @id_lattice_mor : typeclass_instances.
 
@@ -236,6 +323,15 @@ Lemma compose_bounded_join_sl_morphism
 Proof. split; apply _. Qed.
 Hint Extern 4 (BoundedJoinSemiLattice_Morphism _ _ (_ ∘ _)) => class_apply @compose_bounded_join_sl_morphism : typeclass_instances.
 
+Lemma compose_bounded_meet_sl_morphism
+  `{Meet A} `{Top A} `{BoundedSemiLattice A (op:=meet_is_sg_op) (unit:=top_is_mon_unit) (L:=L)}
+  `{Meet B} `{Top B} `{BoundedSemiLattice B (op:=meet_is_sg_op) (unit:=top_is_mon_unit) (L:=K)}
+  `{Meet C} `{Top C} `{BoundedSemiLattice C (op:=meet_is_sg_op) (unit:=top_is_mon_unit) (L:=M)}
+  (f:L ⇀ K) (g:K ⇀ M) `{!BoundedMeetSemiLattice_Morphism L K f} `{!BoundedMeetSemiLattice_Morphism K M g}
+: BoundedMeetSemiLattice_Morphism L M (g ∘ f).
+Proof. split; apply _. Qed.
+Hint Extern 4 (BoundedMeetSemiLattice_Morphism _ _ (_ ∘ _)) => class_apply @compose_bounded_meet_sl_morphism : typeclass_instances.
+
 Lemma compose_lattice_morphism
   `{Lattice (L:=L)} `{Lattice (L:=K)} `{Lattice (L:=M)}
   (f:L ⇀ K) (g:K ⇀ M) `{!Lattice_Morphism L K f} `{!Lattice_Morphism K M g}
@@ -262,6 +358,12 @@ Lemma invert_bounded_join_sl_morphism `{L:Subset} `{K:Subset}
   BoundedJoinSemiLattice_Morphism K L f⁻¹.
 Proof. split; apply _. Qed.
 Hint Extern 4 (BoundedJoinSemiLattice_Morphism _ _ (inverse _)) => eapply @invert_bounded_join_sl_morphism : typeclass_instances.
+
+Lemma invert_bounded_meet_sl_morphism `{L:Subset} `{K:Subset}
+ (f:L ⇀ K) `{BoundedMeetSemiLattice_Morphism _ _ (L:=L) (K:=K) (f:=f)} `{!Inverse f} `{!Bijective L K f} :
+  BoundedMeetSemiLattice_Morphism K L f⁻¹.
+Proof. split; apply _. Qed.
+Hint Extern 4 (BoundedMeetSemiLattice_Morphism _ _ (inverse _)) => eapply @invert_bounded_meet_sl_morphism : typeclass_instances.
 
 Lemma invert_lattice_morphism `{L:Subset} `{K:Subset}
  (f:L ⇀ K) `{Lattice_Morphism _ _ (L:=L) (K:=K) (f:=f)} `{!Inverse f} `{!Bijective L K f} :

@@ -22,7 +22,7 @@ Section contents.
     rewrite_on G -> (right_identity (&) y), (associativity (&) y y⁻¹ x).
     rewrite_on G -> (right_inverse (&) y), (left_identity (&) x).
     subsymmetry.
-  + split; try apply _. rewrite strong_ext_equiv_1.
+  + split; try apply _.
     intros x ? y ? E.
     apply (strong_extensionality (& x⁻¹)).
     rewrite_on G -> (right_inverse (&) x).

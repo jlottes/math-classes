@@ -143,7 +143,8 @@ Section contents.
 
   Global Instance: Field F.
   Proof. split; try apply _. split; try apply _.
-  + unfold uneq, frac_uneq. simpl. rewrite_on D -> (mult_1_l 1), (mult_1_l 0). apply _.
+  + split. apply _. unfold uneq, frac_uneq. simpl.
+    rewrite_on D -> (mult_1_l 1), (mult_1_l 0). now destruct intdom_nontrivial.
   + intros [a1 b1] [a2 b2] [[el0 el1] E1].
     rewrite frac_nonzero in el0. rewrite frac_nonzero in el1. destruct el0. destruct el1.
     split. split; rewrite frac_nonzero; now split. reduce. subsymmetry.
@@ -153,7 +154,7 @@ Section contents.
   Global Instance: Strong_Morphism D F (').
   Proof. split.
   + intros ?. split; apply _.
-  + rewrite strong_ext_equiv_1. intros x ? y ? E.
+  + intros x ? y ? E.
     now rewrite <- (D $ mult_1_r x), <- (D $ mult_1_l y).
   Qed.
 
@@ -206,8 +207,7 @@ Section contents.
     Instance: Strong_Morphism F F2 (frac_to_field F F2 h).
     Proof. unfold frac_to_field, Frac_to_field. split.
     + intros [??] [??]. simpl. apply _.
-    + rewrite strong_ext_equiv_1.
-      intros [n1 d1] [??] [n2 d2] [??] E. simpl in E. do 2 red.
+    + intros [n1 d1] [??] [n2 d2] [??] E. simpl in E. do 2 red.
       rewrite <- (mult_inv_strong_cancel_both _ _ _ _) in E.
       apply (strong_extensionality h). now rewrite 2!(F2 $ preserves_mult _ _).
     Qed.

@@ -268,8 +268,8 @@ Section transference.
   Context {Aue : UnEq A} {Ainv : Inv A} `{!StandardUnEq S} `{!SubDecision S S (=)}
     {inv_closed : SubsetSig_Closed (S ₀ ⇀ S ₀) inv}.
 
-  Instance subsetsig_nontrivial `{!PropHolds (1 ≠ @zero A _)} : PropHolds (1 ≠ @zero (SubsetSig S) _).
-  Proof. trivial. Qed.
+  Instance subsetsig_nontrivial `{el: 1 ∊ S ₀} : 1 ∊ S' ₀.
+  Proof. destruct el. split. apply _. trivial. Qed.
 
   Instance subsetsig_dec_field `{!Field S} : Field S'.
   Proof. apply dec_field.
@@ -283,7 +283,7 @@ Section transference.
     split; (split; [apply _ |]).
     now destruct (_ : inv x ∊ S ₀).
     now destruct (_ : inv y ∊ S ₀).
-  + pose proof field_nontrivial. apply _.
+  + apply _.
   + intros [x ?] [_ Ex]. assert (x ∊ S ₀) by now split.
     unfold inv, subsetsig_inv; simpl.
     destruct (decide_sub (=) x 0). rewrite (standard_uneq _ _) in Ex. contradiction.

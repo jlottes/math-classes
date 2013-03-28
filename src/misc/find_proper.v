@@ -507,7 +507,8 @@ Ltac rebuild p pa k :=
   let t := constr:(t') in
   (* idtac "rebuild" t; *)
   let P := fresh "P" in
-  assert t as P by (class_apply p; apply _); instantiate;
+  assert t as P by (first [class_apply p; apply _ | apply p; apply _ ]); instantiate;
+  (*assert t as P by (class_apply p; apply _); instantiate;*)
   let P' := constr:(P) in
   (* let t := type of P' in
   idtac "got" t; *)

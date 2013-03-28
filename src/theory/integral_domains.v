@@ -7,7 +7,7 @@ Lemma intdomain_proper: Find_Proper_Signature (@IntegralDomain) 0
   (∀ A Aplus Amult Azero Aone Anegate Ae Aue,
    Proper ((=)==>impl) (@IntegralDomain A Aplus Amult Azero Aone Anegate Ae Aue)).
 Proof with try apply _. red. intros. intros S T E. destruct 1. split...
-  rewrite <- E... rewrite <- E...
+  rewrite <- E... rewrite <- E... rewrite <- E...
   intros ? el ? el2. rewrite <- E in el, el2 |- *...
   now apply intdom_nozeroes.
 Qed.
@@ -50,7 +50,7 @@ Hint Extern 5 (StrongLeftCancellation  (.*.) _ _) => class_apply @intdom_strong_
 Hint Extern 5 (StrongRightCancellation (.*.) _ _) => class_apply @intdom_strong_right_cancel : typeclass_instances.
 
 Lemma dec_intdom `{CommutativeRing A (R:=R)} `{UnEq A} `{!StandardUnEq R}
-  `{PropHolds (1 ≠ 0)} `{!NoZeroDivisors R} `{!SubDecision R R (=)}
+  `{1 ∊ R ₀} `{!NoZeroDivisors R} `{!SubDecision R R (=)}
   : IntegralDomain R.
 Proof. pose proof dec_strong_setoid. split; try apply _. split; try apply _.
   exact (dec_strong_binary_morphism (+)).

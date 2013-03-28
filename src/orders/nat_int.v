@@ -37,7 +37,7 @@ Section to_semiring_nonneg.
 End to_semiring_nonneg.
 
 Section nat_int_order.
-Context `{FullPseudoSemiRingOrder (R:=R)} `{!CommutativeSemiRing R} `{!Biinduction R} `{PropHolds (1 ≠ 0)}.
+Context `{FullPseudoSemiRingOrder (R:=R)} `{!CommutativeSemiRing R} `{!Biinduction R} `{1 ∊ R ₀}.
 
 Add Ring R : (stdlib_semiring_theory R).
 
@@ -123,7 +123,7 @@ Lemma le_iff_lt_S x `{x ∊ R} y `{y ∊ R} : x ≤ y ↔ x < 1 + y.
 Proof. rewrite (R $ commutativity (+) _ _). now apply le_iff_lt_plus_1. Qed.
 
 Section another_semiring.
-  Context `{FullPseudoSemiRingOrder B (R:=R2)} `{!CommutativeSemiRing R2} `{PropHolds ((1 : B) ≠ 0)}.
+  Context `{FullPseudoSemiRingOrder (R:=R2)} `{!CommutativeSemiRing R2} `{1 ∊ R2 ₀}.
   Context {f : R ⇀ R2} `{!SemiRing_Morphism R R2 f}.
 
   Instance: OrderPreserving R R2 f.
@@ -134,7 +134,7 @@ Section another_semiring.
     apply (nonneg_plus_le_compat_r _ _).
   Qed.
 
-  Global Instance: StrictlyOrderPreserving R R2 f | 50.
+  Global Instance nat_int_strictly_order_preserving : StrictlyOrderPreserving R R2 f | 50.
   Proof.
     repeat (split; try apply _).
     intros x ? y ? E. apply (nat_int_lt_plus _ _) in E. destruct E as [z E].
@@ -142,9 +142,17 @@ Section another_semiring.
     apply (nonneg_plus_lt_compat_r _ _ _). apply (pos_plus_lt_compat_r _ _).
   Qed.
 
-  Global Instance: OrderEmbedding R R2 f | 50.
+  Instance nat_int_injective `{!StandardUnEq R} : StrongInjective R R2 f.
+  Proof pseudo_order_dec_preserving_inj.
+
+  Global Instance nat_int_order_embedding : OrderEmbedding R R2 f | 50.
   Proof. split; try apply _. apply full_pseudo_order_reflecting. Qed.
+
 End another_semiring.
 End nat_int_order.
 
 Hint Extern 5 (naturals_to_semiring _ _ _ ∊ _⁺) => eapply @to_semiring_nonneg : typeclass_instances.
+
+Hint Extern 5 (StrictlyOrderPreserving _ _ (naturals_to_semiring _ _)) => eapply @nat_int_strictly_order_preserving : typeclass_instances.
+Hint Extern 5 (StrongInjective _ _ (naturals_to_semiring _ _)) => eapply @nat_int_injective : typeclass_instances.
+Hint Extern 5 (OrderEmbedding _ _ (naturals_to_semiring _ _)) => eapply @nat_int_order_embedding : typeclass_instances.

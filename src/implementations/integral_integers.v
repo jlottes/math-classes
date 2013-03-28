@@ -2,17 +2,16 @@ Require Import stdlib_binary_integers.
 Require Import
   abstract_algebra interfaces.naturals interfaces.integers
   theory.strong_setoids theory.fields theory.subrings theory.integers theory.jections
-  peano_naturals natpair_integers.
+  the_integers.
 
-Local Notation nat := (every nat).
-Local Notation Zc := (SRpair nat).
+Local Notation ZZ := the_integers.
 
 Section contents.
   Context `(R:Subset) `{CommutativeRing _ (R:=R)}.
 
-  Notation ZctoR := (integers_to_ring Zc R).
+  Notation ZZtoR := (integers_to_ring ZZ R).
 
-  Definition integral : Subset := ZctoR⁺¹(Zc).
+  Definition integral : Subset := ZZtoR⁺¹(ZZ).
 
   Hint Unfold integral : typeclass_instances.
 
@@ -65,7 +64,7 @@ Section rationals.
   Hint Unfold Z_to_FracZ : typeclass_instances.
 
   Instance: Closed (Zb ⇀ integral (Frac Zb)) Z_to_FracZ.
-  Proof. intros x ?. split. apply _. exists_sub (integers_to_ring Zb Zc x).
+  Proof. intros x ?. split. apply _. exists_sub (integers_to_ring Zb ZZ x).
     unfold Z_to_FracZ. apply (to_ring_twice _ _ _ _).
   Qed.
 
@@ -87,8 +86,8 @@ Section rationals.
   Lemma FracZ_to_Z_correct x `{x ∊ integral (Frac Zb)}
     : x = Z_to_FracZ (FracZ_to_Z x).
   Proof. destruct (_ : x ∊ integral (Frac Zb)) as [el [xc [? E]]].
-    rewrite <-(Frac Zb $ to_ring_unique (integers_to_ring Zb (Frac Zb) ∘ integers_to_ring Zc Zb) xc) in E.
-    unfold compose in E. set (xb := integers_to_ring Zc Zb xc) in E.
+    rewrite <-(Frac Zb $ to_ring_unique (integers_to_ring Zb (Frac Zb) ∘ integers_to_ring ZZ Zb) xc) in E.
+    unfold compose in E. set (xb := integers_to_ring ZZ Zb xc) in E.
     unfold Z_to_FracZ.
     rewrite <-(Frac Zb $ to_ring_unique (cast Zb (Frac Zb)) _).
     rewrite <-(Frac Zb $ to_ring_unique (cast Zb (Frac Zb)) _) in E.

@@ -8,6 +8,9 @@ Require Import misc.quote.
 Require Export
   orders.nat_int.
 
+Hint Extern 5 (StrictlyOrderPreserving _ _ (integers_to_ring _ _)) => eapply @nat_int_strictly_order_preserving : typeclass_instances.
+Hint Extern 5 (OrderEmbedding _ _ (integers_to_ring _ _)) => eapply @nat_int_order_embedding : typeclass_instances.
+
 Local Notation nat := (every nat).
 
 Section integers.
@@ -58,13 +61,26 @@ Qed.
 
 Notation Z_to_natp := (integers_to_ring Z (SRpair nat)).
 
-Global Program Instance: StrongSubDecision Z Z (≤) | 10 := λ x y,
+Program Instance int_le_dec_slow: StrongSubDecision Z Z (≤) := λ x y,
   match decide_sub (≤) (Z_to_natp x) (Z_to_natp y) with
   | left E => left _
   | right E => right _
   end.
 Next Obligation. now apply (order_reflecting (Z_to_natp)). Qed.
+
+  Section another_ring.
+    Context `{FullPseudoSemiRingOrder (R:=R)} `{Negate _} `{!CommutativeRing R} `{1 ∊ R ₀}.
+    Context (f : Z ⇀ R) `{!Ring_Morphism Z R f}.
+
+    Instance from_integers_injective : StrongInjective Z R f := pseudo_order_dec_preserving_inj.
+  End another_ring.
+
 End integers.
+
+Hint Extern 5 (StrongInjective _ _ (integers_to_ring _ _)) => eapply @from_integers_injective : typeclass_instances.
+
+Hint Extern 20 (StrongSubDecision ?Z ?Z le) =>
+  let H := constr:(_ : Integers Z) in eapply (int_le_dec_slow (H:=H)) : typeclass_instances.
 
 (* A default order on the integers *)
 Instance int_le `{Integers A (Z:=Z)} : Le A | 10 :=  λ x y, ∃ z, y = x + naturals_to_semiring nat Z z.

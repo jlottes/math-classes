@@ -86,7 +86,7 @@ Ltac prove_closed := let E := fresh "E" in intros x ? n ?; nat_induction n E;
 
 Existing Instance closed_binary.
 
-Instance nat_pow_nonzero `{UnEq A} `{!UnEqualitySetoid R} `{!Closed (R ₀ ⇀ R ₀ ⇀ R ₀) (.*.)} `{!PropHolds ((1:R) ≠ 0)} :
+Instance nat_pow_nonzero `{UnEq A} `{!UnEqualitySetoid R} `{!Closed (R ₀ ⇀ R ₀ ⇀ R ₀) (.*.)} `{1 ∊ R ₀} :
   Closed (R ₀ ⇀ N ⇀ R ₀) (^).
 Proof. prove_closed. Qed.
 
@@ -107,7 +107,7 @@ Instance nat_pow_ne_0 `{UnEq A} `{!StandardUnEq R} `{!NoZeroDivisors R} `{!PropH
 Proof. prove_closed. Qed.
 *)
 
-Context `{UnEq _} `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder R} `{!PropHolds ((1:R) ≠ 0)}.
+Context `{UnEq _} `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder R} `{1 ∊ R ₀}.
 
 Instance: StrongSetoid R := pseudo_order_setoid.
 

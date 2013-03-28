@@ -1,26 +1,33 @@
-Require 
-  peano_naturals.
 Require Import
   abstract_algebra interfaces.integers interfaces.naturals interfaces.orders
-  interfaces.additional_operations 
+  interfaces.additional_operations
+  the_naturals 
   theory.setoids theory.rings theory.integers int_abs int_to_nat
   orders.semirings orders.rings orders.nat_int.
 
 Local Open Scope mc_fun_scope.
-Local Notation nat := (every nat).
+Local Notation N := the_naturals.
 
 Section nonneg_integers_naturals.
 Context `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
 
-Let of_nat := (naturals_to_semiring nat Z⁺).
-Instance: Inverse of_nat := int_abs Z nat.
+Let of_nat := (naturals_to_semiring N Z⁺).
+Instance: Inverse of_nat := int_abs Z N.
 
-Instance: Morphism (Z⁺ ⇒ nat) of_nat⁻¹.
-Proof. change (Morphism (Z⁺ ⇒ nat) (int_abs Z nat)).
-  rewrite <-(_:SubsetOf (Z ⇒ nat) (Z⁺ ⇒ nat)). apply _.
+Instance: Morphism (N ⇒ Z⁺) of_nat. Proof. unfold of_nat. exact _. Qed.
+Instance: Morphism (N ⇒ Z) of_nat.
+Proof. rewrite <-(_:SubsetOf (N ⇒ Z⁺) (N ⇒ Z)). exact _. Qed.
+
+Instance: SemiRing_Morphism N Z⁺ of_nat. Proof. unfold of_nat. exact _. Qed.
+Instance: SemiRing_Morphism N Z of_nat.
+Proof. rewrite <- ( SemiRing $ (_ : Z⁺ ⊆ Z) ). apply _. Qed.
+
+Instance: Morphism (Z⁺ ⇒ N) of_nat⁻¹.
+Proof. change (Morphism (Z⁺ ⇒ N) (int_abs Z N)).
+  rewrite <-(_:SubsetOf (Z ⇒ N) (Z⁺ ⇒ N)). apply _.
 Qed.
 
-Instance: SemiRing_Morphism Z⁺ nat of_nat⁻¹.
+Instance: SemiRing_Morphism Z⁺ N of_nat⁻¹.
 Proof. apply semiring_morphism_alt; try apply _.
 + exact int_abs_nonneg_plus.
 + intros x ? y ?. exact (int_abs_mult _ _).
@@ -28,9 +35,8 @@ Proof. apply semiring_morphism_alt; try apply _.
 + exact int_abs_1.
 Qed.
 
-Instance: Surjective nat Z⁺ of_nat.
-Proof.
-  split; [| apply _ | intros; apply _].
+Instance: Surjective N Z⁺ of_nat.
+Proof. split; [| apply _ | intros; apply _].
   intros x y E. unfold_sigs. unfold id, compose. red_sig.
   rewrite_on Z⁺ <- E.
   exact (int_abs_nonneg _).
@@ -84,6 +90,9 @@ End another_semiring.
 
 End nonneg_integers_naturals.
 
-Hint Extern 5 (NaturalsToSemiRing _⁺) => eapply @ZPos_to_semiring : typeclass_instances.
-Hint Extern 5 (Naturals _⁺) => class_apply @ZPos_naturals : typeclass_instances.
-Hint Extern 5 (StandardUnEq _⁺) => eapply @ZPos_standard_uneq : typeclass_instances.
+Hint Extern 20 (NaturalsToSemiRing ?Z⁺) =>
+  let H := constr:(_ : Integers Z) in eapply (ZPos_to_semiring (H:=H)) : typeclass_instances.
+Hint Extern 20 (Naturals ?Z⁺) =>
+  let H := constr:(_ : Integers Z) in eapply (ZPos_naturals (H:=H)) : typeclass_instances.
+Hint Extern 20 (StandardUnEq ?Z⁺) =>
+  let H := constr:(_ : Integers Z) in eapply @ZPos_standard_uneq : typeclass_instances.

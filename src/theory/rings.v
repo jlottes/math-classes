@@ -655,6 +655,52 @@ Proof. structure_mor_proper.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@Ring_Morphism) 1 _) => eexact ring_morphism_proper2 : typeclass_instances.
 
+Hint Extern 0 (?S ∊ SemiRng)  => red; apply _ : typeclass_instances.
+Hint Extern 0 (?S ∊ SemiRing) => red; apply _ : typeclass_instances.
+Hint Extern 0 (?S ∊ Rng)      => red; apply _ : typeclass_instances.
+Hint Extern 0 (?S ∊ Ring)     => red; apply _ : typeclass_instances.
+
+Lemma semirng_morphism_proper3: Find_Proper_Signature (@SemiRng_Morphism) 2
+  (∀ A Ae B Be Aplus Amult Azero Bplus Bmult Bzero,
+    Proper ((SemiRng,⊆) --> (SemiRng,⊆) ++> eq ==> impl)
+   (@SemiRng_Morphism A Ae B Be Aplus Amult Azero Bplus Bmult Bzero)).
+Proof. structure_mor_proper3 EX EY.
+  rewrite (Monoid $ EX), <-(Monoid $ EY). apply _.
+  rewrite (SemiGroup $ EX), <-(SemiGroup $ EY). apply _.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@SemiRng_Morphism) 2 _) => eexact semirng_morphism_proper3 : typeclass_instances.
+
+Lemma semiring_morphism_proper3: Find_Proper_Signature (@SemiRing_Morphism) 2
+  (∀ A Ae B Be Aplus Amult Azero Aone Bplus Bmult Bzero Bone,
+    Proper ((SemiRing,⊆) --> (SemiRing,⊆) ++> eq ==> impl)
+   (@SemiRing_Morphism A Ae B Be Aplus Amult Azero Aone Bplus Bmult Bzero Bone)).
+Proof. structure_mor_proper3 EX EY.
+  rewrite (SemiRng $ EX), <-(SemiRng $ EY). apply _.
+  exact preserves_1.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@SemiRing_Morphism) 2 _) => eexact semiring_morphism_proper3 : typeclass_instances.
+
+Lemma rng_morphism_proper3: Find_Proper_Signature (@Rng_Morphism) 2
+  (∀ A Ae B Be Aplus Amult Azero Anegate Bplus Bmult Bzero Bnegate,
+    Proper ((Rng,⊆) --> (Rng,⊆) ++> eq ==> impl)
+   (@Rng_Morphism A Ae B Be Aplus Amult Azero Anegate Bplus Bmult Bzero Bnegate)).
+Proof. structure_mor_proper3 EX EY.
+  rewrite (SemiGroup (op:=plus_is_sg_op) $ EX), <-(SemiGroup (op:=plus_is_sg_op) $ EY). apply _.
+  rewrite (SemiGroup (op:=mult_is_sg_op) $ EX), <-(SemiGroup (op:=mult_is_sg_op) $ EY). apply _.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@Rng_Morphism) 2 _) => eexact rng_morphism_proper3 : typeclass_instances.
+
+Lemma ring_morphism_proper3: Find_Proper_Signature (@Ring_Morphism) 2
+  (∀ A Ae B Be Aplus Amult Azero Aone Anegate Bplus Bmult Bzero Bone Bnegate,
+    Proper ((Ring,⊆) --> (Ring,⊆) ++> eq ==> impl)
+   (@Ring_Morphism A Ae B Be Aplus Amult Azero Aone Anegate Bplus Bmult Bzero Bone Bnegate)).
+Proof. structure_mor_proper3 EX EY.
+  rewrite (Rng $ EX), <-(Rng $ EY). apply _.
+  exists_sub (1:A). exact preserves_1.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@Ring_Morphism) 2 _) => eexact ring_morphism_proper3 : typeclass_instances.
+
+
 (* The identity morphism; covers also the injection from a sub semirng *)
 Lemma id_semirng_mor `(R:Subset) S `{!SubsetOf R S} `{SemiRng _ (R:=R)} `{!SemiRng S} : SemiRng_Morphism R S id.
 Proof. split; apply _. Qed.

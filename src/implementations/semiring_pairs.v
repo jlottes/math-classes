@@ -335,7 +335,7 @@ Section with_full_pseudo_semiring_order.
 
   Instance: ∀ `{z ∊ R}, Strong_Morphism R R (z *.).
   Proof. intros z zel.
-    split. apply _. rewrite strong_ext_equiv_1.
+    split. apply _.
     destruct z as [zp zn], zel as [??]. intros [xp xn][??] [yp yn][??] E1. reduce.
     assert (zp * (xp + yn) + zn * (yp + xn) ≠ zp * (yp + xn) + zn * (xp + yn)) as E.
       mc_replace (zp * (xp + yn) + zn * (yp + xn)) with (zp * xp + zn * xn + (zp * yn + zn * yp)) on SR by subring SR.

@@ -29,7 +29,7 @@ Proof. intros.
   assert (x^n ∊ F) by (apply int_pow_neg_closed; apply _).
   split. apply _.
   apply (strong_extensionality (.* x^(-n))).
-  rewrite (F $ int_pow_neg x n), (F $ mult_0_l (x^(-n))). solve_propholds.
+  rewrite (F $ int_pow_neg x n), (F $ mult_0_l (x^(-n))). now destruct field_nontrivial.
 Qed.
 
 Hint Extern 4 (_ ^ _ ∊ _ ₀) => eapply @int_pow_nonzero : typeclass_instances.
@@ -256,8 +256,8 @@ Instance int_pow_exp_lt_back x `{x ∊ F} :
 Proof. intros E1. 
   assert (x ∊ F₊). split. apply _. apply (subtransitivity _ 1 _); solve_propholds.
   assert (Strong_Morphism Z F (x^)).
-    split. apply _. rewrite strong_ext_equiv_1.
-    intros. now apply (strong_extensionality (Y:=F ₀) (x^)).
+    split. apply _.
+    intros ?? ??. now apply (strong_extensionality (Y:=F ₀) (x^)).
   pose proof int_pow_exp_le_back x _.
   apply _.
 Qed.
@@ -408,3 +408,15 @@ Section int_pow_default.
 End int_pow_default.
 
 Typeclasses Opaque int_pow_default.
+
+(* Make some attempt to choose an appropriate default pow instance *)
+Hint Extern 20 (Pow ?A ?B) =>
+  first [
+    let H := constr:(_ : Integers (A:=B) _) in first [
+      let H' := constr:(_ : Field (A:=A) _) in eapply (int_pow_default (H0:=H))
+    | let H' := constr:(_ : SemiRing (A:=A) _) in
+      match type of H with Integers ?Z => eapply (nat_pow_default (N:=Z⁺)) end
+    | fail 2
+    ]
+  | eapply @nat_pow_default
+  ] : typeclass_instances. 

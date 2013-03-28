@@ -25,10 +25,14 @@ Class SubCoTransitive `(S:Subset) (R : relation _) : Prop := subcotransitivity `
 Arguments subirreflexivity {_ S} R {SubIrreflexive} x {_} _.
 
 Class SubEquivalence `(S:Subset) (R : relation _) : Prop :=
-  { subequiv_reflexive  :> SubReflexive  S R
-  ; subequiv_symmetric  :> SubSymmetric  S R
-  ; subequiv_transitive :> SubTransitive S R
+  { subequiv_reflexive  : SubReflexive  S R
+  ; subequiv_symmetric  : SubSymmetric  S R
+  ; subequiv_transitive : SubTransitive S R
   }.
+Hint Extern 2 (SubReflexive _ _)  => eapply @subequiv_reflexive : typeclass_instances.
+Hint Extern 2 (SubSymmetric _ _)  => eapply @subequiv_symmetric : typeclass_instances.
+Hint Extern 2 (SubTransitive _ _) => eapply @subequiv_transitive : typeclass_instances.
+
 
 Class SubApartness `(S:Subset) (R : relation _) : Prop :=
   { subapart_irreflexive  :> SubIrreflexive  S R

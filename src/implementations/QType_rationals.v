@@ -70,7 +70,7 @@ Qed.
 Instance: Field T.
 Proof. apply fields.dec_field.
 + intros x y E. unfold_sigs. red_sig. now rewrite E.
-+ exact neq_1_0.
++ split. apply _. exact neq_1_0.
 + intros x [_ E]. exact (mul_inv_diag_l x E).
 Qed.
 

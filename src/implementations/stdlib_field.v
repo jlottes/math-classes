@@ -18,7 +18,7 @@ Section field.
     Field_theory.field_theory 0 1 (+) (.*.) (λ x y : SubsetSig F, x - y) (-)
                               (λ x y : SubsetSig F, x / y) inv (=).
   Proof. split. exact (stdlib_ring_theory F).
-  + rewrite <- (standard_uneq _ _). solve_propholds.
+  + rewrite <- (standard_uneq _ _). now destruct field_nontrivial.
   + reflexivity.
   + intros x E. rewrite <- (standard_uneq _ _) in E.
     assert (x ∊ F' ₀) by now split.

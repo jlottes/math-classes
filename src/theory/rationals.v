@@ -2,9 +2,7 @@ Require Import
   abstract_algebra interfaces.integers interfaces.naturals interfaces.rationals
   interfaces.field_of_fractions
   theory.strong_setoids theory.integers theory.fields theory.field_of_fractions
-  peano_naturals natpair_integers.
-
-Local Notation Zc := (SRpair (every nat)).
+  the_integers.
 
 Section hints.
   Context `{Rationals (Q:=Q)}.
@@ -59,7 +57,7 @@ Proof. split. apply _. apply _.
 Qed.
 
 Instance rationals_strong_subdec_eq_slow `{Rationals (Q:=Q)} : StrongSubDecision Q Q (=) | 10
-  := field_of_fracs_strong_subdec_eq_slow (D:=Zc).
+  := field_of_fracs_strong_subdec_eq_slow (D:=the_integers).
 
 Lemma rationals_embed_ints_strong `{Rationals (Q:=Q)}
   `{Integers (Z:=Z)} `{UnEq _} `{!StandardUnEq Z}
@@ -140,7 +138,7 @@ Hint Extern 10 (Inverse (rationals_to_field ?Q1 ?Q2)) => eexact (rationals_to_fi
 Lemma rationals_to_rationals_unique `{Rationals (Q:=Q1)} `{Rationals (Q:=Q2)}
   (f:Q1 ⇀ Q2) (g:Q1 ⇀ Q2) `{!Ring_Morphism Q1 Q2 f} `{!Ring_Morphism Q1 Q2 g}
 : f = g.
-Proof rationals_to_field_unique_alt (Z:=Zc) _ _.
+Proof rationals_to_field_unique_alt (Z:=the_integers) _ _.
 
 Section another_rationals.
   Context `{Rationals (Q:=Q1)} `{Rationals (Q:=Q2)}.
@@ -181,9 +179,9 @@ Hint Extern 10 (Bijective _ _ (rationals_to_field _ _)) => eapply @rationals_to_
 Lemma injective_nats `{Rationals (Q:=Q)} `{Naturals (N:=N)}
   (f:N ⇀ Q) `{!SemiRing_Morphism N Q f} : Injective N Q f.
 Proof. split; try apply _. intros x ? y ? E.
-  apply (injective (naturals_to_semiring N Zc) _ _).
-  apply (injective (integers_to_ring Zc Q) _ _).
-  now rewrite 2!(Q $ naturals.to_semiring_unique_alt f (integers_to_ring Zc Q ∘ naturals_to_semiring N Zc) _) in E.
+  apply (injective (naturals_to_semiring N the_integers) _ _).
+  apply (injective (integers_to_ring the_integers Q) _ _).
+  now rewrite 2!(Q $ naturals.to_semiring_unique_alt f (integers_to_ring the_integers Q ∘ naturals_to_semiring N the_integers) _) in E.
 Qed.
 
 Section isomorphic_image_is_rationals.

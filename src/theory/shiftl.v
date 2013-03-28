@@ -158,7 +158,7 @@ Proof. intros x [? E1] n ?. split. apply _. revert E1. rewrite !(standard_uneq _
   now rewrite (R $ shiftl_base_0 _ _).
 Qed.
 
-Context `{UnEq _} `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder R} `{!PropHolds ((1:R) ≠ 0)}.
+Context `{UnEq _} `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder R} `{1 ∊ R ₀}.
 
 Let shiftl_strict_order_embedding_lemma x `{x ∊ R} y `{y ∊ R} n `{n ∊ N} : x < y ↔ x ≪ n < y ≪ n.
 Proof. biinduction n.
@@ -393,3 +393,14 @@ Section default_shiftl_integers.
 End default_shiftl_integers.
 
 Typeclasses Opaque shiftl_default_int.
+
+(* Make some attempt to choose an appropriate default shiftl instance *)
+Hint Extern 20 (ShiftL ?A ?B) =>
+  first [
+    let H := constr:(_ : Integers (A:=B) _) in first [
+      let H' := constr:(_ : Field (A:=A) _) in eapply @shiftl_default_int
+    | let H' := constr:(_ : SemiRing (A:=A) _) in eapply @shiftl_default
+    | fail 2
+    ]
+  | eapply @shiftl_default
+  ] : typeclass_instances. 

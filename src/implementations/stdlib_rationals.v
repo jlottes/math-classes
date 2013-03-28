@@ -55,7 +55,7 @@ Proof. split. apply _.
 + pose proof dec_strong_setoid (S:=Q). split. apply _.
   exact (dec_strong_binary_morphism _).
   exact (dec_strong_binary_morphism _).
-+ exact Q_apart_0_1.
++ split. apply _. exact Q_apart_0_1.
 + intros x y [[[_ Ex] [_ Ey]] E1].
   split. split; (split; [apply _ | intro E2]).
     destruct Ex. now rewrite <- (Qinv_involutive x), E2.

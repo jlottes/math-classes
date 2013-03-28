@@ -66,7 +66,7 @@ Section pseudo_injective.
   Instance pseudo_order_embedding_ext `{!StrictOrderEmbedding X Y f} :
     Strong_Morphism X Y f.
   Proof.
-    split; try apply _. rewrite strong_ext_equiv_1.
+    split; try apply _.
     intros x ? y ?. rewrite !apart_iff_total_lt; try apply _.
     intros [|]; [left | right]; now apply (strictly_order_reflecting f).
   Qed.
@@ -78,6 +78,14 @@ Section pseudo_injective.
     intros x ? y ?. rewrite !apart_iff_total_lt; try apply _.
     intros [|]; [left | right]; now apply (strictly_order_preserving f).
   Qed.
+
+  Lemma pseudo_order_dec_preserving_inj `{!StandardUnEq X} `{!StrictlyOrderPreserving X Y f} :
+    StrongInjective X Y f.
+  Proof. split; [| exact (dec_strong_morphism f)]. intros ????.
+    rewrite !apart_iff_total_lt; try apply _.
+    intros [|]; [left | right]; now apply (strictly_order_preserving f).
+  Qed.
+
 End pseudo_injective.
 
 (* If a function between pseudo partial orders is strictly order preserving (back), we can

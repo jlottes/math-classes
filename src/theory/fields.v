@@ -39,7 +39,7 @@ Section props.
   Proof. intro x. split.
   + intros [?[y[?[E ?]]]]. split. apply _.
     apply (strong_extensionality (.* y)). rewrite_on F -> E, (mult_0_l y).
-    solve_propholds.
+    now destruct (_ : 1 ∊ F ₀).
   + intros ?. split. apply _. exists_sub (x⁻¹).
     split; [ exact (field_inv_r x) | exact (field_inv_l x) ].
   Qed.
@@ -135,7 +135,7 @@ Section dec_field.
 
   Lemma dec_field
     : Morphism (F ₀ ⇒ F ₀) (⁻¹)
-    → PropHolds (1 ≠ 0)
+    → 1 ∊ F ₀
     → LeftInverse (.*.) (⁻¹) 1 (F ₀)
     → Field F.
   Proof with try apply _. pose proof dec_strong_setoid. split... split...
@@ -152,7 +152,7 @@ Section morphisms.
   Proof. split; try apply _.
   + intros x ?. apply (mult_apart_zero_l _ (f (x⁻¹))).
     rewrite <- (F2 $ preserves_mult _ _), (F1 $ field_inv_r _), (F2 $ preserves_1). apply _.
-  + rewrite strong_ext_equiv_1. intros. now apply (strong_extensionality f).
+  + intros ?? ??. now apply (strong_extensionality f).
   Qed.
 
   Global Instance: StrongInjective F1 F2 f.
