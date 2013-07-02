@@ -116,4 +116,6 @@ Qed.
 End contents.
 Hint Extern 4 (_⁻¹ ∊ _₊) => eapply @pos_mult_inv_compat : typeclass_instances.
 Hint Extern 4 (_⁻¹ ∊ _₋) => eapply @neg_mult_inv_compat : typeclass_instances.
+Hint Extern 4 (_⁻¹ ∊ _⁺) => eapply @pos_nonneg : typeclass_instances.
+Hint Extern 4 (_⁻¹ ∊ _⁻) => eapply @neg_nonpos : typeclass_instances.
 

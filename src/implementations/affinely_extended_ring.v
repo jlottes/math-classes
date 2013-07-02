@@ -85,7 +85,7 @@ Section ops.
     | Inject x => match y with | Inject y => x ≤ y | PosInfty => True | _ => False end
     | PosInfty => match y with | PosInfty => True | _ => False end
     | NegInfty => match y with | Undefined => False | _ => True end
-    | _ => False
+    | Undefined => match y with | Undefined => True | _ => False end
     end.
 
   Definition AE_lt `{Lt A} : Lt A' := λ x y,
@@ -205,14 +205,14 @@ Section contents.
     Qed.
 
     Instance AEF_subsetoid : SubSetoid R∞ T.
-    Proof. split; try apply _. intros x y E el. unfold_sigs.
+    Proof. apply subsetoid_alt; try apply _. intros x y E el. unfold_sigs.
       destruct x,y; try tauto; try apply _.
     Qed.
 
     Instance AE_setoid : Setoid R∞ := subsetoid_a (T:=T).
 
     Instance AE_subsetoid : SubSetoid R' R∞.
-    Proof. split; try apply _. intros x y E el. unfold_sigs.
+    Proof. apply subsetoid_alt; try apply _. intros x y E el. unfold_sigs.
       generalize E. destr_R' x a. destruct y; now do 2 red.
     Qed.
 
@@ -251,10 +251,10 @@ Section contents.
     Instance AE_inj_sinj : StrongInjective R R' (cast R R').
     Proof. split. intros ???? E. exact E. apply _. Qed.
 
-    Instance AE_std_uneq `{!StandardUnEq R} : StandardUnEq R'.
+    Instance AE_denial_inequality `{!DenialInequality R} : DenialInequality R'.
     Proof.
       intros [x| | |] e1 [y| | |] e2; do 2 red in e1,e2; try tauto.
-      exact (standard_uneq x y).
+      exact (denial_inequality x y).
     Qed.
 
     Program Instance AE_eq_str_sub_dec `{Le A} `{!StrongSubDecision R R (=)} : StrongSubDecision T T (=)
@@ -285,7 +285,7 @@ Section contents.
                     end
       | PosInfty => match y with | PosInfty => in_left | _ => in_right end
       | NegInfty => match y with | Undefined => in_right | _ => in_left end
-      | _ => in_right
+      | Undefined => match y with | Undefined => in_left | _ => in_right end
       end.
     Next Obligation. unfold le, AE_le. destruct y as [b| | |]; try tauto.
       match goal with H : ∀ x, Inject x ≢ Inject b |- _ => pose proof (H b) as E end.
@@ -295,12 +295,7 @@ Section contents.
     Next Obligation. intuition; discriminate. Qed.
     Next Obligation. unfold le, AE_le. destruct y as [b| | |]; try tauto. Qed.
     Next Obligation. unfold le, AE_le. destruct y as [b| | |]; try tauto. Qed.
-    Next Obligation.
-      destruct x as [a| | |]; try match goal with H : ?a ≢ ?a |- _ => now contradict H end.
-      match goal with  H : ∀ x, Inject x ≢ Inject a |- _ => pose proof (H a) as E end. now contradict E.
-      now unfold le, AE_le.
-    Qed.
-    Next Obligation. intuition; discriminate. Qed.
+    Next Obligation. unfold le, AE_le. destruct y as [b| | |]; try tauto. Qed.
 
     Instance: ∀ `{x ∊ R'}, x ∊ T.    Proof. apply AE_image_subset2. Qed.
 
@@ -323,7 +318,7 @@ Section contents.
   Existing Instance AEI_strongsetoid.
   Existing Instance AE_inj_smor.
   Existing Instance AE_inj_sinj.
-  Existing Instance AE_std_uneq.
+  Existing Instance AE_denial_inequality.
 
   Section ring.
     Context `{CommutativeRing A (R:=R)}.
@@ -423,25 +418,25 @@ Section contents.
     + do_intros. unfold le, AE_le. exact (le_iff_not_lt_flip _ _).
     Qed.
 
+    Instance AEF_order : FullPartialOrder T.
+    Proof. split. apply _. split. apply _.
+    + intros [a| | |] [b| | |] [[el1 el2] E1]; do 2 red in el1,el2; do 2 red in E1; try tauto;
+      intros [c| | |] [d| | |] [[el3 el4] E2]; do 2 red in el3,el4; do 2 red in E2; try tauto;
+      intro E; try tauto. do 2 red in E. do 2 red. now rewrite <-(R $ E1), <-(R $ E2).
+    + intros [a| | |] el1; do 2 red in el1; try tauto. now do 2 red.
+    + intros [a| | |] el1 [b| | |] el2 [c| | |] el3; do 2 red in el1,el2,el3; try tauto;
+      intros E1 E2; do 2 red in E1,E2; try tauto. do 2 red. subtransitivity b.
+    + intros [a| | |] el1 [b| | |] el2; do 2 red in el1,el2; try tauto.
+      intros E1 E2; do 2 red in E1,E2. do 2 red. now apply (subantisymmetry le).
+    + intros [a| | |] el1 [b| | |] el2 [c| | |] el3; do 2 red in el1,el2,el3; try tauto;
+      intros E1 E2; do 2 red in E1,E2; try tauto. do 2 red. subtransitivity b.
+    + intros [a| | |] el1 [b| | |] el2; do 2 red in el1,el2; try tauto.
+      exact (lt_iff_le_apart _ _).
+    Qed.
+
     Instance: Undefined ∊ ae_undef R'.  Proof. lazy. tauto. Qed.
     Lemma AE_undef x `{el : x ∊ ae_undef R'} : x ≡ Undefined.
     Proof. lazy in el. destruct x; tauto. Qed.
-
-    Instance: Proper ((T,=) ==> (T,=) ==> impl) le.
-    Proof.
-      intros [?| | |] [?| | |] [[e1 e2] E1]; do 2 red in e1,e2,E1; try tauto;
-      intros [?| | |] [?| | |] [[e3 e4] E2]; do 2 red in e3,e4,E2; try tauto;
-      unfold le, AE_le, impl; [| tauto..].
-      intro. now rewrite <-(R $ E1), <-(R $ E2).
-    Qed.
-
-    Instance: Proper ((T,=) ==> (T,=) ==> impl) lt.
-    Proof.
-      intros [?| | |] [?| | |] [[e1 e2] E1]; do 2 red in e1,e2,E1; try tauto;
-      intros [?| | |] [?| | |] [[e3 e4] E2]; do 2 red in e3,e4,E2; try tauto;
-      unfold le, AE_le, impl; [| tauto..].
-      intro. now rewrite <-(R $ E1), <-(R $ E2).
-    Qed.
 
     Instance: Morphism (T ⇒ T) (-).
     Proof.
@@ -514,6 +509,7 @@ Section contents.
     + apply SubSetoid_trans with R∞; apply _.
     + intros [?| | |]; lazy; try tauto. intros _ [?| | |]; tauto.
     + intros [?| | |]; lazy; try tauto. intros _ [?| | |]; tauto.
+    + intros [?| | |] ? [?| | |] ? ?; try tauto; now split.
     + intros y ? x ?. rewrite (AE_undef x). destruct y; exact (_ : Undefined ∊ ae_undef R').
     + intros y ? x ?. rewrite (AE_undef x). pose proof (I : Undefined ∊ T).
       destruct y; try exact (_ : Undefined ∊ ae_undef R').
@@ -522,7 +518,7 @@ Section contents.
     Qed.
 
     Context `{Inv A} `{!Field R}.
-    Context `{!StandardUnEq R} `{!StrongSubDecision R R (=)}.
+    Context `{!DenialInequality R} `{!StrongSubDecision R R (=)}.
 
     Instance: 0 ∊ T := _ : 0 ∊ R.
 
@@ -536,8 +532,8 @@ Section contents.
       now red_sig.
       contradict Ey. subtransitivity x. subsymmetry.
       contradict Ex. subtransitivity y.
-      assert (x ∊ R ₀). split. apply _. red. now rewrite (standard_uneq x 0).
-      assert (y ∊ R ₀). split. apply _. red. now rewrite (standard_uneq y 0).
+      assert (x ∊ R ₀). split. apply _. red. now rewrite (denial_inequality x 0).
+      assert (y ∊ R ₀). split. apply _. red. now rewrite (denial_inequality y 0).
       split. split; red; red; apply _. do 2 red. now rewrite (R ₀ $ E1).
     Qed.
 
@@ -593,7 +589,7 @@ End contents.
 
 Hint Extern 2 (AffinelyExtendedRing  (AffineExtendImage _)) => eapply @AE_ae_ring  : typeclass_instances.
 Hint Extern 2 (AffinelyExtendedField (AffineExtendImage _)) => eapply @AE_ae_field : typeclass_instances.
-Hint Extern 2 (StandardUnEq (AffineExtendImage _)) => eapply @AE_std_uneq  : typeclass_instances.
+Hint Extern 2 (DenialInequality (AffineExtendImage _)) => eapply @AE_denial_inequality  : typeclass_instances.
 Hint Extern 2 (StrongSubDecision (AffineExtendFull _) (AffineExtendFull _) (=)) => eapply @AE_eq_str_sub_dec : typeclass_instances.
 Hint Extern 2 (StrongSubDecision (AffineExtendFull _) (AffineExtendFull _) (≤)) => eapply @AE_le_str_sub_dec : typeclass_instances.
 Hint Extern 2 (StrongSubDecision (AffineExtendImage _) (AffineExtendImage _) _) => eapply @AE_im_str_sub_dec : typeclass_instances.

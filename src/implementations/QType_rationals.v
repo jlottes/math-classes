@@ -39,7 +39,7 @@ Proof with intuition. apply Qeq_bool_iff... apply Qeq_bool_neq... Qed.
    but that mean that any comparison would involve two conversion to Q, which is
    a premature pessimization. *)
 
-Instance: StandardUnEq T := _.
+Instance: DenialInequality T := _.
 
 Instance: CommutativeRing T.
 Proof.

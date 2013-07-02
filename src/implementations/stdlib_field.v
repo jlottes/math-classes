@@ -5,22 +5,22 @@ Require Export
 
 Section field.
 
-  Context `{Field (F:=F)} `{!StandardUnEq F} `{!SubDecision F F (=)}.
+  Context `{Field (F:=F)} `{!DenialInequality F} `{!SubDecision F F (=)}.
 
   Global Instance : SubsetSig_Closed (F ₀ ⇀ F ₀) inv := _ : Closed (F ₀ ⇀ F ₀) inv.
 
   Notation F' := (every (SubsetSig F)).
 
-  Instance: StandardUnEq F' := subsetsig_standard_uneq F.
+  Instance: DenialInequality F' := subsetsig_denial_inequality F.
   Instance: Field F' := subsetsig_dec_field F.
 
   Lemma stdlib_field_theory :
     Field_theory.field_theory 0 1 (+) (.*.) (λ x y : SubsetSig F, x - y) (-)
                               (λ x y : SubsetSig F, x / y) inv (=).
   Proof. split. exact (stdlib_ring_theory F).
-  + rewrite <- (standard_uneq _ _). now destruct field_nontrivial.
+  + rewrite <- (denial_inequality _ _). now destruct field_nontrivial.
   + reflexivity.
-  + intros x E. rewrite <- (standard_uneq _ _) in E.
+  + intros x E. rewrite <- (denial_inequality _ _) in E.
     assert (x ∊ F' ₀) by now split.
     exact (field_inv_l x).
   Qed.
@@ -39,7 +39,7 @@ Ltac subfield F :=
     | @inv _ _ ?x => aux x;
       let E := fresh "Eden" in
       try (destruct (_ : x ∊ F ₀) as [_ E];
-           red in E; rewrite (standard_uneq _ _) in E)
+           red in E; rewrite (denial_inequality _ _) in E)
     | _ => idtac
     end
   in match goal with |- ?e => aux e end;

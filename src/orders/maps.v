@@ -42,8 +42,8 @@ End strictly_order_preserving.
 
 (* For structures with a trivial apartness relation we have a stronger result of the above *)
 Section strictly_order_preserving_dec.
-  Context `{FullPartialOrder (P:=X)} `{!StandardUnEq X}
-          `{FullPartialOrder (P:=Y)} `{!StandardUnEq Y}.
+  Context `{FullPartialOrder (P:=X)} `{!DenialInequality X}
+          `{FullPartialOrder (P:=Y)} `{!DenialInequality Y}.
   Context {f:X ⇀ Y}.
 
   Local Existing Instance strict_po_setoid.
@@ -79,7 +79,7 @@ Section pseudo_injective.
     intros [|]; [left | right]; now apply (strictly_order_preserving f).
   Qed.
 
-  Lemma pseudo_order_dec_preserving_inj `{!StandardUnEq X} `{!StrictlyOrderPreserving X Y f} :
+  Lemma pseudo_order_dec_preserving_inj `{!DenialInequality X} `{!StrictlyOrderPreserving X Y f} :
     StrongInjective X Y f.
   Proof. split; [| exact (dec_strong_morphism f)]. intros ????.
     rewrite !apart_iff_total_lt; try apply _.
@@ -229,6 +229,10 @@ Lemma id_order_embedding `{PartialOrder (P:=P2)} {P1} `{!SubsetOf P1 P2} : Order
 Proof. split; (split; [|easy]); split; try apply _; rewrite (_ : SubsetOf P1 P2); apply _. Qed.
 Hint Extern 2 (OrderEmbedding _ _ id) => class_apply @id_order_embedding : typeclass_instances.
 
+Lemma id_strict_order_embedding `{StrictSetoidOrder (S:=S2)} {S1} `{!SubsetOf S1 S2} : StrictOrderEmbedding S1 S2 id.
+Proof. split; (split; [|easy]); split; try apply _; rewrite (_ : SubsetOf S1 S2); apply _. Qed.
+Hint Extern 2 (StrictOrderEmbedding _ _ id) => class_apply @id_strict_order_embedding : typeclass_instances.
+
 Section composition.
   Context `{Equiv A} `{Equiv B} `{Equiv C} `{Le A} `{Le B} `{Le C} `{X:@Subset A} `{Y:@Subset B} `{Z:@Subset C}.
   Context (f : X ⇀ Y) (g : Y ⇀ Z).
@@ -261,6 +265,39 @@ Hint Extern 4 (Order_Morphism  _ _ (_ ∘ _)) => class_apply @compose_order_morp
 Hint Extern 4 (OrderPreserving _ _ (_ ∘ _)) => class_apply @compose_order_preserving : typeclass_instances.
 Hint Extern 4 (OrderReflecting _ _ (_ ∘ _)) => class_apply @compose_order_reflecting : typeclass_instances.
 Hint Extern 4 (OrderEmbedding  _ _ (_ ∘ _)) => class_apply @compose_order_embedding  : typeclass_instances.
+
+Section composition_strict.
+  Context `{Equiv A} `{Equiv B} `{Equiv C} `{Lt A} `{Lt B} `{Lt C} `{X:@Subset A} `{Y:@Subset B} `{Z:@Subset C}.
+  Context (f : X ⇀ Y) (g : Y ⇀ Z).
+
+  Instance compose_strict_order_morphism:
+    StrictOrder_Morphism X Y f → StrictOrder_Morphism Y Z g → StrictOrder_Morphism X Z (g ∘ f).
+  Proof. split; [ apply _ | apply (strict_order_morphism_so_a _ _ f) | apply (strict_order_morphism_so_b _ _ g) ]. Qed.
+
+  Instance compose_strictly_order_preserving:
+    StrictlyOrderPreserving X Y f → StrictlyOrderPreserving Y Z g → StrictlyOrderPreserving X Z (g ∘ f).
+  Proof.
+    repeat (split; try apply _).
+    intros. unfold compose.
+    now do 2 (apply (strictly_order_preserving _); try apply _).
+  Qed.
+
+  Instance compose_strictly_order_reflecting:
+    StrictlyOrderReflecting X Y f → StrictlyOrderReflecting Y Z g → StrictlyOrderReflecting X Z (g ∘ f).
+  Proof.
+    split; try apply _.
+    intros x ? y ? E. unfold compose in E.
+    do 2 apply (strictly_order_reflecting _) in E; trivial; apply _.
+  Qed.
+
+  Instance compose_strict_order_embedding:
+    StrictOrderEmbedding X Y f → StrictOrderEmbedding Y Z g → StrictOrderEmbedding X Z (g ∘ f) := {}.
+End composition_strict.
+
+Hint Extern 4 (StrictOrder_Morphism    _ _ (_ ∘ _)) => class_apply @compose_strict_order_morphism     : typeclass_instances.
+Hint Extern 4 (StrictlyOrderPreserving _ _ (_ ∘ _)) => class_apply @compose_strictly_order_preserving : typeclass_instances.
+Hint Extern 4 (StrictlyOrderReflecting _ _ (_ ∘ _)) => class_apply @compose_strictly_order_reflecting : typeclass_instances.
+Hint Extern 4 (StrictOrderEmbedding    _ _ (_ ∘ _)) => class_apply @compose_strict_order_embedding    : typeclass_instances.
 
 Lemma order_morphism_proper: Find_Proper_Signature (@Order_Morphism) 0
   (∀ A B Ae Ale Be Ble S T, Proper ((@equiv (S ⇀ T) _) ==> impl)
@@ -299,84 +336,3 @@ Proof. red; intros. intros f g E ?. split; rewrite <- E; apply _. Qed.
 Hint Extern 0 (Find_Proper_Signature (@OrderEmbedding) 0 _) => eexact order_embedding_proper : typeclass_instances.
 
 
-(*
-Lemma partialorder_refl_eq  `{PartialOrder (P:=P)} : Proper (PartialOrder,=) P. Proof. apply restrict_rel_refl; apply _. Qed.
-Lemma partialorder_refl_sub `{PartialOrder (P:=P)} : Proper (PartialOrder,⊆) P. Proof. apply restrict_rel_refl; apply _. Qed.
-
-Hint Extern 0 (@Proper _ (@restrict_rel _ PartialOrder (@equiv _ (subset_equiv _))) _)  => eapply @partialorder_refl_eq  : typeclass_instances.
-Hint Extern 0 (@Proper _ (@restrict_rel _ PartialOrder (@SubsetOf _)) _)                => eapply @partialorder_refl_sub : typeclass_instances.
-
-Definition partialorder_refl_eq_fp  `{PartialOrder (P:=P)} : Find_Proper_Proper (PartialOrder,=) P := partialorder_refl_eq.
-Definition partialorder_refl_sub_fp `{PartialOrder (P:=P)} : Find_Proper_Proper (PartialOrder,⊆) P := partialorder_refl_sub.
-
-Hint Extern 0 (@Find_Proper_Proper _ (@restrict_rel _ PartialOrder (@equiv _ (subset_equiv _))) _) => eapply @partialorder_refl_eq_fp  : typeclass_instances.
-Hint Extern 0 (@Find_Proper_Proper _ (@restrict_rel _ PartialOrder (@SubsetOf _)) _)               => eapply @partialorder_refl_sub_fp : typeclass_instances.
-
-Lemma to_partialorder_rel `{PartialOrder (P:=X)} `{!PartialOrder Y} {R:relation _} (E:R X Y)
-  : (PartialOrder,R)%signature X Y.
-Proof. split. split; assumption. exact E. Qed.
-
-
-Lemma Order_Morphism_proper: Find_Proper_Signature (@Order_Morphism) 0
-  (∀ A B Ae Ale Be Ble f, Proper ((ProperSubset,⊆)-->(PartialOrder,⊆)++>impl) (@Order_Morphism A B Ae Ale Be Ble f)).
-Proof. red. intros. intros S1 S2 [[??]ES] T1 T2 [[??]ET] [???].
-  pose proof (po_subsetoid (P:=T1)). pose proof (po_subsetoid (P:=T2)).
-  split; [rewrite_subset ES; rewrite_subset <- ET | rewrite_subset ES |]; apply _.
-Qed.
-Hint Extern 0 (Find_Proper_Signature (@Order_Morphism ) 0 _) => eexact Order_Morphism_proper : typeclass_instances.
-
-Lemma Order_Morphism_proper2: Find_Proper_Signature (@Order_Morphism) 1
-  (∀ A B Ae Ale Be Ble f, Proper ((=)==>(=)==>impl) (@Order_Morphism A B Ae Ale Be Ble f)).
-Proof. red. intros. intros S1 S2 ES T1 T2 ET ?.
-  pose proof (po_subsetoid (P:=S1)). assert (SubSetoid S2) by (rewrite <- ES; apply _).
-  pose proof (order_morphism_po_b f). assert (PartialOrder T2) by (rewrite <- ET; apply _).
-  rewrite_subset <- ES. now rewrite <- (to_partialorder_rel ET).
-Qed.
-Hint Extern 0 (Find_Proper_Signature (@Order_Morphism ) 1 _) => eexact Order_Morphism_proper2 : typeclass_instances.
-*)
-
-(*
-Section propers.
-  Context `{Equiv A} `{Equiv B} `{Le A} `{Le B}.
-
-  Global Instance order_morphism_proper: Proper ((=) ==> iff) (@Order_Morphism A B _ _ _ _).
-  Proof.
-    assert (∀ (f g : A → B), g = f → Order_Morphism f → Order_Morphism g) as P.
-     intros f g E [[? ? ?] ?].
-     split; auto. apply morphism_proper with f. easy. split; easy.
-    firstorder.
-  Qed.
-
-  Global Instance order_preserving_proper: Proper ((=) ==> iff) (@OrderPreserving A B _ _ _ _).
-  Proof.
-    assert (∀ (f g : A → B), g = f → OrderPreserving f → OrderPreserving g) as P.
-     intros f g E [[[? ?] ? ?] ?].
-     split.
-      eapply order_morphism_proper; eauto. now repeat (split; try apply _).
-     intros x y ?. rewrite (E x x), (E y y); now auto.
-    firstorder.
-  Qed.
-
-  Global Instance order_reflecting_proper: Proper ((=) ==> iff) (@OrderReflecting A B _ _ _ _).
-  Proof.
-    assert (∀ (f g : A → B), g = f → OrderReflecting f → OrderReflecting g) as P.
-     intros f g E [[[? ?] ? ?] ?].
-     split.
-      eapply order_morphism_proper; eauto. now repeat (split; try apply _).
-     intros x y F. rewrite (E x x), (E y y) in F; now auto.
-    firstorder.
-  Qed.
-
-  Global Instance order_embedding_proper: Proper ((=) ==> iff) (@OrderEmbedding A B _ _ _ _).
-  Proof.
-    assert (∀ (f g : A → B), g = f → OrderEmbedding f → OrderEmbedding g) as P.
-     intros f g E.
-     split.
-      eapply order_preserving_proper; eauto. now apply _.
-     eapply order_reflecting_proper; eauto. now apply _.
-    intros f g ?; split; intro E.
-     apply P with f. destruct E as [[[[? ?]]]]. now symmetry. easy.
-    now apply P with g.
-  Qed.
-End propers.
-*)

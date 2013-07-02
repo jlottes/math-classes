@@ -20,9 +20,9 @@ Section definition.
 
   Class Rationals {U:RationalsToField Q} : Prop :=
   { rationals_field :>> Field Q
-  ; rationals_std_uneq :>> StandardUnEq Q
+  ; rationals_denial_inequality :>> DenialInequality Q
   ; rationals_embed_ints `{Integers (Z:=Z)} :>> Injective Z Q (integers_to_ring Z Q)
-  ; rationals_spec `{Integers (Z:=Z)} `{UnEq _} `{!StandardUnEq Z}
+  ; rationals_spec `{Integers (Z:=Z)} `{UnEq _} `{!DenialInequality Z}
       `{Field (F:=F)} `{!StrongInjective Z F (integers_to_ring Z F)}
     :> RationalsToFieldSpec (rationals_to_field Q F)
   }.

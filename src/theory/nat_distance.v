@@ -45,7 +45,7 @@ Hint Extern 0 (Morphism _ nat_distance) => eapply @nat_distance_proper : typecla
 
 (** An existing instance of [CutMinus] allows to create an instance of [NatDistance]
  assuming decidability of (≤) on the entire type *)
-Program Instance natdistance_cut_minus `{Naturals (N:=N)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq N} `{!FullPseudoSemiRingOrder N}
+Program Instance natdistance_cut_minus `{Naturals (N:=N)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality N} `{!FullPseudoSemiRingOrder N}
     `{!CutMinusSpec N cm} `{∀ x y, Decision (x ≤ y)} : NatDistance N :=
   λ x y, if decide_rel (≤) x y then inl (y ∸ x) else inr (x ∸ y).
 Next Obligation. split. apply _. rewrite (N $ commutativity (+) _ _). now apply cut_minus_le. Qed.

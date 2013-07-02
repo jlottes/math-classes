@@ -19,6 +19,9 @@ Class Element `{S:Subset} x := element : S x.
 Notation "x ∊ S" := (Element (A:=_) (S:=S) x) (at level 70) : mc_scope.
 Notation "(∊ S )" := (Element (S:=S)) (only parsing) : mc_scope.
 
+Class Inhabited `(X:Subset) := inhabited : ∃ x, x ∊ X.
+Arguments inhabited {_} X {_}.
+
 Definition every A : @Subset A := λ _, True.
 Hint Extern 0 (_ ∊ (every _)) => eexact I : typeclass_instances.
 
@@ -32,19 +35,8 @@ Coercion elt_type: Subset >-> Sortclass.
 Typeclasses Transparent elt_type.
 
 Definition restrict_rel `(S:Subset) (R:relation _): relation _ := λ x y, (x ∊ S ∧ y ∊ S) ∧ R x y .
-(* Notation " ( R | S ) " := (restrict_rel S (R%signature)) : signature_scope. *)
 
 Class SubsetOf `(S:Subset) T := subset x `{x ∊ S} : x ∊ T.
-(* Hint Extern 15 (_ ∊ ?T) => class_apply @subset : typeclass_instances. *)
-(*
-Notation "S ⊆ T" := (SubsetOf S T) (at level 70) : mc_scope.
-Notation "(⊆)" := (SubsetOf) (only parsing) : mc_scope.
-Notation "( S ⊆)" := (SubsetOf S) (only parsing) : mc_scope.
-Notation "(⊆ T )" := (λ S, S ⊆ T) (only parsing) : mc_scope.
-Hint Extern 2 (?x ⊆ ?x) => reflexivity : typeclass_instances.
-Hint Extern 2 (?x ⊆ ?y) => auto_trans : typeclass_instances.
-Notation " ( S ,⊆) " := (restrict_rel S (⊆)) : signature_scope.
-*)
 
 (* Equality *)
 Class Equiv A := equiv: relation A.
@@ -60,7 +52,7 @@ Notation "( x =)" := (equiv x) (only parsing) : mc_scope.
 Notation "(= x )" := (λ y, equiv y x) (only parsing) : mc_scope.
 Notation "( S ,=)" := (restrict_rel S (=)) : signature_scope.
 
-(* "≠" is sometimes standard inequality, sometimes apartness *)
+(* "≠" is not necessarily a denial inequality. *)
 Class UnEq A := uneq : relation A.
 Notation "(≠)" := uneq (only parsing) : mc_scope.
 Infix "≠":= uneq : type_scope.
@@ -69,8 +61,8 @@ Notation "(≠ x )" := (λ y, uneq y x) (only parsing) : mc_scope.
 Notation "( S ,≠)" := (restrict_rel S (≠)) : signature_scope.
 Typeclasses Transparent UnEq.
 
-Class StandardUnEq `{Ae:Equiv A} {Aue:UnEq A} S : Prop
-  := standard_uneq x `{x ∊ S} y `{y ∊ S} : x ≠ y ↔ ¬ x = y.
+Class DenialInequality `{Ae:Equiv A} {Aue:UnEq A} S : Prop
+  := denial_inequality x `{x ∊ S} y `{y ∊ S} : x ≠ y ↔ ¬ x = y.
 Class TightApart `{Ae:Equiv A} {Aue:UnEq A} S : Prop
   := tight_apart   x `{x ∊ S} y `{y ∊ S} : ¬ x ≠ y ↔ x = y.
 
@@ -187,11 +179,15 @@ Class Top A := top: A.
 Class Bottom A := bottom: A.
 Typeclasses Transparent Meet Join Top Bottom.
 
+Class Tilde A := tilde : A → A.
+Typeclasses Transparent tilde.
+
 Class Le A := le: relation A.
 Class Lt A := lt: relation A.
 Typeclasses Transparent Le Lt.
 
 Class Infty A := infty : A.
+Typeclasses Transparent Infty.
 
 Class Abs A := abs : A → A.
 Typeclasses Transparent Abs.
@@ -205,6 +201,7 @@ Instance: Params (@le)     2.
 Instance: Params (@lt)     2.
 Instance: Params (@meet)   2.
 Instance: Params (@join)   2.
+Instance: Params (@tilde)  2.
 Instance: Params (@abs)    2.
 
 Instance plus_is_sg_op      `{f : Plus   A}: SgOp A := f.
@@ -266,6 +263,9 @@ Notation "(⊔)" := join (only parsing) : mc_scope.
 Notation "( X ⊔)" := (join X) (only parsing) : mc_scope.
 Notation "(⊔ X )" := (λ Y, Y ⊔ X) (only parsing) : mc_scope.
 
+Notation "∼ x" := (tilde x) (at level 35, right associativity) : mc_scope.
+Notation "(∼)" := tilde (only parsing) : mc_scope.
+
 Infix "≤" := le : mc_scope.
 Notation "(≤)" := le (only parsing) : mc_scope.
 Notation "( x ≤)" := (le x) (only parsing) : mc_scope.
@@ -296,19 +296,11 @@ Notation "(→)" := (λ x y, x → y) : mc_scope.
 (* Notation "t $ r" := (t r) (at level 65, right associativity, only parsing) : mc_scope. *)
 Notation "(∘)" := compose (only parsing) : mc_scope.
 
-(* The "&" notation for sg op clobbers these notations *)
 (*
-Notation "{ x  |  P }" := (sig (fun x => P)) : mc_scope.
-Notation "{ x : A  |  P }" := (sig (fun x:A => P)) : mc_scope.
-Notation "{ x | P && Q }" := (sig2 (fun x => P) (fun x => Q)) : mc_scope.
-Notation "{ x : A | P && Q }" := (sig2 (fun x:A => P) (fun x:A => Q)) : mc_scope.
-Notation "{ x : A && P }" := (sigT (fun x:A => P)) : mc_scope.
-Notation "{ x : A && P && Q }" := (sigT2 (fun x:A => P) (fun x:A => Q)) : mc_scope.
-*)
-
 Hint Extern 2 (?x ≤ ?y) => reflexivity.
 Hint Extern 4 (?x ≤ ?z) => auto_trans.
 Hint Extern 4 (?x < ?z) => auto_trans.
+*)
 
 Class Inverse `{X:Subset} `{Y:Subset} (f:X ⇀ Y) : Type := inverse: Y ⇀ X.
 Arguments inverse {_ _ _ _} f {Inverse} _.

@@ -5,7 +5,7 @@ Require Export
 Class Setoid `{Ae : Equiv A} S : Prop := setoid_eq : SubEquivalence S (=).
 Hint Extern 2 (SubEquivalence _ (=)) => eapply @setoid_eq : typeclass_instances.
 
-Class UnEqualitySetoid `{Ae : Equiv A} {Aue : UnEq A} S : Prop :=
+Class InequalitySetoid `{Ae : Equiv A} {Aue : UnEq A} S : Prop :=
   { uneq_setoid :>> Setoid S
   ; uneq_proper : Proper ((S,=) ==> (S,=) ==> impl) (≠)
   ; uneq_ne   x `{x ∊ S} y `{y ∊ S} : x ≠ y → ¬ x = y
@@ -19,7 +19,8 @@ Class StrongSetoid `{Ae : Equiv A} {Aue : UnEq A} S : Prop :=
 Hint Extern 2 (SubApartness _ (≠)) => eapply @strongsetoid_apart: typeclass_instances.
 
 Class SubSetoid `{Ae: Equiv A} S T : Prop :=
-  { subsetoid_b : Setoid T
+  { subsetoid_a :>> Setoid S  (* derivable from the other axioms, but convenient *)
+  ; subsetoid_b :   Setoid T
   ; subsetoid_regular : Proper ((T,=) ==> impl) (∊ S)
   ; subsetoid_subset : SubsetOf S T
   }.
@@ -27,10 +28,11 @@ Hint Extern 4 (SubsetOf _ _) => eapply @subsetoid_subset : typeclass_instances.
 Notation "S ⊆ T" := (SubSetoid S T) (at level 70) : mc_scope.
 Notation "(⊆)" := (SubSetoid) (only parsing) : mc_scope.
 Notation "( S ⊆)" := (SubSetoid S) (only parsing) : mc_scope.
-Notation "(⊆ T )" := (λ S, S ⊆ T) (only parsing) : mc_scope.
+Notation "(⊆ T )" := ((λ S, S ⊆ T) : Subset) (only parsing) : mc_scope.
 (* Hint Extern 2 (?x ⊆ ?x) => reflexivity : typeclass_instances.
 Hint Extern 2 (?x ⊆ ?y) => auto_trans : typeclass_instances. *)
 Notation " ( S ,⊆) " := (restrict_rel S (⊆)) : signature_scope.
+Notation "S ⊆ T ⊆ U" := (S ⊆ T ∧ T ⊆ U) (at level 70, T at next level) : mc_scope.
 
 Hint Extern 2 (Equiv (elt_type (⊆ _))) => eapply @subset_equiv : typeclass_instances.
 

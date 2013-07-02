@@ -150,9 +150,9 @@ Section ring.
 End ring.
 
 Section dec.
-  Instance SRpair_std_uneq `{UnEq _} `{!StandardUnEq SR} : StandardUnEq R.
+  Instance SRpair_denial_inequality `{UnEq _} `{!DenialInequality SR} : DenialInequality R.
   Proof. intros [??][??][??][??]. unfold equiv, SRpair_equiv, uneq, SRpair_uneq.
-    exact (standard_uneq _ _).
+    exact (denial_inequality _ _).
   Qed.
 
   Instance SRpair_dec_eq `{∀ (x y:A), Decision (x=y)} (x y : SRpairT A) : Decision (x=y).
@@ -352,7 +352,7 @@ Section with_full_pseudo_semiring_order.
 End with_full_pseudo_semiring_order.
 End contents.
 
-Hint Extern 2 (StandardUnEq (SRpair _)) => eapply @SRpair_std_uneq : typeclass_instances.
+Hint Extern 2 (DenialInequality (SRpair _)) => eapply @SRpair_denial_inequality : typeclass_instances.
 Hint Extern 2 (Decision (@equiv _ SRpair_equiv _ _)) => eapply @SRpair_dec_eq : typeclass_instances.
 Hint Extern 2 (Decision (@le _ SRpair_le _ _)) => eapply @SRpair_dec_le : typeclass_instances.
 Hint Extern 2 (StrongSubDecision (SRpair _) (SRpair _) (=)) => eapply @SRpair_strong_subdec_eq : typeclass_instances.

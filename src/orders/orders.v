@@ -64,7 +64,15 @@ Section partial_order.
   Lemma eq_iff_le x `{x ∊ P} y `{y ∊ P} : x = y ↔ x ≤ y ∧ y ≤ x.
   Proof. split; intros E. split; now rewrite_on P -> E.
          now apply (subantisymmetry (≤) x y). Qed.
+
+  Lemma po_prepartial : Find_Proper_PrePartialOrder (P,=)%signature (P,≤)%signature.
+  Proof. split. apply _.
+  + red. intros ?? E. unfold_sigs. red_sig. now apply (eq_le _ _).
+  + intros ?? E1 E2. unfold_sigs. red_sig. rewrite (eq_iff_le _ _); intuition.
+  Qed.
 End partial_order.
+
+Hint Extern 2 (Find_Proper_PrePartialOrder (restrict_rel ?P eq) (restrict_rel ?P le)) => eapply @po_prepartial : typeclass_instances.
 
 Section strict_order.
   Context `{S:Subset} `{StrictSetoidOrder _ (S:=S)}.
@@ -92,6 +100,7 @@ Section strict_order.
 
   Lemma eq_not_lt x `{x ∊ S} y `{y ∊ S} : x = y → ¬x < y.
   Proof. intros E. rewrite_on S -> E. now apply (subirreflexivity (<)). Qed.
+
 End strict_order.
 
 Section pseudo_order.
@@ -153,10 +162,10 @@ Section pseudo_order.
   Global Instance: SubAntiSymmetric S (complement (<)).
   Proof. intros x ? y ?. rewrite <-(tight_apart _ _), (apart_iff_total_lt x y). intuition. Qed.
 
-  Lemma ne_total_lt `{!StandardUnEq S} x `{x ∊ S} y `{y ∊ S} : ¬ x = y → x < y ∨ y < x.
-  Proof. rewrite <- (standard_uneq _ _). now apply apart_total_lt. Qed.
+  Lemma ne_total_lt `{!DenialInequality S} x `{x ∊ S} y `{y ∊ S} : ¬ x = y → x < y ∨ y < x.
+  Proof. rewrite <- (denial_inequality _ _). now apply apart_total_lt. Qed.
 
-  Global Instance lt_trichotomy `{!StandardUnEq S} `{!SubDecision S S (=)} : Trichotomy S (<).
+  Global Instance lt_trichotomy `{!DenialInequality S} `{!SubDecision S S (=)} : Trichotomy S (<).
   Proof.
     intros x ? y ?.
     destruct (decide_sub (=) x y) as [?|?]; try tauto.
@@ -182,6 +191,9 @@ Section full_partial_order.
 
   Lemma lt_le x `{x ∊ P} y `{y ∊ P} : PropHolds (x < y) → PropHolds (x ≤ y).
   Proof. intro. now apply lt_iff_le_apart. Qed.
+
+  Lemma lt_le_subrel : subrelation (P,<)%signature (P,≤)%signature.
+  Proof. intros. intros ?? E. unfold_sigs. red_sig. now apply (lt_le _ _). Qed.
 
   Lemma not_le_not_lt x `{x ∊ P} y `{y ∊ P} : ¬x ≤ y → ¬x < y.
   Proof. intro E. contradict E. exact (lt_le x y E). Qed.
@@ -226,16 +238,16 @@ Section full_partial_order.
     subtransitivity y; rewrite lt_iff_le_apart; tauto.
   Qed.
 
-  Lemma lt_iff_le_ne `{!StandardUnEq P} x `{x ∊ P} y `{y ∊ P} : x < y ↔ x ≤ y ∧ ¬ x = y.
-  Proof. rewrite <- (standard_uneq _ _). now apply lt_iff_le_apart. Qed.
+  Lemma lt_iff_le_ne `{!DenialInequality P} x `{x ∊ P} y `{y ∊ P} : x < y ↔ x ≤ y ∧ ¬ x = y.
+  Proof. rewrite <- (denial_inequality _ _). now apply lt_iff_le_apart. Qed.
 
-  Lemma le_equiv_lt `{!StandardUnEq P} `{!SubDecision P P (=)} x `{x ∊ P} y `{y ∊ P} : x ≤ y → x = y ∨ x < y.
+  Lemma le_equiv_lt `{!DenialInequality P} `{!SubDecision P P (=)} x `{x ∊ P} y `{y ∊ P} : x ≤ y → x = y ∨ x < y.
   Proof.
     intros. destruct (decide_sub (=) x y); try tauto.
     right. rewrite lt_iff_le_ne; tauto.
   Qed.
 
-  Program Instance strong_dec_from_lt_dec `{!StandardUnEq P} `{!StrongSubDecision P P (≤)} :
+  Program Instance strong_dec_from_lt_dec `{!DenialInequality P} `{!StrongSubDecision P P (≤)} :
      StrongSubDecision P P (=) := λ x y,
     match decide_sub_strong (≤) x y with
     | left E1 => match decide_sub_strong (≤) y x with
@@ -248,7 +260,7 @@ Section full_partial_order.
   Next Obligation. intro E. subsymmetry in E. generalize E. apply not_le_ne; auto. Qed.
   Next Obligation. apply not_le_ne; auto. Qed.
 
-  Program Instance dec_from_lt_dec `{!StandardUnEq P} `{!SubDecision P P (≤)} :
+  Program Instance dec_from_lt_dec `{!DenialInequality P} `{!SubDecision P P (≤)} :
      SubDecision P P (=) := λ x xs y ys,
     match decide_sub (≤) x y with
     | left E1 => match decide_sub (≤) y x with
@@ -261,7 +273,7 @@ Section full_partial_order.
   Next Obligation. intro E. subsymmetry in E. generalize E. now apply not_le_ne. Qed.
   Next Obligation. now apply not_le_ne. Qed.
 
-  Definition strong_lt_dec_slow `{!StandardUnEq P} `{!StrongSubDecision P P (≤)} : StrongSubDecision P P (<).
+  Definition strong_lt_dec_slow `{!DenialInequality P} `{!StrongSubDecision P P (≤)} : StrongSubDecision P P (<).
   Proof. intros x y.
     destruct (decide_sub_strong (≤) x y).
      destruct (decide_sub_strong (=) x y).
@@ -270,7 +282,7 @@ Section full_partial_order.
     right. intros. apply not_le_not_lt; intuition.
   Defined.
 
-  Definition lt_dec_slow `{!StandardUnEq P} `{!SubDecision P P (≤)} : SubDecision P P (<).
+  Definition lt_dec_slow `{!DenialInequality P} `{!SubDecision P P (≤)} : SubDecision P P (<).
   Proof. intros x ? y ?.
     destruct (decide_sub (≤) x y).
      destruct (decide_sub (=) x y).
@@ -283,6 +295,9 @@ End full_partial_order.
 Hint Extern 10 (PropHolds (_ ≤ _)) => eapply @lt_le : typeclass_instances.
 Hint Extern 20 (StrongSubDecision _ _ (<)) => eapply @strong_lt_dec_slow : typeclass_instances.
 Hint Extern 20 (SubDecision _ _ (<)) => eapply @lt_dec_slow : typeclass_instances.
+
+Hint Extern 2 (subrelation (restrict_rel ?P lt) (restrict_rel ?P le)) => eapply @lt_le_subrel : typeclass_instances.
+Hint Extern 2 (Find_Proper_Subrelation (restrict_rel ?P lt) (restrict_rel ?P le)) => eapply @lt_le_subrel : typeclass_instances.
 
 Section full_pseudo_order.
   Context `{S:Subset} `{FullPseudoOrder _ (S:=S)}.
@@ -323,23 +338,23 @@ Section full_pseudo_order.
     rewrite !le_iff_not_lt_flip; tauto.
   Qed.
 
-  Lemma le_or_lt `{!StandardUnEq S} `{!SubDecision S S (=)} x `{x ∊ S} y `{y ∊ S} : x ≤ y ∨ y < x.
+  Lemma le_or_lt `{!DenialInequality S} `{!SubDecision S S (=)} x `{x ∊ S} y `{y ∊ S} : x ≤ y ∨ y < x.
   Proof.
     destruct (trichotomy (<) x y) as [|[|]]; try tauto.
      left. now apply lt_le.
     left. now apply eq_le_flip.
   Qed.
 
-  Global Instance le_total `{!StandardUnEq S} `{!SubDecision S S (=)} : TotalOrder S.
+  Global Instance le_total `{!DenialInequality S} `{!SubDecision S S (=)} : TotalOrder S.
   Proof. split; try apply _. intros x ? y ?. destruct (le_or_lt x y). tauto. right. now apply lt_le. Qed.
 
-  Lemma not_le_lt_flip `{!StandardUnEq S} `{!SubDecision S S (=)} x `{x ∊ S} y `{y ∊ S} : ¬y ≤ x → x < y.
+  Lemma not_le_lt_flip `{!DenialInequality S} `{!SubDecision S S (=)} x `{x ∊ S} y `{y ∊ S} : ¬y ≤ x → x < y.
   Proof. intros. destruct (le_or_lt y x); intuition. Qed.
 
   Existing Instance strong_dec_from_lt_dec.
   Existing Instance dec_from_lt_dec.
 
-  Program Definition strong_lt_dec `{!StandardUnEq S} `{!StrongSubDecision S S (≤)} : StrongSubDecision S S (<)
+  Program Definition strong_lt_dec `{!DenialInequality S} `{!StrongSubDecision S S (≤)} : StrongSubDecision S S (<)
      := λ x y,
     match decide_sub_strong (≤) y x with
     | left E => right _
@@ -348,7 +363,7 @@ Section full_pseudo_order.
   Next Obligation. apply le_not_lt_flip; intuition. Qed.
   Next Obligation. apply not_le_lt_flip; intuition. Qed.
 
-  Program Definition lt_dec `{!StandardUnEq S} `{!SubDecision S S (≤)} : SubDecision S S (<)
+  Program Definition lt_dec `{!DenialInequality S} `{!SubDecision S S (≤)} : SubDecision S S (<)
      := λ x xs y ys,
     match decide_sub (≤) y x with
     | left E => right _
@@ -372,7 +387,7 @@ semirings.lt_0_1 → lt_ne_flip → ...
 *)
 
 Section dec_strict_order.
-  Context `{S:Subset} `{StrictSetoidOrder _ (S:=S)} `{UnEq _} `{!StandardUnEq S} `{!SubDecision S S (=)}.
+  Context `{S:Subset} `{StrictSetoidOrder _ (S:=S)} `{UnEq _} `{!DenialInequality S} `{!SubDecision S S (=)}.
 
   Existing Instance so_setoid.
   Instance: StrongSetoid S := dec_strong_setoid.
@@ -386,7 +401,7 @@ Section dec_strict_order.
      destruct (trichotomy (<) x z) as [? | [Exz | Exz]]; try tauto.
       right. now rewrite_on S <- Exz.
      right. subtransitivity x.
-  + intros x ? y ?. rewrite (standard_uneq _ _). split.
+  + intros x ? y ?. rewrite (denial_inequality _ _). split.
      destruct (trichotomy (<) x y); intuition.
     intros [?|?]. now apply lt_ne. now apply lt_ne_flip.
   Qed.
@@ -399,7 +414,7 @@ Section dec_partial_order.
 
   Definition dec_lt `{UnEq A} : Lt A := λ x y, x ≤ y ∧ x ≠ y.
 
-  Context `{UnEq A} `{!StandardUnEq P} `{Alt : Lt A}
+  Context `{UnEq A} `{!DenialInequality P} `{Alt : Lt A}
           (lt_correct : ∀ `{x ∊ P} `{y ∊ P}, x < y ↔ x ≤ y ∧ x ≠ y).
 
   Instance dec_order: StrictSetoidOrder P.
@@ -407,9 +422,9 @@ Section dec_partial_order.
   + intros ? ? E1 ? ? E2. unfold_sigs.
     rewrite !lt_correct; trivial.
     now rewrite_on P -> E1, E2.
-  + intros x ?. rewrite lt_correct; trivial. rewrite (standard_uneq _ _). now intros [_ []].
+  + intros x ?. rewrite lt_correct; trivial. rewrite (denial_inequality _ _). now intros [_ []].
   + intros x ? y ? z ?. rewrite !lt_correct; trivial.
-    rewrite !standard_uneq; trivial. intros [E1a E1b] [E2a E2b].
+    rewrite !denial_inequality; trivial. intros [E1a E1b] [E2a E2b].
     split. subtransitivity y.
     intros E3. destruct E2b.
     apply (subantisymmetry (≤)); trivial.
@@ -425,7 +440,7 @@ Section dec_partial_order.
 
   Instance: Trichotomy P (<).
   Proof.
-    intros x ? y ?. rewrite !(lt_correct _ _ _ _), !(standard_uneq _ _).
+    intros x ? y ?. rewrite !(lt_correct _ _ _ _), !(denial_inequality _ _).
     destruct (decide_sub (=) x y) as [|E]; try tauto.
     assert (¬y = x). contradict E. subsymmetry.
     destruct (total (≤) x y); intuition.
@@ -437,7 +452,7 @@ Section dec_partial_order.
   Instance dec_full_pseudo_order: FullPseudoOrder P.
   Proof.
     split; try apply _.
-    intros x ? y ?. rewrite (lt_correct _ _ _ _), (standard_uneq _ _). split.
+    intros x ? y ?. rewrite (lt_correct _ _ _ _), (denial_inequality _ _). split.
      intros ? [? []]. now apply (subantisymmetry (≤)).
     intros E1.
     destruct (total (≤) x y); trivial.

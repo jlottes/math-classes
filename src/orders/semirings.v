@@ -11,7 +11,7 @@ Local Existing Instance strict_srorder_semiring.
 Local Existing Instance pseudo_srorder_semiring.
 
 Local Ltac subsetoid_tac R :=
-  split; [apply _ | | apply _]; intros ?? E [??]; unfold_sigs;
+  apply subsetoid_alt; [apply _ | | apply _]; intros ?? E [??]; unfold_sigs;
   split; [apply _ |]; now rewrite_on R <- E.
 
 Lemma NonNeg_subsetoid   `{PartialOrder A (P:=R)} `{Zero A} `{0 ∊ R}: SubSetoid R⁺ R. Proof. subsetoid_tac R. Qed.
@@ -414,10 +414,10 @@ Section pseudo_semiring_order.
   Global Instance strong_mult_nonzero: Strong_Binary_Morphism (R ₀) (R ₀) (R ₀) (.*.).
   Proof. split; try apply _.
   + intros x ? y ?; destruct (decompose_nonzero x), (decompose_nonzero y).
-      apply pos_nonzero, _.
-      apply neg_nonzero, _.
-      apply neg_nonzero, _.
-      apply pos_nonzero, _.
+      apply pos_nonzero. apply _.
+      apply neg_nonzero. apply _.
+      apply neg_nonzero. apply _.
+      apply pos_nonzero. apply _.
   + rewrite strong_ext_equiv_2. intros. now apply (strong_binary_extensionality (.*.)).
   Qed.
 
@@ -580,10 +580,10 @@ Section full_pseudo_order.
   Lemma neg_nonpos : SubsetOf R₋ R⁻ .
   Proof. intros x ?. pose proof (Neg_subset). apply (not_pos_nonpos x), (neg_not_pos x). Qed.
 
-  Lemma nonneg_or_neg `{!StandardUnEq R} `{!SubDecision R R (=)} x `{x ∊ R} : x ∊ R⁺ ∨ x ∊ R₋ .
+  Lemma nonneg_or_neg `{!DenialInequality R} `{!SubDecision R R (=)} x `{x ∊ R} : x ∊ R⁺ ∨ x ∊ R₋ .
   Proof. destruct (le_or_lt 0 x); [left|right]; firstorder. Qed.
 
-  Lemma pos_or_nonpos `{!StandardUnEq R} `{!SubDecision R R (=)} x `{x ∊ R} : x ∊ R₊ ∨ x ∊ R⁻ .
+  Lemma pos_or_nonpos `{!DenialInequality R} `{!SubDecision R R (=)} x `{x ∊ R} : x ∊ R₊ ∨ x ∊ R⁻ .
   Proof. destruct (le_or_lt x 0); [right|left]; firstorder. Qed.
 End full_pseudo_order.
 
@@ -834,7 +834,7 @@ Hint Extern 5 (FullPseudoSemiRingOrder _⁺) => eapply @nonneg_semiring_order : 
 
 Section dec_semiring_order.
   (* Maybe these assumptions can be weakened? *)
-  Context `{SemiRingOrder A (R:=R)} `{UnEq A} `{!StandardUnEq R}
+  Context `{SemiRingOrder A (R:=R)} `{UnEq A} `{!DenialInequality R}
     `{!NoZeroDivisors R} `{!TotalRelation R (≤)} `{!SubDecision R R (=)}.
 
   Context `{Lt A} (lt_correct : ∀ `{x ∊ R} `{y ∊ R}, x < y ↔ x ≤ y ∧ x ≠ y).
@@ -848,7 +848,7 @@ Section dec_semiring_order.
   Proof. split. apply _. apply _.
   + intros x ? y ? E. now apply srorder_partial_minus, not_lt_le_flip.
   + intros z ?. repeat (split; try apply _).
-    intros x ? y ?. rewrite !(lt_correct _ _ _ _), !(standard_uneq _ _).
+    intros x ? y ?. rewrite !(lt_correct _ _ _ _), !(denial_inequality _ _).
     intros [E2a E2b]. split.
       now apply (order_preserving (z+)).
       contradict E2b. now apply (left_cancellation (+) z R).

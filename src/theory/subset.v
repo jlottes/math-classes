@@ -14,6 +14,8 @@ Hint Extern 2 (_ ∊ _ ⊓ _) => split; trivial; apply _ : typeclass_instances.
 Hint Extern 2 (_ ∊ _ ⊔ _) => first [ left; trivial; apply _
                                    | right; trivial; apply _ ] : typeclass_instances.
 
+Lemma empty_subsetof `(S:Subset) : SubsetOf ⊥ S. Proof. firstorder. Qed.
+Hint Extern 2 (SubsetOf ⊥ _) => eapply @empty_subsetof : typeclass_instances.
 
 Ltac subreflexivity    := first [ apply (subreflexivity _) | rapply (subreflexivity)]; trivial.
 Ltac subsymmetry       := first [ apply (subsymmetry _ _)  | rapply (subsymmetry)   ]; trivial.
@@ -44,11 +46,6 @@ Ltac easy ::=
   with do_ccl := trivial with eq_true; repeat do_intro; do_atom in
   (use_hyps; do_ccl) || fail "Cannot solve this goal".
 
-(*
-Hint Extern 20 (?x ∊ ?T) => match goal with
-  | sub : _ ⊆ ?T |- _ => eapply (subset (SubsetOf:=sub) x)
-end : typeclass_instances.
-*)
 
 Hint Extern 2 (SubsetOf ?S (every _)) => eexact (λ `{x ∊ S}, I) : typeclass_instances.
 
@@ -82,6 +79,7 @@ Proof. split.
 + intros ??? E1 E2 ?. split; intro. now apply E2, E1. now apply E1, E2.
 Qed.
 
+Hint Extern 2 (SubEquivalence _ (@equiv _ subset_equiv)) => eapply @every_SubEquivalence : typeclass_instances.
 Hint Extern 5 (Setoid (every Subset)) => eapply @every_SubEquivalence : typeclass_instances.
 
 Instance subsetof_preorder T: PreOrder (@SubsetOf T).
@@ -90,11 +88,18 @@ Proof. firstorder. Qed.
 Instance subsetof_antisym T: AntiSymmetric (=) (@SubsetOf T).
 Proof. firstorder. Qed.
 
+Hint Extern 2 (SubReflexive  _ SubsetOf) => eapply @every_SubReflexive  : typeclass_instances.
+Hint Extern 2 (SubTransitive _ SubsetOf) => eapply @every_SubTransitive : typeclass_instances.
+Hint Extern 2 (SubAntiSymmetric _ SubsetOf) => eapply @every_SubAntiSymmetric : typeclass_instances.
+
 Hint Extern 2 (SubsetOf ?x ?x) => reflexivity : typeclass_instances.
 Hint Extern 20 (SubsetOf ?X ?Y) => match goal with
     E : X = Y |- _ => intro; apply E
   | E : Y = X |- _ => intro; apply E
 end : typeclass_instances.
+
+Hint Extern 2 (_ ∊ (λ S, SubsetOf S ?X)) => red : typeclass_instances.
+Hint Extern 2 (_ ∊ SubsetOf _) => red : typeclass_instances.
 
 Lemma subset_partialorder A : PartialOrder (Ale:=@SubsetOf A) (every Subset).
 Proof. split; try apply _. firstorder. Qed.
@@ -109,7 +114,7 @@ Hint Extern 2 (JoinSemiLatticeOrder (every Subset)) => eapply @lattice_order_joi
 Lemma subset_bounded_meet_semilattice {A} : BoundedMeetSemiLattice (every (@Subset A)).  Proof. firstorder. Qed.
 Lemma subset_bounded_join_semilattice {A} : BoundedJoinSemiLattice (every (@Subset A)).  Proof. firstorder. Qed.
 Hint Extern 2 (BoundedMeetSemiLattice (every Subset)) => eapply @subset_bounded_meet_semilattice : typeclass_instances.
-Hint Extern 2 (BoundedJoinSemiLattice (every Subset)) => eapply @subset_bounded_meet_semilattice : typeclass_instances.
+Hint Extern 2 (BoundedJoinSemiLattice (every Subset)) => eapply @subset_bounded_join_semilattice : typeclass_instances.
 
 Lemma subset_dist_lattice {A} : DistributiveLattice (every (@Subset A)). Proof. firstorder. Qed.
 Hint Extern 2 (DistributiveLattice (every Subset)) => eapply @subset_dist_lattice : typeclass_instances.
@@ -127,6 +132,8 @@ Proof. intros ? S. now change (S = S). Qed.
 Instance: ∀ A, Find_Proper_Reflexive (@SubsetOf A).
 Proof. intros ? S. exact (_ : SubsetOf S S). Qed.
 
+Hint Extern 2 (@Find_Proper_PrePartialOrder _ (restrict_rel _ _) (restrict_rel _ SubsetOf)) => eapply @restrict_ppo_fp : typeclass_instances.
+
 Lemma subsetof_proper : Find_Proper_Signature (@SubsetOf) 0
   (∀ A, Proper (SubsetOf --> SubsetOf ++> impl) (@SubsetOf A)).
 Proof. intros ? ?? ? ?? ? ?. firstorder. Qed.
@@ -136,6 +143,12 @@ Lemma element_proper : Find_Proper_Signature (@Element) 0
   (∀ A, Proper (SubsetOf ++> eq ==> impl) (@Element A)).
 Proof. intros ? ?? S ?? E. rewrite E. unfold impl. apply S. Qed.
 Hint Extern 0 (Find_Proper_Signature (@Element) 0 _) => eexact element_proper : typeclass_instances.
+
+Lemma inhabited_proper : Find_Proper_Signature (@Inhabited) 0
+  (∀ A, Proper (SubsetOf ++> impl) (@Inhabited A)).
+Proof. intros ? ?? E [x ?]. exists x. now apply E. Qed.
+Hint Extern 0 (Find_Proper_Signature (@Inhabited) 0 _) => eexact inhabited_proper : typeclass_instances.
+Hint Extern 2 (_ ∊ Inhabited) => red : typeclass_instances.
 
 (* Closed is just another name for Element *)
 Lemma Closed_proper : Find_Proper_Signature (@Closed) 0
@@ -201,6 +214,9 @@ Arguments from_restrict_rel {A} S R x y E.
 Hint Extern 0 (@Proper _ (@restrict_rel _ _ _) _) => eapply @restrict_rel_subset_refl : typeclass_instances.
 Hint Extern 0 (@ProperProxy _ (@restrict_rel _ _ _) _) => eapply @restrict_rel_subset_refl : typeclass_instances.
 Hint Extern 0 (@Find_Proper_Proper _ (@restrict_rel _ _ _) _) => eapply @restrict_rel_subset_refl : typeclass_instances.
+Hint Extern 5 (@Proper _ (@restrict_rel _ _ _) _) => eapply @to_restrict_rel : typeclass_instances.
+Hint Extern 5 (@ProperProxy _ (@restrict_rel _ _ _) _) => eapply @to_restrict_rel : typeclass_instances.
+Hint Extern 5 (@Find_Proper_Proper _ (@restrict_rel _ _ _) _) => eapply @to_restrict_rel : typeclass_instances.
 Hint Extern 5 (Symmetric (restrict_rel _ _)) => eapply @restrict_rel_subset_sym : typeclass_instances.
 Hint Extern 0 (Find_Proper_Symmetric (restrict_rel _ _)) => eapply @restrict_rel_subset_sym : typeclass_instances.
 Hint Extern 5 (Transitive (restrict_rel _ _)) => eapply @restrict_rel_subset_trans : typeclass_instances.

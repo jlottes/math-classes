@@ -35,7 +35,7 @@ Hint Extern 0 (Morphism _ (int_abs _ _)) => eapply @int_abs_proper : typeclass_i
 
 Section contents.
 Context `{Z:Subset} `{N:Subset} {f : N ⇀ Z}.
-Context `{Integers _ (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
+Context `{Integers _ (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z} `{!FullPseudoSemiRingOrder Z}.
 Context `{Naturals _ (N:=N)} `{!SemiRing_Morphism N Z f} `{!IntAbs Z N}.
 
 Lemma int_abs_spec x `{x ∊ Z} :
@@ -85,7 +85,7 @@ Proof.
 Qed.
 
 Lemma int_abs_ne_0 x `{x ∊ Z} : ¬ int_abs Z N x = 0 ↔ x ≠ 0.
-Proof. rewrite (standard_uneq _ _). destruct (int_abs_0_alt x). tauto. Qed.
+Proof. rewrite (denial_inequality _ _). destruct (int_abs_0_alt x). tauto. Qed.
 
 Lemma int_abs_0 : int_abs Z N 0 = 0.
 Proof. now apply (int_abs_0_alt 0). Qed.

@@ -14,7 +14,7 @@ Hint Extern 5 (OrderEmbedding _ _ (integers_to_ring _ _)) => eapply @nat_int_ord
 Local Notation nat := (every nat).
 
 Section integers.
-Context `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
+Context `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z} `{!FullPseudoSemiRingOrder Z}.
 
 Notation nat_to_Z := (naturals_to_semiring nat Z).
 
@@ -87,7 +87,7 @@ Instance int_le `{Integers A (Z:=Z)} : Le A | 10 :=  λ x y, ∃ z, y = x + natu
 Instance int_lt `{Integers A (Z:=Z)} `{UnEq A} : Lt A | 10 := dec_lt.
 
 Section default_order.
-Context `{Integers (Z:=Z)} `{UnEq _} `{!StandardUnEq Z}.
+Context `{Integers (Z:=Z)} `{UnEq _} `{!DenialInequality Z}.
 
 Notation nat_to_Z := (naturals_to_semiring nat Z).
 

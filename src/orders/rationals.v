@@ -10,7 +10,7 @@ Local Open Scope grp_scope. (* notation for inverse *)
 
 Section rationals_and_integers.
   Context `{Rationals (Q:=Q)} `{Le _} `{!SemiRingOrder Q}.
-  Context `{Integers (Z:=Z)} `{UnEq _} `{!StandardUnEq _} `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder Z}.
+  Context `{Integers (Z:=Z)} `{UnEq _} `{!DenialInequality _} `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder Z}.
   Context  (f : Z ⇀ Q) `{!Ring_Morphism Z Q f}.
 
   Add Field Q : (stdlib_field_theory Q).
@@ -41,7 +41,7 @@ End rationals_and_integers.
 
 Section more_rationals_and_integers.
   Context `{Rationals (Q:=Q)} `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder Q}.
-  Context `{Integers (Z:=Z)} `{UnEq _} `{!StandardUnEq _} `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder Z}.
+  Context `{Integers (Z:=Z)} `{UnEq _} `{!DenialInequality _} `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder Z}.
   Context  (f : Z ⇀ Q) `{!Ring_Morphism Z Q f}.
 
   Existing Instance from_integers_injective.
@@ -211,7 +211,7 @@ Section default_order.
         subfield Q. subsymmetry.
       now destruct (naturals.zero_sum _ _ Ezs).
     + rewrite (N $ F). preserves_simplify (n_to_sr). subfield Q.
-    + contradict F. rewrite <- (standard_uneq _ _). now destruct (_ : d2 ∊ N ₀).
+    + contradict F. rewrite <- (denial_inequality _ _). now destruct (_ : d2 ∊ N ₀).
   Qed.
 
   Instance: PartialOrder Q := {}.

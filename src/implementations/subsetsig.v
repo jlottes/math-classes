@@ -27,11 +27,11 @@ Section defs.
 
   Instance: ∀ `{Zero A} `{!SubsetSig_Closed S 0}, 0 ∊ S := λ _ _, subsetsig_closed.
 
-  Program Instance subsetsig_inv `{Inv A} `{Equiv A} `{UnEq A} `{!StandardUnEq S} `{!SubDecision S S (=)}
+  Program Instance subsetsig_inv `{Inv A} `{Equiv A} `{UnEq A} `{!DenialInequality S} `{!SubDecision S S (=)}
     `{Zero A} `{!SubsetSig_Closed S 0} `{!SubsetSig_Closed (S ₀ ⇀ S ₀) inv} : Inv SubsetSig :=
    λ x, if (decide_sub (=) (`x) 0) then exist _ 0 _ else exist _ (inv (`x)) _.
   Next Obligation. destruct x as [x ?]; simpl in *.
-    assert (x ∊ S ₀). split. apply _. now rewrite (standard_uneq x 0).
+    assert (x ∊ S ₀). split. apply _. now rewrite (denial_inequality x 0).
     apply NonZero_subset. apply _.
   Qed.
 
@@ -87,7 +87,7 @@ Section quoting.
   Lemma subsetsig_quote_mult `(E1:Quote S x sx) `(E2:Quote S y sy) : Quote S (x*y) (sx*sy). Proof. solve2 E1 E2. Qed.
   Lemma subsetsig_quote_negate `(E:Quote S x sx) : Quote S (-x) (-sx). Proof. solve E. Qed.
 
-  Context {Aue : UnEq A} {Ainv : Inv A} `{!StandardUnEq S} `{!SubDecision S S (=)}
+  Context {Aue : UnEq A} {Ainv : Inv A} `{!DenialInequality S} `{!SubDecision S S (=)}
     {inv_closed : SubsetSig_Closed (S ₀ ⇀ S ₀) inv}
     {inv_proper : Morphism (S ₀ ⇒ S ₀) inv}.
 
@@ -97,7 +97,7 @@ Section quoting.
   Proof. destruct E as [? E]. unfold inv at 2. unfold subsetsig_inv.
     destruct sx as [y ?]; simpl in *. assert (y ∊ S ₀) by now rewrite <- (S $ E).
     destruct (decide_sub (=) y 0) as [E1|E2].
-    + contradict E1. rewrite <- (standard_uneq _ _). now destruct (_ : y ∊ S ₀).
+    + contradict E1. rewrite <- (denial_inequality _ _). now destruct (_ : y ∊ S ₀).
     + pose proof _ : inv x ∊ S ₀ . split. apply _. simpl. now rewrite <- (S ₀ $ E).
   Qed.
 
@@ -171,7 +171,7 @@ Section propers.
       now rewrite_on S -> E1.
   Qed.
 
-  Context {Aue : UnEq A} {Ainv : Inv A} `{!StandardUnEq S} `{!SubDecision S S (=)}
+  Context {Aue : UnEq A} {Ainv : Inv A} `{!DenialInequality S} `{!SubDecision S S (=)}
     {inv_closed : SubsetSig_Closed (S ₀ ⇀ S ₀) inv}
     {inv_proper : Morphism (S ₀ ⇒ S ₀) inv}.
 
@@ -185,7 +185,7 @@ Section propers.
     + easy.
     + contradict E0'. subtransitivity x1; subsymmetry.
     + contradict E0. subtransitivity x2.
-    + rewrite <- (standard_uneq _ _) in E0. rewrite <- (standard_uneq _ _) in E0'.
+    + rewrite <- (denial_inequality _ _) in E0. rewrite <- (denial_inequality _ _) in E0'.
       assert (x1 ∊ S ₀) by now split. assert (x2 ∊ S ₀) by now split.
       pose proof _ : inv x1 ∊ S ₀ . now rewrite <- (S ₀ $ E1).
   Qed.
@@ -259,13 +259,13 @@ Section transference.
   Instance subsetsig_comring `{!CommutativeRing S} : CommutativeRing S' := {}.
 
 
-  Instance subsetsig_standard_uneq {Aue : UnEq A} `{!StandardUnEq S} : StandardUnEq S'.
-  Proof. intros [x ?] _ [y ?] _. exact (standard_uneq x y). Qed.
+  Instance subsetsig_denial_inequality {Aue : UnEq A} `{!DenialInequality S} : DenialInequality S'.
+  Proof. intros [x ?] _ [y ?] _. exact (denial_inequality x y). Qed.
 
   Instance subsetsig_dec_eq `{!SubDecision S S (=)} (x y : SubsetSig S) : Decision (x = y).
   Proof. destruct x as [x ?]. destruct y as [y ?]. exact (decide_sub (=) x y). Qed.
 
-  Context {Aue : UnEq A} {Ainv : Inv A} `{!StandardUnEq S} `{!SubDecision S S (=)}
+  Context {Aue : UnEq A} {Ainv : Inv A} `{!DenialInequality S} `{!SubDecision S S (=)}
     {inv_closed : SubsetSig_Closed (S ₀ ⇀ S ₀) inv}.
 
   Instance subsetsig_nontrivial `{el: 1 ∊ S ₀} : 1 ∊ S' ₀.
@@ -278,15 +278,15 @@ Section transference.
     destruct x as [x ?], y as [y ?].
     assert (x ∊ S ₀) by now split. assert (y ∊ S ₀) by now split.
     unfold inv, subsetsig_inv; simpl.
-    destruct (decide_sub (=) x 0). rewrite (standard_uneq _ _) in Ex. contradiction.
-    destruct (decide_sub (=) y 0). rewrite (standard_uneq _ _) in Ey. contradiction.
+    destruct (decide_sub (=) x 0). rewrite (denial_inequality _ _) in Ex. contradiction.
+    destruct (decide_sub (=) y 0). rewrite (denial_inequality _ _) in Ey. contradiction.
     split; (split; [apply _ |]).
     now destruct (_ : inv x ∊ S ₀).
     now destruct (_ : inv y ∊ S ₀).
   + apply _.
   + intros [x ?] [_ Ex]. assert (x ∊ S ₀) by now split.
     unfold inv, subsetsig_inv; simpl.
-    destruct (decide_sub (=) x 0). rewrite (standard_uneq _ _) in Ex. contradiction.
+    destruct (decide_sub (=) x 0). rewrite (denial_inequality _ _) in Ex. contradiction.
     exact (field_inv_l x).
   Qed.
 

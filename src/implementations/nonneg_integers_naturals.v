@@ -9,7 +9,7 @@ Local Open Scope mc_fun_scope.
 Local Notation N := the_naturals.
 
 Section nonneg_integers_naturals.
-Context `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
+Context `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z} `{!FullPseudoSemiRingOrder Z}.
 
 Let of_nat := (naturals_to_semiring N Z⁺).
 Instance: Inverse of_nat := int_abs Z N.
@@ -45,7 +45,7 @@ Qed.
 Instance ZPos_to_semiring: NaturalsToSemiRing Z⁺ := naturals.retract_is_nat_to_sr of_nat.
 Instance ZPos_naturals: Naturals Z⁺ := naturals.retract_is_nat of_nat.
 
-Instance ZPos_standard_uneq: StandardUnEq Z⁺.
+Instance ZPos_denial_inequality: DenialInequality Z⁺.
 Proof. now rewrite (_:Z⁺ ⊆ Z). Qed.
 
 Context `{!IntAbs Z Z⁺}.
@@ -94,5 +94,5 @@ Hint Extern 20 (NaturalsToSemiRing ?Z⁺) =>
   let H := constr:(_ : Integers Z) in eapply (ZPos_to_semiring (H:=H)) : typeclass_instances.
 Hint Extern 20 (Naturals ?Z⁺) =>
   let H := constr:(_ : Integers Z) in eapply (ZPos_naturals (H:=H)) : typeclass_instances.
-Hint Extern 20 (StandardUnEq ?Z⁺) =>
-  let H := constr:(_ : Integers Z) in eapply @ZPos_standard_uneq : typeclass_instances.
+Hint Extern 20 (DenialInequality ?Z⁺) =>
+  let H := constr:(_ : Integers Z) in eapply @ZPos_denial_inequality : typeclass_instances.

@@ -28,19 +28,18 @@ Section ring.
   { ae_cring :>> CommutativeRing R
   ; ae_order :>> FullPseudoSemiRingOrder R
   ; ae_order_ext :>> FullPseudoOrder R∞
-  ; ae_setoid :>> StrongSetoid F
+  ; ae_order_full :>> FullPartialOrder F
   ; ae_set_def : R∞ = (λ x, x ∊ R ∨ (x ∊ F ∧ (x = ∞ ∨ x = -∞)))
   ; ae_subsetoid : R ⊆ F
   ; ae_decompose_full x `{x ∊ F} : x ∊ R∞ ∨ x ∊ U
   ; ae_undef_eq x `{x ∊ U} y `{y ∊ U} : x = y
   ; ae_undef_uneq x `{x ∊ U} y `{y ∊ R∞} : x ≠ y
-  ; ae_le_proper : Proper ((F,=) ==> (F,=) ==> impl) le
-  ; ae_lt_proper : Proper ((F,=) ==> (F,=) ==> impl) lt
   ; ae_plus_mor : Morphism (F ⇒ F ⇒ F) (+)
   ; ae_negate_mor : Morphism (F ⇒ F) (-)
   ; ae_mult_mor : Strong_Binary_Morphism F F F (.*.)
   ; ae_inf_el_F : ∞ ∊ F
   ; ae_inf_not_el : ¬ ∞ ∊ R
+  ; ae_lt_defined x `{x ∊ F} y `{y ∊ F} : x < y → x ∊ R∞ ∧ y ∊ R∞
   ; ae_inf_sub x `{x ∊ R} : x < ∞
   ; ae_minf_slb x `{x ∊ R} : -∞ < x
   ; ae_neg_inf_invl : - - ∞ = ∞
@@ -73,6 +72,7 @@ End ring.
 Arguments AffinelyExtendedRing {_} R {_ _ _ _ _ _ _ _ _ _ _ _}.
 
 Hint Extern 2 (StrongSetoid R∞) => eapply @pseudo_order_setoid : typeclass_instances.
+Hint Extern 2 (StrongSetoid F) => eapply @strict_po_setoid : typeclass_instances.
 Hint Extern 2 (?R ⊆ aff_ext_full ?R) => eapply @ae_subsetoid : typeclass_instances.
 Hint Extern 2 (Morphism (F ⇒ F ⇒ F) (+)) => eapply @ae_plus_mor : typeclass_instances.
 Hint Extern 2 (Morphism (F ⇒ F) (-)) => eapply @ae_negate_mor : typeclass_instances.

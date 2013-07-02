@@ -5,7 +5,7 @@ Require Export
   implementations.field_of_fractions.
 
 Section intfrac_rationals.
-  Context `{Integers (Z:=Z)} `{UnEq _} `{!StandardUnEq Z}.
+  Context `{Integers (Z:=Z)} `{UnEq _} `{!DenialInequality Z}.
 
   Instance FracZ_to_field: RationalsToField (Frac Z) := from_intfracs_to_field.
   Instance FracZ_rationals: Rationals (Frac Z) := from_intfracs.

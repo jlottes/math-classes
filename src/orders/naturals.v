@@ -8,7 +8,7 @@ Require Export
   orders.nat_int.
 
 Section naturals_order.
-Context `{Naturals (N:=N)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq N} `{!FullPseudoSemiRingOrder N}.
+Context `{Naturals (N:=N)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality N} `{!FullPseudoSemiRingOrder N}.
 
 Instance nat_nonneg x `{x ∊ N} : x ∊ N⁺.
 Proof. now apply (to_semiring_nonneg (f:=id)). Qed.
@@ -35,7 +35,7 @@ Lemma nat_0_or_ge_1 x `{x ∊ N} : x = 0 ∨ 1 ≤ x.
 Proof. destruct (nat_0_or_pos x); [left|right]. trivial. exact (pos_ge_1 x). Qed.
 
 Lemma nat_ne_0_pos x `{x ∊ N ₀} : x ∊ N₊.
-Proof. destruct (_:x ∊ N ₀) as [_ E]. rewrite (standard_uneq _ _) in E.
+Proof. destruct (_:x ∊ N ₀) as [_ E]. rewrite (denial_inequality _ _) in E.
   destruct (nat_0_or_pos x); intuition.
 Qed.
 
@@ -85,7 +85,7 @@ Instance nat_le `{Naturals (N:=N)} : Le _ | 11 :=  λ x y, ∃ `{z ∊ N}, x + z
 Instance nat_lt `{Naturals A (N:=N)} `{UnEq A} : Lt A | 11 := dec_lt.
 
 Section default_order.
-Context `{Naturals (N:=N)} `{UnEq _} `{!StandardUnEq N}.
+Context `{Naturals (N:=N)} `{UnEq _} `{!DenialInequality N}.
 
 Instance: Proper ((N,=) ==> (N,=) ==> impl) (≤).
 Proof.

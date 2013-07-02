@@ -71,10 +71,10 @@ Section contents.
          exists_sub n. now exists_sub d.
   Qed.
 
-  Instance field_of_fracs_standard_uneq `{!StandardUnEq D} : StandardUnEq Q.
+  Instance field_of_fracs_denial_inequality `{!DenialInequality D} : DenialInequality Q.
   Proof. split. exact (uneq_ne _ _).
     intro E. apply (strong_extensionality toFracD).
-    rewrite (standard_uneq _ _). contradict E. now apply (injective toFracD _ _).
+    rewrite (denial_inequality _ _). contradict E. now apply (injective toFracD _ _).
   Qed.
 
   Instance field_of_fracs_strong_subdec_eq_slow `{!StrongSubDecision D D (=)} : StrongSubDecision Q Q (=).

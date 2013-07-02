@@ -233,9 +233,9 @@ Section rng_props.
 
 End rng_props.
 
-Lemma dec_negate_nonzero `{Rng (R:=R)} `{UnEq _} `{!StandardUnEq R} x `{x ∊ R ₀} : -x ∊ R ₀.
-Proof. destruct (_ : x ∊ R ₀) as [_ E]. rewrite (standard_uneq _ _) in E.
-  split. apply _. rewrite (standard_uneq _ _). mc_contradict E. now apply (flip_negate_0 x).
+Lemma dec_negate_nonzero `{Rng (R:=R)} `{UnEq _} `{!DenialInequality R} x `{x ∊ R ₀} : -x ∊ R ₀.
+Proof. destruct (_ : x ∊ R ₀) as [_ E]. rewrite (denial_inequality _ _) in E.
+  split. apply _. rewrite (denial_inequality _ _). mc_contradict E. now apply (flip_negate_0 x).
 Qed.
 Hint Extern 6 (-_ ∊ _ ₀) => eapply @dec_negate_nonzero : typeclass_instances.
 
@@ -248,7 +248,7 @@ Section ring_props.
 End ring_props.
 
 Lemma ZeroDivisor_proper2: Find_Proper_Signature (@ZeroDivisor) 1
-  (∀ `{UnEq A} `{Equiv A} `{Zero A} `{Mult A} R `{!UnEqualitySetoid R}
+  (∀ `{UnEq A} `{Equiv A} `{Zero A} `{Mult A} R `{!InequalitySetoid R}
      `{0 ∊ R} `{!MultiplicativeSemiGroup R},
    Proper ((R,=)==>impl) (ZeroDivisor R)).
 Proof. red. intros. intros x x' E [?[y[? Z]]]. unfold_sigs.
@@ -257,24 +257,24 @@ Proof. red. intros. intros x x' E [?[y[? Z]]]. unfold_sigs.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@ZeroDivisor) 1 _) => eexact ZeroDivisor_proper2 : typeclass_instances.
 
-Lemma dec_mult_nonzero `{SemiRng A (R:=R)} `{UnEq A} `{!StandardUnEq R} `{!NoZeroDivisors R}
+Lemma dec_mult_nonzero `{SemiRng A (R:=R)} `{UnEq A} `{!DenialInequality R} `{!NoZeroDivisors R}
   : Closed (R ₀ ⇀ R ₀ ⇀ R ₀) (.*.).
 Proof. intros x ? y ?. split. apply _.
-  pose proof (no_zero_divisors x) as nzd. rewrite (standard_uneq _ _). mc_contradict nzd.
+  pose proof (no_zero_divisors x) as nzd. rewrite (denial_inequality _ _). mc_contradict nzd.
   split. apply _. exists_sub y. now left.
 Qed.
 Hint Extern 21 (Closed (?R ₀ ⇀ ?R ₀ ⇀ ?R ₀) (.*.)) => eapply @dec_mult_nonzero : typeclass_instances.
 Hint Extern 12 (?x * ?y ∊ ?R ₀) => eapply @dec_mult_nonzero: typeclass_instances.
 
-Instance: ∀ `{SemiRng (R:=R)} `{UnEq _} `{!StandardUnEq R}, NonZeroProduct R.
-Proof. intros. intros x ? y ? [_ E]. rewrite (standard_uneq _ _) in E.
-  split; (split; [ apply _ |]); rewrite (standard_uneq _ _);
+Instance: ∀ `{SemiRng (R:=R)} `{UnEq _} `{!DenialInequality R}, NonZeroProduct R.
+Proof. intros. intros x ? y ? [_ E]. rewrite (denial_inequality _ _) in E.
+  split; (split; [ apply _ |]); rewrite (denial_inequality _ _);
   mc_contradict E; rewrite_on R -> E.
   exact (mult_0_l _). exact (mult_0_r _).
 Qed.
 
 Section cancellation.
-  Context `{Rng A (R:=R)} `{UnEq A} `{!StandardUnEq R} `{!NoZeroDivisors R}
+  Context `{Rng A (R:=R)} `{UnEq A} `{!DenialInequality R} `{!NoZeroDivisors R}
           `{∀ `{x ∊ R} `{y ∊ R}, Stable (x=y)}.
 
   Instance mult_left_cancellation z `{z ∊ R ₀} : LeftCancellation (.*.) z R.
@@ -284,7 +284,7 @@ Section cancellation.
     pose proof (no_zero_divisors z) as nzd.
     apply stable. unfold DN. contradict nzd.
     split. apply _. assert (x-y ∊ R ₀). split. apply _.
-      now rewrite -> (standard_uneq _ _), (equal_by_zero_sum _ _).
+      now rewrite -> (denial_inequality _ _), (equal_by_zero_sum _ _).
     exists_sub (x-y). tauto.
   Qed.
 
@@ -295,7 +295,7 @@ Section cancellation.
     pose proof (no_zero_divisors z) as nzd.
     apply stable. unfold DN. contradict nzd.
     split. apply _. assert (x-y ∊ R ₀). split. apply _.
-      now rewrite -> (standard_uneq _ _), (equal_by_zero_sum _ _).
+      now rewrite -> (denial_inequality _ _), (equal_by_zero_sum _ _).
     exists_sub (x-y). tauto.
   Qed.
 
@@ -305,8 +305,8 @@ Local Notation U := RingUnits.
 
 Lemma RingUnits_subsetoid `{Mult} `{One _} `{Equiv _} R `{!MultiplicativeMonoid R}
   : U R ⊆ R.
-Proof. split; try apply _. intros ? x' E [?[y[??]]]. unfold_sigs.
-  split. assumption. exists_sub y. now rewrite_on R <- E. 
+Proof. apply subsetoid_alt; try apply _. intros ? x' E [?[y[??]]]. unfold_sigs.
+  split. assumption. exists_sub y. now rewrite_on R <- E.
 Qed.
 Hint Extern 5 (SubSetoid (U _) _) => eapply @RingUnits_subsetoid : typeclass_instances.
 
@@ -359,7 +359,7 @@ Proof with try apply _. intros.
   split...
 Qed.
 
-Lemma RingUnit_not_zero_divisor `{Ring (R:=R)} `{UnEq _} `{!UnEqualitySetoid R} x {ru:x ∊ U R} : ¬ZeroDivisor R x.
+Lemma RingUnit_not_zero_divisor `{Ring (R:=R)} `{UnEq _} `{!InequalitySetoid R} x {ru:x ∊ U R} : ¬ZeroDivisor R x.
 Proof. destruct ru as [?[y[? [E1 E2]]]]. intros [[??][z[[? zn0][E|E]]]];
   red in zn0; apply (uneq_ne _ _) in zn0; contradict zn0.
 + rewrite_on R <- (mult_1_l z), <- E2.

@@ -14,7 +14,7 @@ Local Ltac biinduction n :=
 
 (* * Properties of Int Pow *)
 Section int_pow_properties.
-Context `{Field (F:=F)} `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
+Context `{Field (F:=F)} `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z} `{!FullPseudoSemiRingOrder Z}.
 
 Add Ring F : (stdlib_ring_theory F).
 Add Ring Z : (stdlib_ring_theory Z).
@@ -50,7 +50,7 @@ Proof.
       intros x ? y ? n ? m ? E IE.
       assert (m ∊ Z⁺) by now rewrite <- (Z $ E).
       destruct (strong_binary_extensionality (X:=F) (Y:=Z⁺) (^) IE); try trivial.
-      contradict E. now rewrite <- (standard_uneq n m).
+      contradict E. now rewrite <- (denial_inequality n m).
     rewrite strong_ext_equiv_2. intros x ? y ? n ? m ?.
     destruct (decide_sub (=) n m) as [E|IE]; [intro IE; left | right].
     * destruct (nonneg_or_neg n).
@@ -59,7 +59,7 @@ Proof.
         rewrite (F ₀ $ int_pow_neg_alt x n), (F ₀ $ int_pow_neg_alt y m) in IE.
         apply (P _ _ _ _ (-n) _ (-m) _). now rewrite (Z $ E).
         now apply (strong_extensionality (X:=F ₀) (Y:=F ₀) (⁻¹)).
-    * now rewrite (standard_uneq n m).
+    * now rewrite (denial_inequality n m).
 Qed.
 
 Lemma int_pow_0 x `{x ∊ F} : x^0 = 1. Proof nat_pow_0 (N:=Z⁺) x.
@@ -285,7 +285,7 @@ Hint Extern 4 (_ ^ _ ∊ _₊) => eapply @int_pow_pos : typeclass_instances.
 
 Section preservation.
   Context
-    `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
+    `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z} `{!FullPseudoSemiRingOrder Z}.
   Context
     `{Field (F:=F1)} `{!IntPowSpec F1 Z ip1}
     `{Field (F:=F2)} `{!IntPowSpec F2 Z ip2}
@@ -306,8 +306,8 @@ Section preservation.
 End preservation.
 
 Section exp_preservation.
-  Context `{Integers (Z:=Z1)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z1} `{!FullPseudoSemiRingOrder Z1}.
-  Context `{Integers (Z:=Z2)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z2} `{!FullPseudoSemiRingOrder Z2}.
+  Context `{Integers (Z:=Z1)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z1} `{!FullPseudoSemiRingOrder Z1}.
+  Context `{Integers (Z:=Z2)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z2} `{!FullPseudoSemiRingOrder Z2}.
   Context `{Field (F:=F)} {f : Z1 ⇀ Z2} `{!Ring_Morphism Z1 Z2 f}.
   Context `{!IntPowSpec F Z1 ip1} `{!IntPowSpec F Z2 ip2}.
 
@@ -329,7 +329,7 @@ Require Import peano_naturals misc.quote.
 
 (* Very slow default implementation by translation into Peano *)
 Section int_pow_default.
-  Context `{Field A (F:=F)} `{Integers B (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
+  Context `{Field A (F:=F)} `{Integers B (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z} `{!FullPseudoSemiRingOrder Z}.
 
   Notation nat := (every nat).
   Existing Instance to_semiring_nonneg_mor.

@@ -47,7 +47,7 @@ Instance: Morphism (nat ⇒ nat) S := injective_mor S.
 Definition nat_dec: ∀ x y, Decision (x = y) := eq_nat_dec.
 Hint Extern 2 (Decision (@equiv _ nat_equiv _ _)) => eapply @nat_dec : typeclass_instances.
 
-Instance: StandardUnEq nat := default_uneq_standard _.
+Instance: DenialInequality nat := default_uneq_denial _.
 Instance: StrongSetoid nat := strong_setoids.dec_strong_setoid.
 
 Add Ring nat: (stdlib_semiring_theory nat).

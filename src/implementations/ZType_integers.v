@@ -43,7 +43,7 @@ Next Obligation.
   apply Zcompare_Eq_iff_eq in E. auto.
 Qed.
 
-Instance: StandardUnEq T := _.
+Instance: DenialInequality T := _.
 Instance: StrongSetoid T := strong_setoids.dec_strong_setoid.
 
 Instance: CommutativeRing T | 10.

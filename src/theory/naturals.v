@@ -71,7 +71,7 @@ Section retract_is_nat.
 End retract_is_nat.
 
 Section contents.
-Context `{Naturals (N:=N)} `{UnEq _} `{!StandardUnEq N}.
+Context `{Naturals (N:=N)} `{UnEq _} `{!DenialInequality N}.
 
 Section borrowed_from_nat.
 
@@ -101,7 +101,7 @@ Section borrowed_from_nat.
 
   Global Instance: ∀ `{z ∊ N ₀}, LeftCancellation (.*.) z N.
   Proof. intros z [? E] x ? y ?.
-    rewrite (standard_uneq _ _) in E. red in E. generalize E.
+    rewrite (denial_inequality _ _) in E. red in E. generalize E.
     quote_to_nat. var y. var x. var z.
     intros z y x E. assert (z ∊ nat ₀). split. apply _. trivial.
     exact (left_cancellation (.*.) z nat _ _).
@@ -111,7 +111,7 @@ Section borrowed_from_nat.
   Proof. intros. apply right_cancel_from_left. Qed.
 
   Instance nat_nontrivial: 1 ∊ N ₀.
-  Proof. split. apply _. red. rewrite (standard_uneq _ _). now quote_to_nat. Qed.
+  Proof. split. apply _. red. rewrite (denial_inequality _ _). now quote_to_nat. Qed.
 
   Lemma zero_sum x `{x ∊ N} y `{y ∊ N} : x + y = 0 → x = 0 ∧ y = 0.
   Proof. quote_to_nat. apply Plus.plus_is_O. Qed.
@@ -126,7 +126,7 @@ End borrowed_from_nat.
 
 Lemma nat_1_plus_ne_0 x `{x ∊ N} : ¬ 1 + x = 0.
 Proof. intro E. destruct (zero_sum 1 x E).
-  destruct nat_nontrivial as [_ T]. rewrite (standard_uneq _ _) in T. contradiction.
+  destruct nat_nontrivial as [_ T]. rewrite (denial_inequality _ _) in T. contradiction.
 Qed.
 
 Global Program Instance: StrongSubDecision N N (=) | 10 := λ x y,

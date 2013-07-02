@@ -172,14 +172,14 @@ Section rationals.
   Instance integral_rat_to_ring : IntegersToRing Z := retract_is_int_to_ring Zb_to_Q.
   Instance integral_rat_integers : Integers Z := retract_is_int Zb_to_Q.
 
-  Instance integral_rat_std_uneq : StandardUnEq Z.
-  Proof. intros x ? y ?. exact (standard_uneq x y). Qed.
+  Instance integral_rat_denial_inequality : DenialInequality Z.
+  Proof. intros x ? y ?. exact (denial_inequality x y). Qed.
 
 End rationals.
 
 Hint Extern 10 (IntegersToRing (integral _)) => eapply @integral_rat_to_ring : typeclass_instances.
 Hint Extern 10 (Integers (integral _)) => eapply @integral_rat_integers : typeclass_instances.
-Hint Extern 10 (StandardUnEq (integral _)) => eapply @integral_rat_std_uneq : typeclass_instances.
+Hint Extern 10 (DenialInequality (integral _)) => eapply @integral_rat_denial_inequality : typeclass_instances.
 
 Section more_rationals.
   Context `{Rationals (Q:=Q)}.

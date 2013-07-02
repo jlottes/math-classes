@@ -99,6 +99,10 @@ Section product.
 End product.
 Hint Extern 2 (Decision (@equiv _ prod_equiv _ _)) => eapply @prod_dec : typeclass_instances.
 
+Lemma prod_inhabited `{X:Subset} `{Y:Subset} `{!Inhabited X} `{!Inhabited Y} : Inhabited (X*Y).
+Proof. destruct (inhabited X) as [x ?]. destruct (inhabited Y) as [y ?]. exists (x,y). apply _. Qed.
+Hint Extern 2 (Inhabited (_ * _)) => eapply @prod_inhabited : typeclass_instances.
+
 Definition prod_map `{X1:Subset} `{X2:Subset} `{Y1:Subset} `{Y2:Subset}
   (f:X1⇀X2) (g:Y1⇀Y2) : X1*Y1 ⇀ X2*Y2 := λ x, (f (fst x), g (snd x)).
 
@@ -132,6 +136,76 @@ End prod_map.
 Hint Extern 2 (Morphism _ (prod_map _ _)) => eapply @prod_map_mor : typeclass_instances.
 Hint Extern 2 ((prod_map _ _)⁺¹(_ * _) ⊆ _ * _) => eapply @prod_map_image_subsetoid : typeclass_instances.
 Hint Extern 2 ((?f _, ?g _) ∊ (prod_map ?f ?g)⁺¹(_ * _)) => eapply @prod_map_image_el : typeclass_instances.
+
+Definition prod_diag `(x:A) := (x,x).
+Lemma prod_diag_mor `{Setoid (S:=X)} : Morphism (X ⇒ X*X) prod_diag.
+Proof. intros ??[[??]?]. unfold prod_diag. red_sig. now split. Qed.
+Hint Extern 2 (Morphism _ prod_diag) => eapply @prod_diag_mor : typeclass_instances.
+Hint Extern 2 (prod_diag _ ∊ ?X * ?X) =>
+  eapply (morphism_closed prod_diag (m:=prod_diag_mor (X:=X))) : typeclass_instances.
+
+Definition prod_swap {A B} (p:A*B) := let (x,y) := p in (y,x).
+Lemma prod_swap_mor `{Setoid (S:=X)} `{Setoid (S:=Y)} : Morphism (X*Y ⇒ Y*X) prod_swap.
+Proof. intros [??][??][[[??][??]][??]]. unfold prod_swap. red_sig. now split. Qed.
+Hint Extern 2 (Morphism _ prod_swap) => eapply @prod_swap_mor : typeclass_instances.
+Hint Extern 2 (prod_swap _ ∊ ?Y * ?X) =>
+  eapply (morphism_closed prod_swap (m:=prod_swap_mor (X:=X) (Y:=Y))) : typeclass_instances.
+
+Definition prod_assoc_r {A B C} (p:(A*B)*C) := let (p',z) := p in let (x,y) := p' in (x,(y,z)).
+Lemma prod_assoc_r_mor `{Setoid (S:=X)} `{Setoid (S:=Y)} `{Setoid (S:=Z)}
+  : Morphism ((X*Y)*Z ⇒ X*(Y*Z)) prod_assoc_r.
+Proof. intros [[??]?][[??]?] [[ [[??]?] [[??]?] ] [[??]?]].
+  unfold prod_assoc_r. red_sig. now repeat split.
+Qed.
+Hint Extern 2 (Morphism _ prod_assoc_r) => eapply @prod_assoc_r_mor : typeclass_instances.
+Hint Extern 2 (prod_assoc_r _ ∊ ?X * (?Y * ?Z)) =>
+  eapply (morphism_closed prod_assoc_r (m:=prod_assoc_r_mor (X:=X) (Y:=Y) (Z:=Z))) : typeclass_instances.
+
+Definition prod_assoc_l {A B C} (p:A*(B*C)) := let (x,p') := p in let (y,z) := p' in ((x,y),z).
+Lemma prod_assoc_l_mor `{Setoid (S:=X)} `{Setoid (S:=Y)} `{Setoid (S:=Z)}
+  : Morphism (X*(Y*Z) ⇒ (X*Y)*Z) prod_assoc_l.
+Proof. intros [?[??]][?[??]] [[ [?[??]] [?[??]] ] [?[??]]].
+  unfold prod_assoc_l. red_sig. now repeat split.
+Qed.
+Hint Extern 2 (Morphism _ prod_assoc_l) => eapply @prod_assoc_l_mor : typeclass_instances.
+Hint Extern 2 (prod_assoc_l _ ∊ (?X * ?Y) * ?Z) =>
+  eapply (morphism_closed prod_assoc_l (m:=prod_assoc_l_mor (X:=X) (Y:=Y) (Z:=Z))) : typeclass_instances.
+
+Section proj_image.
+  Context `{Setoid (S:=X)} `{Setoid (S:=Y)}.
+
+  Lemma prod_diag_image U `{U ⊆ X} : image (X:=X) (Y:=X*X) prod_diag U ⊆ (U*U)%subset .
+  Proof. apply (subsetoid_from_subsetof (X*X) _ _).
+    intros [??] [[??][?[?[E1 E2]]]]. split. now rewrite <-(X $ E1). now rewrite <-(X $ E2).
+  Qed.
+
+  Notation π₁ := (fst:X*Y⇀X).
+  Notation π₂ := (snd:X*Y⇀Y).
+
+  Context U `{U ⊆ X*Y}.
+
+  Lemma fst_snd_image : U ⊆ π₁⁺¹(U)*π₂⁺¹(U).
+  Proof. apply (subsetoid_from_subsetof (X*Y) _ _). intros [a b] ?.
+    destruct (_ : (a,b) ∊ X*Y).
+    split; (split; [ apply _ | now exists_sub (a,b) ]).
+  Qed.
+
+  Lemma fst_image_inhabited `{!Inhabited U} : Inhabited π₁⁺¹(U).
+  Proof. destruct (inhabited U) as [[x y]?].
+    destruct (_ : (x,y) ∊ (X*Y)%subset ).
+    exists x. split; trivial. now exists_sub (x,y).
+  Qed.
+
+  Lemma snd_image_inhabited `{!Inhabited U} : Inhabited π₂⁺¹(U).
+  Proof. destruct (inhabited U) as [[x y]?].
+    destruct (_ : (x,y) ∊ (X*Y)%subset ).
+    exists y. split; trivial. now exists_sub (x,y).
+  Qed.
+End proj_image.
+Hint Extern 2 (prod_diag⁺¹(?U) ⊆ ?U * ?U) => eapply @prod_diag_image : typeclass_instances.
+Hint Extern 2 (?U ⊆ fst⁺¹(?U)*snd⁺¹(?U)) => eapply @fst_snd_image : typeclass_instances.
+Hint Extern 2 (Inhabited fst⁺¹(?U)) => eapply @fst_image_inhabited : typeclass_instances.
+Hint Extern 2 (Inhabited snd⁺¹(?U)) => eapply @snd_image_inhabited : typeclass_instances.
 
 (*
 Definition prod_fst_equiv X A `{Equiv X} : relation (X * A) := λ x y, fst x = fst y.

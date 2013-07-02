@@ -49,7 +49,7 @@ Hint Extern 5 (Strong_Binary_Morphism (_ ₀) (_ ₀) (_ ₀) (.*.)) => class_ap
 Hint Extern 5 (StrongLeftCancellation  (.*.) _ _) => class_apply @intdom_strong_left_cancel  : typeclass_instances.
 Hint Extern 5 (StrongRightCancellation (.*.) _ _) => class_apply @intdom_strong_right_cancel : typeclass_instances.
 
-Lemma dec_intdom `{CommutativeRing A (R:=R)} `{UnEq A} `{!StandardUnEq R}
+Lemma dec_intdom `{CommutativeRing A (R:=R)} `{UnEq A} `{!DenialInequality R}
   `{1 ∊ R ₀} `{!NoZeroDivisors R} `{!SubDecision R R (=)}
   : IntegralDomain R.
 Proof. pose proof dec_strong_setoid. split; try apply _. split; try apply _.
@@ -57,12 +57,12 @@ Proof. pose proof dec_strong_setoid. split; try apply _. split; try apply _.
   exact (dec_strong_binary_morphism (.*.)).
 Qed.
 
-Lemma dec_intdom_zero_product `{IntegralDomain (D:=D)} `{!StandardUnEq D} `{!SubDecision D D (=)}
+Lemma dec_intdom_zero_product `{IntegralDomain (D:=D)} `{!DenialInequality D} `{!SubDecision D D (=)}
   : ZeroProduct D.
 Proof. intros x ? y ? E. destruct (decide_sub (=) x 0) as [Ex|Ex]. now left. right.
   rewrite <-(tight_apart _ _) in E.
   rewrite <-(tight_apart _ _). contradict E.
-  rewrite <-(standard_uneq _ _) in Ex.
+  rewrite <-(denial_inequality _ _) in Ex.
   assert (x ∊ D ₀) by firstorder.
   assert (y ∊ D ₀) by firstorder.
   now destruct (_ : x * y ∊ D ₀).

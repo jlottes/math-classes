@@ -1,0 +1,69 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<link href="coqdoc.css" rel="stylesheet" type="text/css"/>
+<title>MathClasses.misc.propholds</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library MathClasses.misc.propholds</h1>
+
+<div class="code">
+<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span><br/>
+&nbsp;&nbsp;<a class="idref" href="MathClasses.interfaces.canonical_names.html#"><span class="id" type="library">canonical_names</span></a> <a class="idref" href="MathClasses.misc.find_proper.html#"><span class="id" type="library">find_proper</span></a>.<br/>
+
+<br/>
+<span class="id" type="keyword">Class</span> <a name="PropHolds"><span class="id" type="record">PropHolds</span></a> (<span class="id" type="var">P</span> : <span class="id" type="keyword">Prop</span>) := <a name="prop_holds"><span class="id" type="projection">prop_holds</span></a>: <a class="idref" href="MathClasses.misc.propholds.html#P"><span class="id" type="variable">P</span></a>.<br/>
+
+<br/>
+<span class="id" type="keyword">Hint Extern</span> 0 (<a class="idref" href="MathClasses.misc.propholds.html#PropHolds"><span class="id" type="class">PropHolds</span></a> <span class="id" type="var">_</span>) ⇒ <span class="id" type="tactic">assumption</span> : <span class="id" type="var">typeclass_instances</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Instance</span>: <a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.Classes.Morphisms.html#Proper"><span class="id" type="class">Proper</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.Init.Logic.html#iff"><span class="id" type="definition">iff</span></a> <a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.Classes.Morphisms.html#ProperNotations.:signature_scope:x_'==>'_x"><span class="id" type="notation">==&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.Init.Logic.html#iff"><span class="id" type="definition">iff</span></a>) <a class="idref" href="MathClasses.misc.propholds.html#PropHolds"><span class="id" type="class">PropHolds</span></a>.<br/>
+<span class="id" type="keyword">Proof</span>. <span class="id" type="var">now</span> <span class="id" type="tactic">repeat</span> <span class="id" type="tactic">intro</span>. <span class="id" type="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Lemma</span> <a name="propholds_proper"><span class="id" type="lemma">propholds_proper</span></a> : <a class="idref" href="MathClasses.misc.find_proper.html#Find_Proper_Signature"><span class="id" type="class">Find_Proper_Signature</span></a> (@<a class="idref" href="MathClasses.misc.propholds.html#PropHolds"><span class="id" type="class">PropHolds</span></a>) 0<br/>
+&nbsp;&nbsp;(<a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.Classes.Morphisms.html#Proper"><span class="id" type="class">Proper</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.Program.Basics.html#impl"><span class="id" type="definition">impl</span></a> <a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.Classes.Morphisms.html#ProperNotations.:signature_scope:x_'++>'_x"><span class="id" type="notation">++&gt;</span></a> <a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.Program.Basics.html#impl"><span class="id" type="definition">impl</span></a>) <a class="idref" href="MathClasses.misc.propholds.html#PropHolds"><span class="id" type="class">PropHolds</span></a>).<br/>
+<span class="id" type="keyword">Proof</span>. <span class="id" type="tactic">intros</span> ?? <span class="id" type="var">P</span>. <span class="id" type="var">now</span> <span class="id" type="tactic">unfold</span> <a class="idref" href="MathClasses.misc.propholds.html#PropHolds"><span class="id" type="class">PropHolds</span></a>. <span class="id" type="keyword">Qed</span>.<br/>
+<span class="id" type="keyword">Hint Extern</span> 0 (<a class="idref" href="MathClasses.misc.find_proper.html#Find_Proper_Signature"><span class="id" type="class">Find_Proper_Signature</span></a> (@<a class="idref" href="MathClasses.misc.propholds.html#PropHolds"><span class="id" type="class">PropHolds</span></a>) 0 <span class="id" type="var">_</span>) ⇒ <span class="id" type="tactic">eexact</span> <a class="idref" href="MathClasses.misc.propholds.html#propholds_proper"><span class="id" type="lemma">propholds_proper</span></a> : <span class="id" type="var">typeclass_instances</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Ltac</span> <span class="id" type="var">solve_propholds</span> :=<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">match</span> <span class="id" type="keyword">goal</span> <span class="id" type="keyword">with</span><br/>
+&nbsp;&nbsp;| [ |- <a class="idref" href="MathClasses.misc.propholds.html#PropHolds"><span class="id" type="class">PropHolds</span></a> (?<span class="id" type="var">P</span>) ] ⇒ <span class="id" type="tactic">apply</span> <span class="id" type="var">_</span><br/>
+&nbsp;&nbsp;| [ |- ?<span class="id" type="var">P</span> ] ⇒ <span class="id" type="tactic">change</span> (<a class="idref" href="MathClasses.misc.propholds.html#PropHolds"><span class="id" type="class">PropHolds</span></a> <span class="id" type="var">P</span>); <span class="id" type="tactic">apply</span> <span class="id" type="var">_</span><br/>
+&nbsp;&nbsp;<span class="id" type="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">Ltac</span> <span class="id" type="var">mc_contradict</span> <span class="id" type="var">H</span> :=<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">match</span> <span class="id" type="keyword">goal</span> <span class="id" type="keyword">with</span><br/>
+&nbsp;&nbsp;|- <a class="idref" href="MathClasses.misc.propholds.html#PropHolds"><span class="id" type="class">PropHolds</span></a> ?<span class="id" type="var">P</span> ⇒ <span class="id" type="tactic">unfold</span> <a class="idref" href="MathClasses.misc.propholds.html#PropHolds"><span class="id" type="class">PropHolds</span></a><br/>
+&nbsp;&nbsp;| <span class="id" type="var">_</span> ⇒ <span class="id" type="tactic">idtac</span><br/>
+&nbsp;&nbsp;<span class="id" type="keyword">end</span>;<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">match</span> <span class="id" type="var">type</span> <span class="id" type="var">of</span> <span class="id" type="var">H</span> <span class="id" type="keyword">with</span><br/>
+&nbsp;&nbsp;| <a class="idref" href="MathClasses.misc.propholds.html#PropHolds"><span class="id" type="class">PropHolds</span></a> ?<span class="id" type="var">P</span> ⇒ <span class="id" type="tactic">unfold</span> <a class="idref" href="MathClasses.misc.propholds.html#PropHolds"><span class="id" type="class">PropHolds</span></a> <span class="id" type="keyword">in</span> <span class="id" type="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" type="var">_</span> ⇒ <span class="id" type="tactic">idtac</span><br/>
+&nbsp;&nbsp;<span class="id" type="keyword">end</span>;<br/>
+&nbsp;&nbsp;<span class="id" type="var">contradict</span> <span class="id" type="var">H</span>.<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index.html">Index</a><hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

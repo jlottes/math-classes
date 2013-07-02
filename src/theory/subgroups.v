@@ -5,7 +5,7 @@ Local Open Scope grp_scope. (* notation for inverse *)
 Local Notation e := mon_unit.
 
 Class Normal_SubGroup {A Aop Aunit Ainv Ae} N G :=
-  { normal_subgroup_a : @Group A Aop Aunit Ainv Ae N
+  { normal_subgroup_a :>> @Group A Aop Aunit Ainv Ae N
   ; normal_subgroup_b : Group G
   ; normal_subgroup_sub :>> N ⊆ G
   ; normality n `{n ∊ N} g `{g ∊ G} : g & n & g⁻¹ ∊ N
@@ -102,7 +102,7 @@ Section center.
   Notation Z := group_center.
 
   Instance: Z ⊆ G.
-  Proof. split; [ apply _ | | firstorder]. intros x y E [_ C]. unfold_sigs.
+  Proof. apply subsetoid_alt; [ apply _ | | firstorder]. intros x y E [_ C]. unfold_sigs.
     split. assumption. intros z ?. rewrite_on G <-E. now apply C.
   Qed.
 

@@ -13,8 +13,10 @@ End pointwise_dependent_relation.
 
 Definition iffT (A B: Type): Type := prod (A → B) (B → A).
 
+(*
 Class NonEmpty (A : Type) : Prop := non_empty : inhabited A.
 Class NonEmptyT (A : Type) : Type := non_emptyT : A.
+*)
 
 (*
 Definition uncurry {A B C} (f: A → B → C) (p: A * B): C := f (fst p) (snd p).

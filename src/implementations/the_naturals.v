@@ -14,7 +14,7 @@ Module Type TheNaturalsSig.
   Parameter U    : NaturalsToSemiRing N.
   Parameter naturals : @Naturals A plus mult zero one equiv N U.
   Parameter uneq : UnEq A.
-  Parameter std_uneq : StandardUnEq N.
+  Parameter denial_inequality : DenialInequality N.
   Parameter le   : Le A.
   Parameter lt   : Lt A.
   Parameter order : FullPseudoSemiRingOrder N.
@@ -34,7 +34,7 @@ Module TheNaturals : TheNaturalsSig.
   Definition U     := _ : NaturalsToSemiRing X.
   Definition naturals := _ : Naturals X.
   Definition uneq  := _ : UnEq T.
-  Definition std_uneq := _ : StandardUnEq X.
+  Definition denial_inequality := _ : DenialInequality X.
   Definition le := _ : Le T.
   Definition lt := _ : Lt T.
   Definition order := _ : FullPseudoSemiRingOrder X.

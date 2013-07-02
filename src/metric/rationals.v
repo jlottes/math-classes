@@ -34,11 +34,27 @@ Section contents.
     rewrite <- (mult_inv_lt_cancel_l _ _ _), <- (flip_pos_minus _ _).
     now mc_replace (z*2 - z) with z on Q by subring Q.
   Qed.
+(*
+  Notation "#" := (rationals_to_field the_ae_rationals Q).
+
+  Instance rationals_located_points: LocatedPoints Q.
+  Proof.
+    intros x ? y ? p ? q ? E.
+    unfold ball, rationals_ball, alt_Build_MetricSpace_ball, b.
+    destruct (decide_sub (le) (|x - y|) (# q)) as [?|P].
+    + left. right. split; trivial. apply _.
+    + right. contradict P. destruct P as [Ep|[_ P]].
+      contradict E. apply (lt_flip _ _). rewrite (_ $ Ep). exact (ae_inf_sub _).
+      pose proof (le_lt_trans (|x - y|) (# p) (# q)) as P'.
+      apply P'; trivial. now apply (strictly_order_preserving # _ _).
+  Qed.
+*)
 End contents.
 
 Hint Extern 2 (Ball TheAERationals.A) => eexact rationals_ball : typeclass_instances.
 Hint Extern 2 (Ball (elt_type the_ae_rationals)) => eexact rationals_ball : typeclass_instances.
 Hint Extern 2 (MetricSpace the_ae_rationals) => eexact rationals_metric : typeclass_instances.
+(*Hint Extern 2 (LocatedPoints the_ae_rationals) => eexact rationals_located_points : typeclass_instances.*)
 
 Hint Extern 20 (Ball ?A) =>
   let H := match A with
@@ -48,8 +64,10 @@ Hint Extern 20 (Ball ?A) =>
   in eapply (rationals_ball (H:=H)) : typeclass_instances.
 Hint Extern 20 (MetricSpace ?Q) =>
   let H := constr:(_ : Rationals Q) in eapply (rationals_metric (H:=H)) : typeclass_instances.
-
-Local Notation B := TheAERationals.A.
+(*Hint Extern 20 (LocatedPoints ?Q) =>
+  let H := constr:(_ : Rationals Q) in eapply (rationals_located_points (H:=H)) : typeclass_instances.
+*)
+Local Notation AQ := TheAERationals.A.
 Local Notation Q := the_ae_rationals.
 Local Notation "Q∞" := (aff_ext Q).
 Local Notation Qfull := (aff_ext_full Q).
@@ -110,9 +128,19 @@ Proof. split; try apply _. intros.
 Qed.
 Hint Extern 8 (Isometry _ _ (rationals_to_field _ _)) => eapply @rat_to_rat_isometry : typeclass_instances.
 
+Lemma the_ae_rationals_finite_points : FinitePoints Q.
+Proof. intros x ? y ?. exists_sub (|x-y|). now apply (the_ae_rationals_ball _ _ _). Qed.
 
-Lemma the_ae_rationals_prelength : PrelengthMetricSpace Q.
-Proof. split. apply _. intros x ? y ? ε ? δ₁ ? δ₂ ? E E'.
+Lemma the_ae_rationals_located_points : LocatedPoints Q.
+Proof. intros x ? y ? p ? q ? E.
+  rewrite 2!(the_ae_rationals_ball _ _ _).
+  destruct (total (≤) (|x-y|) q); [now left | right].
+  apply (lt_not_le_flip _ _).
+  now apply (lt_le_trans _ q _).
+Qed.
+
+Lemma the_ae_rationals_prelength : PrelengthSpace Q.
+Proof. intros x ? y ? ε ? δ₁ ? δ₂ ? E E'.
   rewrite (the_ae_rationals_ball _ _ _) in E'.
   pose proof _ : δ₁ + δ₂ ∊ Q₊ .
   exists_sub ((x*δ₂ + y*δ₁)/(δ₁ + δ₂)).
@@ -130,11 +158,19 @@ Proof. split. apply _. intros x ? y ? ε ? δ₁ ? δ₂ ? E E'.
     rewrite <-(mult_inv_le_cancel_l _ _ _).
     apply (order_preserving (δ₂ *.) _ _). subtransitivity ε. now apply (lt_le _ _).
 Qed.
-Hint Extern 2 (PrelengthMetricSpace the_ae_rationals) => eexact the_ae_rationals_prelength : typeclass_instances.
 
-Lemma rationals_prelength `{Rationals (Q:=Q')} : PrelengthMetricSpace Q'.
-Proof isometric_prelength (r2r Q Q').
+Hint Extern 2 (FinitePoints   the_ae_rationals) => eexact the_ae_rationals_finite_points : typeclass_instances.
+Hint Extern 2 (LocatedPoints  the_ae_rationals) => eexact the_ae_rationals_located_points: typeclass_instances.
+Hint Extern 2 (PrelengthSpace the_ae_rationals) => eexact the_ae_rationals_prelength     : typeclass_instances.
 
-Hint Extern 20 (PrelengthMetricSpace ?Q) =>
+Lemma rationals_finite_points  `{Rationals (Q:=Q')} : FinitePoints Q'.    Proof isometric_finite_points  (r2r Q Q').
+Lemma rationals_located_points `{Rationals (Q:=Q')} : LocatedPoints Q'.   Proof isometric_located_points (r2r Q Q').
+Lemma rationals_prelength      `{Rationals (Q:=Q')} : PrelengthSpace Q'.  Proof isometric_prelength      (r2r Q Q').
+
+Hint Extern 20 (FinitePoints ?Q) =>
+  let H := constr:(_ : Rationals Q) in eapply (rationals_finite_points (H:=H)) : typeclass_instances.
+Hint Extern 20 (LocatedPoints ?Q) =>
+  let H := constr:(_ : Rationals Q) in eapply (rationals_located_points (H:=H)) : typeclass_instances.
+Hint Extern 20 (PrelengthSpace ?Q) =>
   let H := constr:(_ : Rationals Q) in eapply (rationals_prelength (H:=H)) : typeclass_instances.
 

@@ -131,7 +131,7 @@ Check fun `{Field (F:=F)} => _ : StrongInjective (F ₀) (F ₀) (⁻¹).
 
 Section dec_field.
   Context `{CommutativeRing A (R:=F)} `{Inv A}.
-  Context `{UnEq A} `{!StandardUnEq F} `{!SubDecision F F (=)}.
+  Context `{UnEq A} `{!DenialInequality F} `{!SubDecision F F (=)}.
 
   Lemma dec_field
     : Morphism (F ₀ ⇒ F ₀) (⁻¹)

@@ -11,7 +11,7 @@ Require Import
 Local Open Scope mc_abs_scope.
 
 Section contents.
-  Context `{Integers (Z:=Z)} `{UnEq _} `{!StandardUnEq Z}
+  Context `{Integers (Z:=Z)} `{UnEq _} `{!DenialInequality Z}
           `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder Z}.
   Context `{!StrongSubDecision Z Z (≤)} `{!StrongSubDecision Z Z (=)}.
   Context {pw} `{!ShiftLSpec Z Z⁺ pw}.

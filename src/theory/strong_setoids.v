@@ -23,7 +23,7 @@ Proof.
   subsymmetry. apply P1 with y₁; trivial. subsymmetry.
 Qed.
 
-Global Instance: UnEqualitySetoid S.
+Global Instance: InequalitySetoid S.
 Proof. split; try apply _; intros ?? ??; rewrite <- ?(tight_apart _ _); tauto. Qed.
 
 Global Instance: ∀ `{x ∊ S} `{y ∊ S}, Stable (x = y).
@@ -35,14 +35,14 @@ Local Hint Extern 20 (?x ∊ ?T) => match goal with
 end : typeclass_instances.
 
 
-Lemma standard_uneq_proper : Find_Proper_Signature (@StandardUnEq) 0
-  (∀ A, Proper ((=)==>(=)==>SubsetOf-->impl) (@StandardUnEq A)).
+Lemma denial_inequality_proper : Find_Proper_Signature (@DenialInequality) 0
+  (∀ A, Proper ((=)==>(=)==>SubsetOf-->impl) (@DenialInequality A)).
 Proof. red. intros. intros e1 e2 Ee u1 u2 Eu S1 S2 ES P. unfold flip in ES.
   intros x ? y ?. split; intro Q.
     apply Eu in Q. apply (P _ _ _ _) in Q. contradict Q. now apply Ee.
     apply Eu. apply (P _ _ _ _). contradict Q. now apply Ee.
 Qed.
-Hint Extern 0 (Find_Proper_Signature (@StandardUnEq) 0 _) => eexact standard_uneq_proper : typeclass_instances.
+Hint Extern 0 (Find_Proper_Signature (@DenialInequality) 0 _) => eexact denial_inequality_proper : typeclass_instances.
 
 Lemma tight_apart_proper : Find_Proper_Signature (@TightApart) 0
   (∀ A, Proper ((=)==>(=)==>SubsetOf-->impl) (@TightApart A)).
@@ -63,13 +63,13 @@ Hint Extern 0 (Find_Proper_Signature (@StrongSetoid) 0 _) => eexact strong_setoi
 (* In case we have a decidable setoid, we can construct a strong setoid. Again
   we do not make this an instance as it will cause loops *)
 Section dec_setoid.
-  Context `{UnEq} {S} `{Setoid _ (S:=S)} `{!StandardUnEq S} `{!SubDecision S S (=)}.
+  Context `{UnEq} {S} `{Setoid _ (S:=S)} `{!DenialInequality S} `{!SubDecision S S (=)}.
 
   Instance dec_strong_setoid: StrongSetoid S.
-  Proof. split; [ split; red | red ]; intros x ?; [| intros y ? ..]; rewrite -> ?(standard_uneq _ _).
+  Proof. split; [ split; red | red ]; intros x ?; [| intros y ? ..]; rewrite -> ?(denial_inequality _ _).
   + intro E. now contradict E.
   + intro E. contradict E. subsymmetry.
-  + intros E1 z ?. rewrite -> ?(standard_uneq _ _).
+  + intros E1 z ?. rewrite -> ?(denial_inequality _ _).
     destruct (decide_sub (=) x z) as [E2|?]; [|tauto]. right. contradict E1. subtransitivity z.
   + split. apply stable. tauto.
   Qed.
@@ -281,20 +281,20 @@ Hint Extern 0 (Find_Proper_Signature (@StrongInjective) 0 _) => eexact strong_in
 
 
 Section dec_setoid_morphisms.
-  Context `{StrongSetoid (S:=X)} `{!StandardUnEq X} `{StrongSetoid (S:=Y)}.
+  Context `{StrongSetoid (S:=X)} `{!DenialInequality X} `{StrongSetoid (S:=Y)}.
 
   Instance dec_strong_morphism (f : X ⇀ Y) `{!Morphism (X ⇒ Y) f} : Strong_Morphism X Y f.
   Proof. split. now apply morphism_closed.
-    intros x ? y ? E. rewrite (standard_uneq _ _). contradict E. apply (equiv_nue _ _).
+    intros x ? y ? E. rewrite (denial_inequality _ _). contradict E. apply (equiv_nue _ _).
     now rewrite_on X -> E.
   Qed.
 
-  Context `{!StandardUnEq Y}.
+  Context `{!DenialInequality Y}.
 
   Instance dec_strong_injective (f : X ⇀ Y) `{!Injective X Y f} : StrongInjective X Y f.
   Proof. pose proof injective_mor f.
     split; try apply _.
-    intros x ? y ?. rewrite ?(standard_uneq _ _). intro E. contradict E.
+    intros x ? y ?. rewrite ?(denial_inequality _ _). intro E. contradict E.
     exact (injective f x y E).
   Qed.
 
@@ -304,7 +304,7 @@ Section dec_setoid_morphisms.
     : Strong_Binary_Morphism X Y Z f.
   Proof. split. now apply binary_morphism_closed. rewrite strong_ext_equiv_2.
     intros x₁ ? x₂ ? y₁ ? y₂ ? E1.
-    case (subcotransitivity E1 (f x₂ y₁)); rewrite ?(standard_uneq _ _); intro E2;
+    case (subcotransitivity E1 (f x₂ y₁)); rewrite ?(denial_inequality _ _); intro E2;
     [ left | right ]; intro E3; destruct (uneq_ne _ _ E2).
     now rewrite_on X -> E3. now rewrite_on Y -> E3.
   Qed.

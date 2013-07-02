@@ -67,13 +67,13 @@ Hint Extern 5 (1 ∊ ?R⁺) => eapply @NonNeg_element : typeclass_instances.
 Hint Extern 5 (1 ∊ ?R₊) => eapply @Pos_element : typeclass_instances.
 Hint Extern 5 (2 ∊ ?R ₀) => eapply @NonZero_element : typeclass_instances.
 
-Lemma NonZero_subsetoid `{Equiv} `{UnEq _} `{Zero _} R `{!UnEqualitySetoid R} `{0 ∊ R} : R ₀ ⊆ R.
+Lemma NonZero_subsetoid `{Equiv} `{UnEq _} `{Zero _} R `{!InequalitySetoid R} `{0 ∊ R} : R ₀ ⊆ R.
 Proof. split; try apply _. intros ?? E [??]. unfold_sigs. split. apply _. now rewrite_on R <- E. Qed.
 Hint Extern 5 (SubSetoid (?R ₀) _) => eapply (NonZero_subsetoid R) : typeclass_instances. 
 
-Lemma zero_or_nonzero `{Setoid (S:=R)} `{UnEq _} `{Zero _} `{!StandardUnEq R} `{!SubDecision R R (=)} `{0 ∊ R}
+Lemma zero_or_nonzero `{Setoid (S:=R)} `{UnEq _} `{Zero _} `{!DenialInequality R} `{!SubDecision R R (=)} `{0 ∊ R}
   x `{x ∊ R} : x = 0 ∨ x ∊ R ₀.
-Proof. destruct (decide_sub (=) x 0). now left. right. split. apply _. now rewrite (standard_uneq _ _). Qed.
+Proof. destruct (decide_sub (=) x 0). now left. right. split. apply _. now rewrite (denial_inequality _ _). Qed.
 
 (* When the following properties hold, they hold also on subsets. *)
 Local Ltac solve := red; intros; intros S1 S2 ES R1 R2 ER P ?; intros; unfold flip in *; apply ER; apply P; try apply _.
@@ -217,7 +217,7 @@ Proof. intro. intros. intros ?? ES P x ? y ?. unfold flip in ES.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@ZeroProduct) 0 _) => eexact ZeroProduct_proper : typeclass_instances.
 
-Instance ZeroProduct_no_zero_divisors `{UnEqualitySetoid A (S:=R)} `{Mult A} `{Zero A} `{0 ∊ R} `{!ZeroProduct R} : NoZeroDivisors R.
+Instance ZeroProduct_no_zero_divisors `{InequalitySetoid A (S:=R)} `{Mult A} `{Zero A} `{0 ∊ R} `{!ZeroProduct R} : NoZeroDivisors R.
 Proof. intros x [[? xn0][y[[? yn0][E|E]]]];
   pose proof (uneq_ne _ _ xn0); pose proof (uneq_ne _ _ yn0);
   destruct (zero_product _ _ E); contradiction.

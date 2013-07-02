@@ -6,7 +6,7 @@ Require Import
 
 Section hints.
   Context `{Rationals (Q:=Q)}.
-  Context `{Integers (Z:=Z)} `{UnEq _} `{!StandardUnEq Z}
+  Context `{Integers (Z:=Z)} `{UnEq _} `{!DenialInequality Z}
       `{Field (F:=F)} `{!StrongInjective Z F (integers_to_ring Z F)}.
 
   Notation toF := (rationals_to_field Q F).
@@ -40,7 +40,7 @@ Instance rationals_frac_to_field `{Integers (Z:=Z)} `{Rationals (Q:=Q)}
   : FracToField Z Q | 15 := λ _ F _ _ _ _ _ _ _, rationals_to_field Q F.
 
 Instance rationals_is_field_of_fracs
-  `{Integers (Z:=Z)} `{UnEq _} `{!StandardUnEq Z} `{Rationals (Q:=Q)}
+  `{Integers (Z:=Z)} `{UnEq _} `{!DenialInequality Z} `{Rationals (Q:=Q)}
   : Field_of_Fractions Z Q | 15.
 Proof. split. apply _. apply _.
 + exact (dec_strong_injective _).
@@ -60,15 +60,15 @@ Instance rationals_strong_subdec_eq_slow `{Rationals (Q:=Q)} : StrongSubDecision
   := field_of_fracs_strong_subdec_eq_slow (D:=the_integers).
 
 Lemma rationals_embed_ints_strong `{Rationals (Q:=Q)}
-  `{Integers (Z:=Z)} `{UnEq _} `{!StandardUnEq Z}
+  `{Integers (Z:=Z)} `{UnEq _} `{!DenialInequality Z}
   : StrongInjective Z Q (integers_to_ring Z Q).
 Proof dec_strong_injective _.
 
 Hint Extern 10 (StrongInjective _ _ (integers_to_ring _ _)) => eapply @rationals_embed_ints_strong : typeclass_instances.
 
 Section alt_Build_Rationals.
-  Context `(Z:Subset) `{Integers _ (Z:=Z)} `{UnEq _} `{!StandardUnEq Z}.
-  Context `(Q:Subset) `{Field _ (F:=Q)} `{!StandardUnEq Q} `{!RationalsToField Q}.
+  Context `(Z:Subset) `{Integers _ (Z:=Z)} `{UnEq _} `{!DenialInequality Z}.
+  Context `(Q:Subset) `{Field _ (F:=Q)} `{!DenialInequality Q} `{!RationalsToField Q}.
   Context `{!Injective Z Q (integers_to_ring Z Q)}.
 
   Instance alt_Build_Rationals :
@@ -89,14 +89,14 @@ Section alt_Build_Rationals.
 End alt_Build_Rationals.
 
 Section from_field_of_fracs.
-  Context `{Integers (Z:=Z)} `{UnEq _} `{!StandardUnEq Z} `{Field (F:=Q)}
+  Context `{Integers (Z:=Z)} `{UnEq _} `{!DenialInequality Z} `{Field (F:=Q)}
           `{!ToFieldOfFracs Z Q} `{!FracToField Z Q}
           `{!Field_of_Fractions Z Q}.
 
   Instance from_intfracs_to_field: RationalsToField Q
     := λ _ F _ _ _ _ _ _, frac_to_field Q F (integers_to_ring Z F).
 
-  Instance: StandardUnEq Q := field_of_fracs_standard_uneq.
+  Instance: DenialInequality Q := field_of_fracs_denial_inequality.
 
   Instance: StrongInjective Z Q (integers_to_ring Z Q).
   Proof. rewrite <- (integers_initial (to_field_of_fracs Q)). apply _. Qed.
@@ -111,11 +111,11 @@ Section from_field_of_fracs.
 End from_field_of_fracs.
 
 Section another_integers.
-  Context `{Rationals (Q:=Q)} `{Integers B (Z:=Z)} `{UnEq B} `{!StandardUnEq Z}.
+  Context `{Rationals (Q:=Q)} `{Integers B (Z:=Z)} `{UnEq B} `{!DenialInequality Z}.
   Context (f : Z ⇀ Q) `{!Ring_Morphism Z Q f}.
 
   Instance int_to_rat_strong_inj: StrongInjective Z Q f.
-  Proof. rewrite (integers_initial f). exact (dec_strong_injective _). Qed.
+  Proof. rewrite (integers_initial f). exact rationals_embed_ints_strong. Qed.
 
   Lemma rationals_decompose_dec x : { (n,d) : B*B | x ∊ Q → (n ∊ Z ∧ d ∊ Z ₀) ∧ x = f n / f d }.
   Proof. destruct (field_of_fracs_decompose_dec x) as [[n d] P].
@@ -129,7 +129,7 @@ Section another_integers.
   Lemma rationals_decompose x `{x ∊ Q} : ∃ `{n ∊ Z} `{d ∊ Z ₀}, x = f n / f d.
   Proof.
     destruct (rationals_decompose_dec x) as [[n d] P]. destruct (P _) as [[??] E].
-    exists_sub n. exists_sub d. trivial.
+    now exists_sub n d.
   Qed.
 End another_integers.
 
@@ -185,7 +185,7 @@ Proof. split; try apply _. intros x ? y ? E.
 Qed.
 
 Section isomorphic_image_is_rationals.
-  Context `{Rationals (Q:=Q)} `{Field (F:=Q2)} `{!StandardUnEq Q2}.
+  Context `{Rationals (Q:=Q)} `{Field (F:=Q2)} `{!DenialInequality Q2}.
   Context (f : Q ⇀ Q2) `{!Inverse f} `{!Bijective Q Q2 f} `{!Ring_Morphism Q Q2 f}.
   Open Scope mc_fun_scope.
 
@@ -208,12 +208,12 @@ Section isomorphic_image_is_rationals.
 End isomorphic_image_is_rationals.
 
 Section injective_preimage_is_rationals.
-  Context `{Field (F:=Q2)} `{!StandardUnEq Q2}.
+  Context `{Field (F:=Q2)} `{!DenialInequality Q2}.
   Context `{Integers  (Z:=Z)} (h : Z ⇀ Q2) `{!Injective Z Q2 h} `{!Ring_Morphism Z Q2 h}.
   Context `{Rationals (Q:=Q)} (f : Q2 ⇀ Q) `{!Injective Q2 Q f} `{!Ring_Morphism Q2 Q f}.
   Open Scope mc_fun_scope.
 
-  Instance: StandardUnEq Z := _.
+  Instance: DenialInequality Z := _.
   Instance: StrongInjective Z Q2 (integers_to_ring Z Q2).
   Proof. rewrite <- (integers_initial h). exact (dec_strong_injective _). Qed.
 

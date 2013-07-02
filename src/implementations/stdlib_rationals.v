@@ -68,7 +68,7 @@ Qed.
 (* misc: *)
 Instance: ∀ x y: QArith_base.Q, Decision (x = y) := Qeq_dec.
 
-Instance: StandardUnEq Q := _.
+Instance: DenialInequality Q := _.
 
 Instance inject_Z_Q: Cast Z Q := inject_Z.
 

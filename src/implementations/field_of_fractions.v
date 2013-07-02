@@ -254,9 +254,9 @@ Section dec.
 
   Notation F := (Frac D).
 
-  Instance Frac_standard_uneq `{!StandardUnEq D} : StandardUnEq F.
+  Instance Frac_denial_inequality `{!DenialInequality D} : DenialInequality F.
   Proof. intros [a b][??] [c d][??]. unfold equiv, frac_equiv, uneq, frac_uneq.
-    exact (standard_uneq _ _).
+    exact (denial_inequality _ _).
   Qed.
 
   Instance Frac_dec_eq `{∀ (x y : A), Decision (x = y)} (x y : FracPair A) : Decision (x=y).
@@ -280,7 +280,7 @@ Section dec.
   Defined.
 End dec.
 
-Hint Extern 2 (StandardUnEq (Frac _)) => eapply @Frac_standard_uneq : typeclass_instances.
+Hint Extern 2 (DenialInequality (Frac _)) => eapply @Frac_denial_inequality : typeclass_instances.
 Hint Extern 2 (Decision (@equiv _ frac_equiv _ _)) => eapply @Frac_dec_eq : typeclass_instances.
 Hint Extern 2 (StrongSubDecision (Frac _) (Frac _) (=)) => eapply @Frac_strong_subdec_eq : typeclass_instances.
 Hint Extern 2 (SubDecision (Frac _) (Frac _) (=)) => eapply @Frac_subdec_eq : typeclass_instances.

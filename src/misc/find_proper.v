@@ -101,19 +101,19 @@ Lemma restrict_rel_sym_fp `(S:A → Prop) (R:relation A) {sym:Find_Proper_Symmet
 Hint Extern 0 (@Find_Proper_Subrelation _ (@restrict_rel _ _ ?R) ?R) => eapply @restrict_rel_sub_fp : typeclass_instances.
 Hint Extern 4 (@Find_Proper_Symmetric _ (@restrict_rel _ _ _)) => eapply @restrict_rel_sym_fp : typeclass_instances.
 
-(*
 Lemma restrict_sub_sub_fp `(S:A → Prop) (R1 R2:relation A) {sub:Find_Proper_Subrelation R1 R2}
   : Find_Proper_Subrelation (restrict_rel S R1) (restrict_rel S R2).
 Proof restrict_sub_sub S R1 R2 (sub:=sub).
 
-Hint Extern 4 (@Find_Proper_Subrelation  _ (@restrict_rel _ ?S _) (@restrict_rel _ ?S _)) => eapply @restrict_sub_sub_fp : typeclass_instances.
+(* Hint Extern 4 (@Find_Proper_Subrelation  _ (@restrict_rel _ ?S _) (@restrict_rel _ ?S _)) => eapply @restrict_sub_sub_fp : typeclass_instances. *)
 
 Lemma restrict_ppo_fp `(S:A → Prop) (eq le:relation A) `{!Find_Proper_PrePartialOrder eq le}
   : Find_Proper_PrePartialOrder (restrict_rel S eq) (restrict_rel S le).
-Proof. pose proof (find_proper_antisym (eq:=eq)). split; apply _. Qed.
+Proof. pose proof (find_proper_antisym (eq:=eq)). split. apply _.
+  apply restrict_sub_sub_fp. apply _. now apply restrict_antisym.
+Qed.
 
-Hint Extern 2 (@Find_Proper_PrePartialOrder _ (@restrict_rel _ ?S _) (@restrict_rel _ ?S _)) => eapply @restrict_ppo_fp : typeclass_instances.
-*)
+(*Hint Extern 2 (@Find_Proper_PrePartialOrder _ (@restrict_rel _ ?S _) (@restrict_rel _ ?S _)) => eapply @restrict_ppo_fp : typeclass_instances.*)
 
 (** The tactic for partial applications, which uses reflexivity. *)
 

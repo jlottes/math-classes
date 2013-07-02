@@ -106,7 +106,7 @@ Section contents.
   Instance: 0 ∊ Dyadic.                              Proof. split; apply _. Qed.
   Instance: 1 ∊ Dyadic.                              Proof. split; apply _. Qed.
 
-  Context `{UnEq _} `{!StandardUnEq Z} `{Lt _} `{!FullPseudoSemiRingOrder Z}.
+  Context `{UnEq _} `{!DenialInequality Z} `{Lt _} `{!FullPseudoSemiRingOrder Z}.
   Context `{!StrongSubDecision Z Z (=)}.
   Context `{!ShiftLSpec Z Z⁺ sl}.
 

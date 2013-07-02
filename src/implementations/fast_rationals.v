@@ -187,7 +187,7 @@ Proof.
   now rewrite ?(associativity (.*.) _ _ _), (commutativity (.*.) ('n) _).
 Qed.
 
-Instance bigQ_Zshiftl: ShiftL bigQ Z := λ x k, x ≪ (cast Z bigZ k).
+Instance bigQ_Zshiftl: ShiftL bigQ Z := λ x k, x ≪ cast Z bigZ k.
 
 Instance: ShiftLSpec bigQ Z _.
 Proof.

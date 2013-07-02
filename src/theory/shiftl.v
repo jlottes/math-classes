@@ -18,7 +18,7 @@ Qed.
 
 Lemma shiftl_spec_from_int_pow
   `{Field (F:=F)} `{2 ∊ F ₀}
-  `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}
+  `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z} `{!FullPseudoSemiRingOrder Z}
   `{!IntPowSpec F Z pw} sl :
    Closed (F ⇀ Z ⇀ F) (≪) → (∀ `{x ∊ F} `{n ∊ Z}, x ≪ n = 2 ^ n * x) → ShiftLSpec F Z sl.
 Proof. intros ? spec. pose proof @closed_binary. split.
@@ -151,8 +151,8 @@ Proof. split; try apply _. intros x ? y ?. biinduction n.
   - now rewrite_on R -> E2.
 Qed.
 
-Instance shiftl_ne_0 `{UnEq A} `{!StandardUnEq R} : Closed (R ₀ ⇀ N ⇀ R ₀) (≪).
-Proof. intros x [? E1] n ?. split. apply _. revert E1. rewrite !(standard_uneq _ _).
+Instance shiftl_ne_0 `{UnEq A} `{!DenialInequality R} : Closed (R ₀ ⇀ N ⇀ R ₀) (≪).
+Proof. intros x [? E1] n ?. split. apply _. revert E1. rewrite !(denial_inequality _ _).
   intro E1. mc_contradict E1.
   apply (injective (≪ n) _ _).
   now rewrite (R $ shiftl_base_0 _ _).
@@ -380,7 +380,7 @@ Typeclasses Opaque shiftl_default.
 
 Section default_shiftl_integers.
   Context `{Field A (F:=F)} `{2 ∊ F ₀}
-    `{Integers B (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}
+    `{Integers B (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z} `{!FullPseudoSemiRingOrder Z}
     `{!IntPowSpec F Z ipw}.
 
   Instance shiftl_default_int: ShiftL A B := λ x n, 2 ^ n * x.

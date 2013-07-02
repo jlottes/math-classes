@@ -1,32 +1,37 @@
 Require Import abstract_algebra interfaces.orders.
 Require Export subset.
 
+Lemma empty_setoid `{Equiv A} : Setoid (@bottom (@Subset A) _). Proof. firstorder. Qed.
+Hint Extern 2 (Setoid ⊥) => eapply @empty_setoid : typeclass_instances.
+Lemma empty_subsetoid `{Setoid (S:=X)} : ⊥ ⊆ X. Proof. firstorder. Qed.
+Hint Extern 2 (⊥ ⊆ _) => eapply @empty_subsetoid : typeclass_instances.
+
 Lemma equiv_proper : Find_Proper_Signature (@equiv) 0
   (∀ A Ae S `{@Setoid A Ae S}, Proper ((S,=)==>(S,=)==>impl) (=)).
 Proof. red. intros. change (Proper ((S,=)==>(S,=)==>impl) (=)).
   intros x1 x2 Ex y1 y2 Ey P. unfold_sigs. subtransitivity y1. now subtransitivity x1. Qed.
 Hint Extern 0 (Find_Proper_Signature (@equiv) 0 _) => eexact equiv_proper : typeclass_instances.
 
-Lemma unequiv_proper : Find_Proper_Signature (@uneq) 0
-  (∀ `{UnEqualitySetoid (S:=X)}, Proper ((X,=)==>(X,=)==>impl) (≠)).
+Lemma uneq_proper_fp : Find_Proper_Signature (@uneq) 0
+  (∀ `{InequalitySetoid (S:=X)}, Proper ((X,=)==>(X,=)==>impl) (≠)).
 Proof. red. intros. exact uneq_proper. Qed.
-Hint Extern 0 (Find_Proper_Signature (@uneq) 0 _) => eexact unequiv_proper : typeclass_instances.
+Hint Extern 0 (Find_Proper_Signature (@uneq) 0 _) => eexact uneq_proper_fp : typeclass_instances.
 
 Instance default_uneq `{Equiv} : UnEq _ | 20 := (λ x y, ¬ x = y).
 Typeclasses Opaque default_uneq.
 
-Lemma default_uneq_standard `{Equiv} S : StandardUnEq S.
+Lemma default_uneq_denial `{Equiv} S : DenialInequality S.
 Proof. easy. Qed.
-Hint Extern 2 (@StandardUnEq _ _(@default_uneq _ _) _) => eapply @default_uneq_standard : typeclass_instances.
+Hint Extern 2 (@DenialInequality _ _ (@default_uneq _ _) _) => eapply @default_uneq_denial : typeclass_instances.
 
-Instance: ∀ `{Equiv} `{UnEq _} S `{!Setoid S} `{!StandardUnEq S}, UnEqualitySetoid S.
+Instance: ∀ `{Equiv} `{UnEq _} S `{!Setoid S} `{!DenialInequality S}, InequalitySetoid S.
 Proof. intros. split; try apply _; [ intros ?? E1 ?? E2; unfold_sigs; unfold impl | intros ???? ..];
-  setoid_rewrite (standard_uneq _ _); try tauto.
+  setoid_rewrite (denial_inequality _ _); try tauto.
   intro P. contradict P. now rewrite_on S -> E1, E2.
 Qed.
 
-Instance: ∀ `{Equiv} `{UnEq _} S `{!Setoid S} `{!StandardUnEq S} `{!SubDecision S S (=)}, TightApart S.
-Proof. intros. intros x ? y ?. rewrite (standard_uneq _ _).
+Instance: ∀ `{Equiv} `{UnEq _} S `{!Setoid S} `{!DenialInequality S} `{!SubDecision S S (=)}, TightApart S.
+Proof. intros. intros x ? y ?. rewrite (denial_inequality _ _).
   split. unfold SubDecision in *|-. apply stable. tauto.
 Qed.
 
@@ -39,8 +44,8 @@ Local Hint Extern 20 (?x ∊ ?T) => match goal with
   | sub : SubsetOf _ ?T |- _ => eapply (subset (SubsetOf:=sub) x)
 end : typeclass_instances.
 
-Lemma UnEqualitySetoid_proper : Find_Proper_Signature (@UnEqualitySetoid) 0
-  (∀ A, Proper ((=)==>(=)==>SubsetOf-->impl) (@UnEqualitySetoid A)).
+Lemma InequalitySetoid_proper : Find_Proper_Signature (@InequalitySetoid) 0
+  (∀ A, Proper ((=)==>(=)==>SubsetOf-->impl) (@InequalitySetoid A)).
 Proof. red. intros. intros ?? Ee ?? Eu S1 S2 ES ?. unfold flip in ES. split.
 + rewrite <- Ee, ES. apply _.
 + intros ?? E1 ?? E2 E. unfold_sigs. apply Ee in E1. apply Ee in E2. apply Eu in E.
@@ -48,18 +53,17 @@ Proof. red. intros. intros ?? Ee ?? Eu S1 S2 ES ?. unfold flip in ES. split.
 + intros ???? E1 E2. apply Eu in E1. apply Ee in E2. exact (uneq_ne _ _ E1 E2).
 + intros ???? E1 E2. apply Ee in E1. apply Eu in E2. exact (equiv_nue _ _ E1 E2).
 Qed.
-Hint Extern 0 (Find_Proper_Signature (@UnEqualitySetoid) 0 _) => eexact UnEqualitySetoid_proper : typeclass_instances.
+Hint Extern 0 (Find_Proper_Signature (@InequalitySetoid) 0 _) => eexact InequalitySetoid_proper : typeclass_instances.
 
-
-Lemma subsetoid_a `{Equiv} {S T} {sub:SubSetoid S T} : Setoid S.
-Proof. rewrite (_:SubsetOf S T). apply subsetoid_b. Qed.
+Lemma subsetoid_alt {A} S T `{Equiv A} `{!Setoid T}
+  : Proper ((T,=) ==> impl) (∊ S) → SubsetOf S T →  S ⊆ T.
+Proof. intros. split; try apply _. rewrite (_:SubsetOf S T). apply _. Qed.
 
 Lemma subsetoid_subset_subrel `{Equiv} : subrelation (⊆) SubsetOf.
 Proof. firstorder. Qed.
 
 Hint Extern 2 (subrelation (⊆) SubsetOf) => eapply @subsetoid_subset_subrel : typeclass_instances.
 Hint Extern 2 (Find_Proper_Subrelation (⊆) SubsetOf) => eapply @subsetoid_subset_subrel : typeclass_instances.
-
 
 Hint Extern 19 (?x ∊ ?T) => match goal with
   | sub : SubSetoid _ ?T |- _ => eapply (subset (SubsetOf:=subsetoid_subset (SubSetoid:=sub)) x)
@@ -73,6 +77,7 @@ Hint Extern 0 (Find_Proper_Signature (@Element) 1 _) => eexact element_proper2 :
 Lemma subsetoid_proper : Find_Proper_Signature (@SubSetoid) 0
   (∀ A, Proper ((=)==>(=)==>(=)==>impl) (@SubSetoid A)).
 Proof. red. intros. intros e1 e2 E1 ?? E2 X Y E3 S. split.
++ rewrite <- E1, <- E2. exact subsetoid_a.
 + rewrite <- E1, <- E3. exact subsetoid_b.
 + intros a b [[ela elb] E4]. rewrite <- E3 in ela,elb. rewrite <- E2.
   assert (@equiv _ e1 a b) as E' by now apply E1. intro. now rewrite <- (X $ E').
@@ -80,19 +85,22 @@ Proof. red. intros. intros e1 e2 E1 ?? E2 X Y E3 S. split.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@SubSetoid) 0 _) => eexact subsetoid_proper : typeclass_instances.
 
+Lemma subsetoid_from_subsetof `(X:Subset) `{Setoid _ (S:=X)} S T `{S ⊆ X} `{T ⊆ X}
+  : SubsetOf S T → S ⊆ T.
+Proof. split; try apply _. Qed.
 
 
-Hint Extern 0 (?S ∊ Setoid) => eexact (_ : Setoid S) : typeclass_instances.
+Hint Extern 0 (?S ∊ Setoid) => red : typeclass_instances.
 
 Lemma Setoid_subsetoid `{Equiv} : Setoid ⊆ (every Subset).
-Proof with try apply _. split...
+Proof. apply subsetoid_alt; try apply _.
   intros S1 S2 [_ ES]. change (Setoid S1 -> Setoid S2). intro. now rewrite <- ES.
 Qed.
 Hint Extern 2 ((Setoid) ⊆ (every Subset)) => eapply @Setoid_subsetoid : typeclass_instances.
 Hint Extern 2 (Setoid Setoid) => eapply (subsetoid_a (T:=every _)) : typeclass_instances.
 
 Lemma SubSetoid_trans `{Equiv} : Transitive SubSetoid.
-Proof. intros S1 S2 S3 P1 P2. split. apply subsetoid_b.
+Proof. intros S1 S2 S3 P1 P2. apply subsetoid_alt. apply subsetoid_b.
   intros x y E ?. unfold_sigs. assert (y∊S2). rewrite_on S3 <- E. apply _. now rewrite_on S2 <- E.
   transitivity S2; apply _.
 Qed.
@@ -128,14 +136,16 @@ Hint Extern 5 (SubReflexive _ SubSetoid) => eapply @SubSetoid_refl : typeclass_i
 
 Lemma subsetoid_refl `{Setoid (S:=X)} : X ⊆ X.  Proof. subreflexivity. Qed.
 Hint Extern 5 (SubSetoid ?X ?X) => eapply @subsetoid_refl : typeclass_instances.
-
+Hint Extern 2 (Proper (⊆) _) => red : typeclass_instances.
+Hint Extern 2 (ProperProxy (⊆) _) => red : typeclass_instances.
+Hint Extern 2 (Find_Proper_Proper (⊆) _) => red : typeclass_instances.
 
 Lemma subset_singleton_element `{Setoid (S:=X)} x `{x ∊ X} : x ∊ {{x}}.
 Proof. assert (x=x) by subreflexivity. firstorder. Qed.
 Hint Extern 2 (?x ∊ {{?x}}) => eapply @subset_singleton_element: typeclass_instances.
 
 Lemma subset_singleton_subsetoid `{Setoid (S:=X)} x `{x ∊ X} : {{x}} ⊆ X.
-Proof. split; [ apply _ | | firstorder ].
+Proof. apply subsetoid_alt; [ apply _ | | firstorder ].
   intros y z E [? E2]. split. now rewrite <- E. unfold_sigs. now subtransitivity y.
 Qed.
 Hint Extern 2 ((subset_singleton ?X _) ⊆ ?X) => eapply @subset_singleton_subsetoid : typeclass_instances.
@@ -159,14 +169,6 @@ Proof. pose proof @closed_range.
   split; red; [ intros ?? | intros ???? | intros ?? y ? ?? ]; rewrite ?(eq_correct _ _ _ _);
   intros. easy. subsymmetry. subtransitivity (f y).
 Qed.
-
-(*
-Local Existing Instance setoidmor_a.
-Local Existing Instance setoidmor_b.
-Local Existing Instance binary_setoidmor_a.
-Local Existing Instance binary_setoidmor_b.
-Local Existing Instance binary_setoidmor_c.
-*)
 
 (* symmetry and transitivity of extensional equality *)
 
@@ -357,6 +359,10 @@ Lemma id_morphism2
 Proof. rewrite <- (_ : SubsetOf (@morphism _ _ X1 X1 ex1 ex1) (@morphism _ _ X1 X2 ex1 ex2)). apply _. Qed.
 Hint Extern 5 (Morphism _ id) => eapply @id_morphism2 : typeclass_instances.
 
+Lemma const_morphism `(X:Subset) `{Equiv X} `{Setoid (S:=Y)} c `{c ∊ Y}
+  : Morphism (X ⇒ Y) (λ _, c).
+Proof. intros _ _ _. now red_sig. Qed.
+Hint Extern 5 (Morphism _ (λ _, ?c)) => eapply @const_morphism : typeclass_instances.
 
 Lemma compose_morphism `{X:Subset} `{Y:Subset} `{Z:Subset} (f:X ⇀ Y) (g:Y ⇀ Z) `{Equiv X} `{Equiv Y} `{Equiv Z}
   {mf:Morphism (X ⇒ Y) f} {mg:Morphism (Y ⇒ Z) g} : Morphism (X ⇒ Z) (g ∘ f).
@@ -442,17 +448,22 @@ Section images.
   Instance subsetof_inv_image `{!SubsetOf T Y} : SubsetOf f⁻¹(T) X. Proof. now intros ?[??]. Qed.
 
   Instance subsetoid_image {S} `{!SubsetOf S X} : f⁺¹(S) ⊆ Y.
-  Proof with try apply _. split... intros y1 y2 E [_ [x [? E2]]]. unfold_sigs.
+  Proof with try apply _. apply subsetoid_alt... intros y1 y2 E [_ [x [? E2]]]. unfold_sigs.
     split... exists_sub x. subtransitivity y1.
   Qed.
 
   Instance subsetoid_inv_image `{T ⊆ Y} : f⁻¹(T) ⊆ X.
-  Proof with try apply _. split... intros x1 x2 E [_?]. unfold_sigs.
+  Proof with try apply _. apply subsetoid_alt... intros x1 x2 E [_?]. unfold_sigs.
     split... assert (f x2 = f x1) as E2. now rewrite_on X -> E. now rewrite_on Y -> E2.
   Qed.
 
   Lemma setoid_image     S `{!SubsetOf S X} : Setoid f⁺¹(S). Proof subsetoid_a.
   Lemma setoid_inv_image T `{T ⊆ Y}         : Setoid f⁻¹(T). Proof subsetoid_a.
+
+  Lemma image_empty : f⁺¹(⊥) = ⊥. Proof. firstorder. Qed.
+
+  Lemma image_inhabited S `{!SubsetOf S X} `{!Inhabited S} : Inhabited f⁺¹(S).
+  Proof. destruct (inhabited S) as [x ?]. exists (f x). apply _. Qed.
 
   Lemma image_eq_singleton S `{!SubsetOf S X} y `{y ∊ Y}
     : f⁺¹(S) = {{y}} ↔ (∃ x, x ∊ S) ∧ ∀ `{x ∊ S}, f x = y.
@@ -470,6 +481,20 @@ Section images.
     intros [? E]. split. apply _. now rewrite_on X -> E.
   Qed.
 
+  Lemma subimage_image {S} `{!SubsetOf S X} {T} `{!SubsetOf T S} :
+    (@image _ S _ (@image _ X _ Y _ f S) _ f T) = f⁺¹(T).
+  Proof. intro y. split.
+  + intros [[??]?]. now split.
+  + intros [?[x[? E]]]. split. split. apply _. now exists_sub x. now exists_sub x.
+  Qed.
+
+  Lemma image_dom_range_proper X2 Y2 `{Y ⊆ Y2} S `{!SubsetOf S X}
+    : f⁺¹(S) = (image (X:=X2) (Y:=Y2) f S).
+  Proof. intro y. split.
+  + intros [?[x[? E]]]. split. apply _. now exists_sub x.
+  + intros [?[x[? E]]]. split. rewrite <-(_ $ E). apply _. now exists_sub x.
+  Qed.
+
 End images.
 
 Hint Extern 2 (?f ?x ∊ ?f⁺¹(_)) => eapply @image_element : typeclass_instances.
@@ -479,18 +504,60 @@ Hint Extern 2 (Setoid ?f⁺¹(_)) => eapply (setoid_image f) : typeclass_instanc
 Hint Extern 2 (Setoid ?f⁻¹(_)) => eapply (setoid_inv_image f) : typeclass_instances.
 Hint Extern 5 (?f⁺¹(_) ⊆ _) => eapply (subsetoid_image f) : typeclass_instances.
 Hint Extern 5 (?f⁻¹(_) ⊆ _) => eapply (subsetoid_inv_image f) : typeclass_instances.
+Hint Extern 2 (Inhabited ?f⁺¹(_)) => eapply @image_inhabited : typeclass_instances.
 
 Lemma image_proper: Find_Proper_Signature (@image) 0
   (∀ A X B Y Be f, Proper (SubsetOf ++> SubsetOf) (@image A X B Y Be f)).
 Proof. red. intros. intros S1 S2 ES y [?[x[? Ex]]]. split. apply _. now exists_sub x. Qed.
 Hint Extern 0 (Find_Proper_Signature (@image) 0 _) => eexact image_proper : typeclass_instances.
 
+Lemma image_proper2: Find_Proper_Signature (@image) 1
+  (∀ `{Setoid (S:=X)} `{Setoid (S:=Y)},
+    Proper ((@equiv (X ⇀ Y) _)
+      ==> (restrict_rel (λ S, SubsetOf S X) (=))
+      ==> (=)) (@image _ X _ Y _)).
+Proof. red. intros. intros f g Ef S1 S2 [[e1 e2] ES] y. red in e1,e2.
+  split; intros [?[x[? Ex]]]; (split; [apply _ |]);
+  assert (x ∊ X) by first [ now apply e1 | now apply e2 ];
+  destruct (Ef x x (_ $ subreflexivity x)) as [[??] E].
+  assert (x ∊ S2) by now apply ES. exists_sub x. subtransitivity (f x). subsymmetry.
+  assert (x ∊ S1) by now apply ES. exists_sub x. subtransitivity (g x).
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@image) 1 _) => eexact image_proper2 : typeclass_instances.
+
 Lemma inv_image_proper: Find_Proper_Signature (@inv_image) 0
   (∀ A X B Y f, Proper (SubsetOf ++> SubsetOf) (@inv_image A X B Y f)).
 Proof. red. intros. intros S1 S2 ES x [??]. split; apply _.  Qed.
 Hint Extern 0 (Find_Proper_Signature (@inv_image) 0 _) => eexact inv_image_proper : typeclass_instances.
 
+Lemma inv_image_proper2: Find_Proper_Signature (@inv_image) 1
+  (∀ `{Setoid (S:=X)} `{Setoid (S:=Y)},
+    Proper ((@equiv (X ⇀ Y) _) ==> ((⊆ Y),=) ==> (=)) (@inv_image _ X _ Y)).
+Proof. red. intros. intros f g Ef S1 S2 [[e1 e2]ES] x. red in e1,e2.
+  split; intros [??]; (split; [apply _ |]); apply ES.
+  now rewrite <-(Ef x x (_ $ subreflexivity x)).
+  now rewrite ->(Ef x x (_ $ subreflexivity x)).
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@inv_image) 1 _) => eexact inv_image_proper2 : typeclass_instances.
+
+
 Lemma image_id `{Setoid (S:=X)} S `{!SubSetoid S X} {Y} : @image _ Y _ X _ id S = S.
 Proof. split. intros [?[?[? E]]]. now rewrite <-(X $ E).
        intro. split. apply _. now exists_sub x.
 Qed.
+
+Lemma compose_image `{Setoid (S:=X)} `{Setoid (S:=Y)} `{Setoid (S:=Z)}
+  (f:X ⇀ Y) `{!Morphism (X ⇒ Y) f}
+  (g:Y ⇀ Z) `{!Morphism (Y ⇒ Z) g} S `{!S ⊆ X}
+  : (g ∘ f)⁺¹(S) = g⁺¹(f⁺¹(S)).
+Proof. unfold compose. intro z. split.
++ intros [?[x[? E]]]. split. apply _. now exists_sub (f x).
++ intros [?[y[[?[x [? E2]]] E1]]]. split. apply _. exists_sub x.
+  subtransitivity (g y). now rewrite (_ $ E2).
+Qed.
+
+Lemma restrict_morphism_image `{Setoid (S:=X)} `{Setoid (S:=Y)}
+  (f:X ⇀ Y) `{!Morphism (X ⇒ Y) f} S `{!S ⊆ X}
+  : Morphism (S ⇒ f⁺¹(S)) f.
+Proof. intros ?? E. unfold_sigs. red_sig. now rewrite (X $ E). Qed.
+Hint Extern 5 (Morphism (?S ⇒ ?f⁺¹(?S)) ?f) => eapply @restrict_morphism_image : typeclass_instances.

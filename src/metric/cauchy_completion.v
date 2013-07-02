@@ -1,14 +1,12 @@
 Require Import
   abstract_algebra interfaces.orders interfaces.rationals interfaces.metric_spaces
   theory.setoids theory.jections theory.fields theory.rationals
-  orders.affinely_extended_field stdlib_field metric.metric_spaces
-  theory.products metric.product.
+  orders.affinely_extended_field stdlib_field metric.metric_spaces metric.maps.
 
-Local Notation B := TheAERationals.A.
+Local Notation AQ := TheAERationals.A.
 Local Notation Q := the_ae_rationals.
 Local Notation "Q∞" := (aff_ext Q).
 Local Notation Qfull := (aff_ext_full Q).
-Add Field Q : (stdlib_field_theory Q).
 
 Lemma net_subsetoid `{X:Subset} `{Equiv X} `{Ball X} S `{el: S ∊ CauchyNets X} q `{q ∊ Q∞₊}
   : S q ⊆ X.
@@ -43,13 +41,14 @@ Section cauchy_msp.
   + intros P. intros.
     apply (ball_closed _ _ _). intros ε ?.
     destruct (P ε _) as [a[?[b[?[c[?[s[?[t[?[E B]]]]]]]]]]].
-    apply (ball_weaken_le ((p + a) + c + (q + b))); try apply _.
+    assert ((p + a) + c + (q + b) < p + q + ε) as Er.
+      rewrite (_ $ plus_0_l _) in E.
+      apply (strictly_order_preserving ((p+q)+) _ _) in E.
+      now mc_replace (p + a + c + (q + b)) with (p + q + (a + b + c)) on Q by subring Q.
+    rewrite <- (Qfull $ Er). clear Er.
     apply (ball_triangle _ _ _ t _).
     apply (ball_triangle _ _ _ s _).
     now apply (cauchy_net S _ _). assumption. subsymmetry. now apply (cauchy_net T _ _).
-    rewrite (_ $ plus_0_l _) in E.
-    apply (strictly_order_preserving ((p+q)+) _ _) in E. apply (lt_le _ _). red.
-    now mc_replace (p + a + c + (q + b)) with (p + q + (a + b + c)) on Q by subring Q.
   + intros E. intros.
     set (a:=ε/(2*3)). assert (a ∊ Q₊). subst a. apply _.
     destruct (cauchy_net_inhabited (S:=S) a) as [s ?].
@@ -150,14 +149,14 @@ Section cauchy_completion.
 
   Instance: ∀ `{SS ∊ CauchyNets C} `{q ∊ Q∞⁺}, limit SS q ⊆ X.
   Proof.
-    intros. split; [apply _ |..]; unfold limit, net_to_fun, net_net_limit.
+    intros. apply subsetoid_alt; [apply _ |..]; unfold limit, net_to_fun, net_net_limit.
   + intros ?? E P. unfold_sigs.
     destruct P as [a[?[b[?[E'[T [??]]]]]]].
     exists_sub a b. split; trivial. exists_sub T. now rewrite <-(X $ E).
   + intros ? [?[?[b[?[?[T[??]]]]]]]. apply _.
   Qed.
 
-  Instance net_net_limit_reg `{SS ∊ CauchyNets C} : limit SS ∊ C.
+  Instance: ∀ `{SS ∊ CauchyNets C}, limit SS ∊ C.
   Proof. split; try apply _; unfold limit.
   + assert (∀ `{a ∊ Q∞₊} `{b ∊ Q∞₊} x, a=b -> net_net_limit SS a x -> net_net_limit SS b x) as P.
       intros p ? q ? x E [a[?[b[?[E'[T [??]]]]]]].  rewrite (_ $ E) in E'.
@@ -167,8 +166,7 @@ Section cauchy_completion.
   + intros q ?.
     destruct (cauchy_net_inhabited (S:=SS) (q/2)) as [S ?]. pose proof _ : S ∊ C.
     destruct (cauchy_net_inhabited (S:=S) (q/2)) as [x ?].
-    exists x. exists_sub (q/2) (q/2). split. rewrite (_ $ ae_in_halves _).
-    apply (subreflexivity (S:=Q∞) _).
+    exists x. exists_sub (q/2) (q/2). split. now rewrite (_ $ ae_in_halves _).
     now exists_sub S.
   + intros p ? q ? x [a[?[b[?[Ex[S [??]]]]]]] y [a'[?[b'[?[Ey[T [??]]]]]]].
     destruct (ae_pos_sum_finite_bound _ _ _ Ex).
@@ -176,14 +174,15 @@ Section cauchy_completion.
     apply (ball_closed _ _ _). intros ε ?.
     pose proof (cauchy_net SS a a' S T) as B. rewrite (net_ball_def _ _ _) in B.
     destruct (B ε _) as [α[?[β[?[γ[?[s[?[t[?[E B']]]]]]]]]]].
-    apply (ball_weaken_le) with (b+α + γ + (β+b')); try apply _.
+    assert (b+α + γ + (β+b') < p+q+ε) as Er.
+      apply (lt_le_trans _ ((a+b)+(a'+b')+ε) _).
+      mc_replace (b + α + γ + (β + b')) with ((b+b') + (α + β + γ)) on Q by subring Q.
+      mc_replace (a + b + (a'+b') + ε) with ((b+b') + (a + a' + ε)) on Q by subring Q.
+      now apply (strictly_order_preserving ((b+b')+) _ _).
+      apply (order_preserving (+ ε) _ _). now apply (plus_le_compat _ _ _ _).
+    rewrite <-(Qfull $ Er). clear Er.
     apply (ball_triangle _ _ _ t _); [| now apply (cauchy_net T _ _)].
     apply (ball_triangle _ _ _ s _); trivial. now apply (cauchy_net S _ _).
-    subtransitivity ((a+b)+(a'+b')+ε).
-    mc_replace (b + α + γ + (β + b')) with ((b+b') + (α + β + γ)) on Q by subring Q.
-    mc_replace (a + b + (a'+b') + ε) with ((b+b') + (a + a' + ε)) on Q by subring Q.
-    apply (order_preserving ((b+b')+) _ _). now apply (lt_le _ _).
-    apply (order_preserving (+ ε) _ _). now apply (plus_le_compat _ _ _ _).
   Qed.
 
   Lemma net_net_limit_correct `{SS ∊ CauchyNets C} : NetLimit SS (limit SS).
@@ -200,16 +199,17 @@ Section cauchy_completion.
     destruct (ae_pos_sum_finite_bound _ _ _ E).
     pose proof cauchy_net SS p q S T as B. rewrite (net_ball_def _ _ _) in B.
     destruct (B δ _) as [α[?[β[?[γ[?[s'[?[t'[?[E' B']]]]]]]]]]].
-    apply (ball_weaken_le) with (a+α + γ + (β+b')); try apply _.
+    assert (a+α + γ + (β+b') < p+a+a+δ) as Er.
+      mc_replace (a+α + γ + (β+b')) with (α+β+γ + b' + a) on Q by subring Q.
+      mc_replace (p + a + a + δ) with (p + a + δ + a) on Q by subring Q.
+      apply (strictly_order_preserving (+a) _ _). apply (lt_le_trans _ (p + q + δ + b') _).
+      now apply (strictly_order_preserving (+b') _ _).
+      mc_replace (p + q + δ + b') with (q + b' + p + δ) on Q by subring Q.
+      rewrite (_ $ commutativity (+) p a).
+      apply (order_preserving (+δ) _ _). now apply (order_preserving (+p) _ _).
+    rewrite <-(Qfull $ Er). clear Er.
     apply (ball_triangle _ _ _ t' _); [| now apply (cauchy_net T _ _)].
     apply (ball_triangle _ _ _ s' _); trivial. now apply (cauchy_net S _ _).
-    mc_replace (a+α + γ + (β+b')) with (α+β+γ + b' + a) on Q by subring Q.
-    mc_replace (p + a + a + δ) with (p + a + δ + a) on Q by subring Q.
-    apply (order_preserving (+a) _ _). subtransitivity (p + q + δ + b').
-    apply (order_preserving (+b') _ _). now apply (lt_le _ _).
-    mc_replace (p + q + δ + b') with (q + b' + p + δ) on Q by subring Q.
-    rewrite (_ $ commutativity (+) p a).
-    apply (order_preserving (+δ) _ _). now apply (order_preserving (+p) _ _).
   Qed.
 
   Instance: Morphism (CauchyNets C ⇒ C) limit.
@@ -223,7 +223,7 @@ Section cauchy_completion.
     assert (a + (a + a) + a = 0 + ε) as E' by (subst a; subfield Q).
     (* rewriting doesn't work here, for some reason *)
     (* rewrite (_ $ E'). *)
-    apply ( ball_proper _ _ _ C _ _ _ (Qfull $ E') _ _ (_ : Proper (C,=) (limit SS))
+    apply ( ball_proper1 _ _ _ C _ _ _ (Qfull $ E') _ _ (_ : Proper (C,=) (limit SS))
       _ _ (_ : Proper (C,=) (limit TT))).
     apply (ball_triangle _ _ _ t _); [| now apply net_net_limit_correct ].
     apply (ball_triangle _ _ _ s _). subsymmetry. now apply net_net_limit_correct.
@@ -253,7 +253,7 @@ Section cauchy_completion.
 
   Lemma net_const_dist S `{S ∊ C} q `{q ∊ Q∞₊} s `{s ∊ S q} : ball q S (cast X C s).
   Proof. destruct (ae_decompose_pos q) as [E|?]. subsymmetry in E.
-    apply ( ball_proper _ _ _ C _ _ _ (Qfull $ E) _ _ (_ : Proper (C,=) S)
+    apply ( ball_proper1 _ _ _ C _ _ _ (Qfull $ E) _ _ (_ : Proper (C,=) S)
       _ _ (_ : Proper (C,=) (cast X C s))). exact (msp_ball_inf _ _).
     rewrite (net_ball_def _ _ _). intros ε ?.
     set (a:=ε/4). assert (a ∊ Q₊). subst a. apply _.
@@ -266,7 +266,7 @@ Section cauchy_completion.
     + subsymmetry. now apply (cauchy_net S _ _).
   Qed.
 
-  Instance net_const_dense : Dense C (cast X C)⁺¹(X).
+  Instance net_const_dense : Dense (X:=C) (cast X C)⁺¹(X).
   Proof. split; try apply _.
     unfold closure. intros S. split. now intros [? _]. intros ?.
     split. apply _. intros. 
@@ -283,8 +283,9 @@ Section cauchy_completion.
   + intros P. apply (ball_closed _ _ _). intros ε ?.
     destruct (P ε _) as [a[?[b[?[c[?[x'[[? Ex][y'[[? Ey][E B]]]]]]]]]]].
     rewrite (_ $ Ex), (_ $ Ey) in B.
-    apply (ball_weaken_le c _ _). trivial. apply _. apply (lt_le _ _).
-    subtransitivity (a+b+c). exact (pos_plus_lt_compat_l _ _).
+    assert (c < q + ε) as Er.
+      subtransitivity (a+b+c). exact (pos_plus_lt_compat_l _ _).
+    now rewrite <-(Qfull $ Er).
   Qed.
 
   Hint Extern 0 (ToCompletion X C) => eexact net_const : typeclass_instances.
@@ -333,7 +334,7 @@ Section limit.
   Instance: Morphism (X ⇒ C) limit⁻¹ := _ : Morphism (X ⇒ C) (').
 
   Instance limit_bijection : Bijective C X limit.
-  Proof. split. apply _. split; try apply _.
+  Proof. split. apply isometry_injective. apply _. split; try apply _.
     change (limit ∘ (') = id). unfold compose.
     intros ?? E. unfold_sigs. red_sig. subtransitivity x.
     apply (limit_const _ _). intros. exact (_ : x ∊ {{x}}).
@@ -344,25 +345,24 @@ End limit.
 Hint Extern 2 (Isometry _ _ limit) => eapply @limit_isometry : typeclass_instances.
 Hint Extern 5 (Bijective _ _ limit) => eapply @limit_bijection : typeclass_instances.
 
-Local Hint Extern 2 (_ ∊ (⊆ _)) => red : typeclass_instances.
-
-Local Existing Instance completion_msp_X.
+(*Local Hint Extern 2 (_ ∊ (⊆ _)) => red : typeclass_instances.*)
 
 Section map_limit.
   Context `{MetricSpace (X:=X)} `{CompleteMetricSpace (X:=Y)}.
-  Context (g:X ⇀ Y) `{!Isometry X Y g}.
+  Context `{X' ⊆ Y} (g:X ⇀ X') `{!Isometry X X' g}.
 
   Definition map_net (S : Net X) : Net Y := net (λ q, g⁺¹(S q)).
   Notation T := map_net.
 
-  Instance: ∀ S `{S ∊ CauchyNets X} `{q ∊ Q∞₊}, T S q  ⊆ Y := λ S _ q _, _ : g⁺¹(S q) ⊆ Y.
+  Instance: ∀ S `{S ∊ CauchyNets X} `{q ∊ Q∞₊}, T S q  ⊆ X' := λ S _ q _, _ : g⁺¹(S q) ⊆ X'.
+  Instance: ∀ S `{S ∊ CauchyNets X} `{q ∊ Q∞₊}, T S q  ⊆ Y. Proof. transitivity X'; apply _. Qed. 
   Instance: ∀ S `{S ∊ CauchyNets X} `{q ∊ Q∞₊}, Setoid (T S q) := λ _ _ _ _, subsetoid_a.
 
   Lemma map_net_proper S1 `{S1 ∊ CauchyNets X} S2 `{S2 ∊ CauchyNets X}
     : S1 = S2 → T S1 = T S2.
   Proof. 
     intros E p ? q ? cx [?[x [? Ex]]] cy [?[y [? Ey]]].
-    rewrite <-(_ $ Ex), <-(_ $ Ey), <-(isometric g _ _ _).
+    rewrite <-(Y $ Ex), <-(Y $ Ey), <-(isometric g _ _ _).
     now apply E.
   Qed.
 
@@ -387,7 +387,7 @@ Section map_limit.
     assert (g t ∊ T S2 b). change (g t ∊ g⁺¹(S2 b)) . apply _.
     exists_sub (g s) (g t). split; trivial. now rewrite <-(isometric g _ _ _).
   + destruct els as [?[s'[? Es]]], elt as [?[t'[? Et]]].
-    exists_sub s' t'. split; trivial. now rewrite (isometric g _ _ _), (_ $ Es), (_ $ Et).
+    exists_sub s' t'. split; trivial. now rewrite (isometric g _ _ _), (Y $ Es), (Y $ Et).
   Qed.
 
   Definition map_limit := limit ∘ map_net.
@@ -395,10 +395,12 @@ Section map_limit.
   Hint Unfold map_limit : typeclass_instances.
   Instance map_limit_isometry : Isometry (CauchyNets X) Y map_limit := _.
 
-  Lemma map_limit_spec S `{S ∊ CauchyNets X} p `{p ∊ Q₊} x `{x ∊ S p}
+  Lemma map_limit_spec S `{S ∊ CauchyNets X} p `{p ∊ Q∞₊} x `{x ∊ S p}
     : ball p (g x) (map_limit S).
   Proof. unfold map_limit, compose.
     assert (g x ∊ T S p). change (g x ∊ g⁺¹(S p)) . apply _.
+    destruct (ae_decompose_pos p) as [Ep|?].
+      rewrite (_ $ Ep). exact (msp_ball_inf _ _).
     apply complete_msp; trivial; apply _.
   Qed.
 
@@ -408,8 +410,44 @@ Section map_limit.
     intros. change (g x ∊ g⁺¹(S q)) . apply _.
   Qed.
 
+  Hint Extern 0 AmbientSpace => eexact Y : typeclass_instances.
+
+  Context `{!Closed X'}.
+
+  Definition map_limit_closed := map_limit : CauchyNets X ⇀ X'.
+
+  Hint Unfold map_limit_closed : typeclass_instances.
+
+  Instance: ∀ S `{S ∊ CauchyNets X}, map_limit_closed S ∊ X'.
+  Proof. intros. rewrite <-(closed X'). split. apply _.
+    intros q ?. destruct (cauchy_net_inhabited (S:=S) q) as [x ?].
+    exists_sub (g x). subsymmetry. exact (map_limit_spec _ _ _).
+  Qed.
+
+  Instance: Morphism (CauchyNets X ⇒ X') map_limit_closed.
+  Proof. intros ?? E. unfold_sigs. red_sig. now rewrite (CauchyNets X $ E). Qed.
+
+  Instance map_limit_closed_iso `{!Closed (X:=Y) X'} : Isometry (CauchyNets X) X' map_limit.
+  Proof. split; try apply _. exact sub_metric_space. exact (isometric_def _ _). Qed.
+
 End map_limit.
 
 Hint Extern 2 (Isometry _ _ (map_limit _)) => eapply @map_limit_isometry : typeclass_instances.
 Hint Extern 2 (Morphism _ (map_limit _)) => eapply @isometry_mor : typeclass_instances.
+Hint Extern 2 (Isometry _ _ (map_limit_closed _)) => eapply @map_limit_closed_iso : typeclass_instances.
+Hint Extern 2 (Morphism _ (map_limit_closed _)) => eapply @isometry_mor : typeclass_instances.
 
+Section subspace.
+  Context `{CompleteMetricSpace (X:=X)}.
+  Hint Extern 0 AmbientSpace => eexact X  : typeclass_instances.
+
+  Context U `{!Closed U}.
+
+  Instance : MetricSpace U := sub_metric_space.
+
+  Instance subspace_limit : Limit U := map_limit_closed (id:U ⇀ U).
+  Instance complete_subspace : CompleteMetricSpace U.
+  Proof. split; unfold limit,subspace_limit; try apply _.
+    intros S ? p ? x ?. exact (map_limit_spec (id:U ⇀ U) S p x).
+  Qed.
+End subspace.

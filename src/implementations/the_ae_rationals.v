@@ -1,7 +1,8 @@
 Require Import
   abstract_algebra interfaces.rationals interfaces.orders interfaces.affine_extension
-  theory.subset theory.rationals orders.rationals orders.abs
-  the_rationals implementations.affinely_extended_ring.
+  theory.subset theory.rationals orders.rationals orders.abs orders.minmax
+  the_rationals implementations.affinely_extended_ring
+  stdlib_field.
 
 Module Type TheAERationalsSig.
   Parameter A : Type.
@@ -56,9 +57,21 @@ Module TheAERationals : TheAERationalsSig.
   Definition le_dec := _ : StrongSubDecision (AffineExtendFull Q') (AffineExtendFull Q') (≤).
   Definition abs : Abs T := default_abs (R:=X).
   Instance: AffinelyExtendedRing X := _.
-  Definition dec_abs := default_abs_spec : DecAbs X.
+  Definition dec_abs := default_abs_spec (R:=X).
 End TheAERationals.
 
 Notation the_ae_rationals := TheAERationals.Q.
 Hint Extern 10 (@Subset TheAERationals.A) => eexact (aff_ext_full the_ae_rationals) : typeclass_instances.
+Hint Extern 12 (@Subset TheAERationals.A) => eexact (aff_ext the_ae_rationals) : typeclass_instances.
+
+Local Notation QA := TheAERationals.A.
+Local Notation Q := the_ae_rationals.
+Local Notation "Q∞" := (aff_ext Q).
+Local Notation Qfull := (aff_ext_full Q).
+Add Field Q : (stdlib_field_theory Q).
+
+Ltac ae_rat_set_min δ a b Ea Eb :=
+  set (δ := @meet _ (min (X:=Q∞)) a b); assert (δ ∊ Q∞₊) by (subst δ; apply _);
+  assert (δ ≤ a) as Ea by (subst δ; exact (meet_lb_l (Ameet:=(min (X:=Q∞))) (L:=Q∞) _ _));
+  assert (δ ≤ b) as Eb by (subst δ; exact (meet_lb_r (Ameet:=(min (X:=Q∞))) (L:=Q∞) _ _)).
 

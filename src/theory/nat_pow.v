@@ -20,7 +20,7 @@ Hint Extern 5 (@pow ?A ?B ?pw _ _ ∊ _) =>
 
 (* * Properties of Nat Pow *)
 Section nat_pow_properties.
-Context `{SemiRing (R:=R)} `{Naturals (N:=N)} `{UnEq _} `{!StandardUnEq N} `{!NatPowSpec R N pw}.
+Context `{SemiRing (R:=R)} `{Naturals (N:=N)} `{UnEq _} `{!DenialInequality N} `{!NatPowSpec R N pw}.
 
 (*
 Global Instance: Proper ((=) ==> (=) ==> (=)) (^) | 0.
@@ -37,7 +37,7 @@ Lemma nat_pow_base_0 n `{n ∊ N ₀} : 0 ^ n = 0.
 Proof.
   match goal with H : n ∊ N ₀ |- _ => destruct H as [? nz]; red in nz; revert nz end.
   nat_induction n E.
-  + rewrite (standard_uneq _ _). intros E. now destruct E.
+  + rewrite (denial_inequality _ _). intros E. now destruct E.
   + intros. rewrite (R $ nat_pow_S _ _). exact (mult_0_l _).
 Qed.
 
@@ -86,11 +86,11 @@ Ltac prove_closed := let E := fresh "E" in intros x ? n ?; nat_induction n E;
 
 Existing Instance closed_binary.
 
-Instance nat_pow_nonzero `{UnEq A} `{!UnEqualitySetoid R} `{!Closed (R ₀ ⇀ R ₀ ⇀ R ₀) (.*.)} `{1 ∊ R ₀} :
+Instance nat_pow_nonzero `{UnEq A} `{!InequalitySetoid R} `{!Closed (R ₀ ⇀ R ₀ ⇀ R ₀) (.*.)} `{1 ∊ R ₀} :
   Closed (R ₀ ⇀ N ⇀ R ₀) (^).
 Proof. prove_closed. Qed.
 
-Lemma nat_pow_strong `{UnEq _} `{!StrongSetoid R} `{UnEq _} `{!StandardUnEq N} `{!Strong_Binary_Morphism R R R (.*.)} :
+Lemma nat_pow_strong `{UnEq _} `{!StrongSetoid R} `{UnEq _} `{!DenialInequality N} `{!Strong_Binary_Morphism R R R (.*.)} :
   Strong_Binary_Morphism R N R (^).
 Proof. split; try apply _.
  rewrite strong_ext_equiv_2.
@@ -98,7 +98,7 @@ Proof. split; try apply _.
   * intro IE. left. rewrite <- (N $ E) in IE. revert IE. nat_induction n IH.
     - rewrite ?(R $ nat_pow_0 _). intro Q. contradict Q. now rewrite (tight_apart 1 1).
     - rewrite ?(R $ nat_pow_S _ n). intro IE. destruct (strong_binary_extensionality (.*.) IE); intuition.
-  * right. now rewrite (standard_uneq n m).
+  * right. now rewrite (denial_inequality n m).
 Qed.
 
 (*

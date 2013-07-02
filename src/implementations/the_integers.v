@@ -15,7 +15,7 @@ Module Type TheIntegersSig.
   Parameter U    : IntegersToRing Z.
   Parameter integers : @Integers A plus mult zero one negate equiv Z U.
   Parameter uneq : UnEq A.
-  Parameter std_uneq : StandardUnEq Z.
+  Parameter denial_inequality : DenialInequality Z.
   Parameter le   : Le A.
   Parameter lt   : Lt A.
   Parameter order : FullPseudoSemiRingOrder Z.
@@ -37,7 +37,7 @@ Module TheIntegers : TheIntegersSig.
   Definition U     := _ : IntegersToRing X.
   Definition integers := _ : Integers X.
   Definition uneq  := _ : UnEq T.
-  Definition std_uneq := _ : StandardUnEq X.
+  Definition denial_inequality := _ : DenialInequality X.
   Definition le := _ : Le X.
   Definition lt := _ : Lt X.
   Definition order : FullPseudoSemiRingOrder Z := _ : FullPseudoSemiRingOrder X.

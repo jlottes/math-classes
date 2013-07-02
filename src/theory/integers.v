@@ -116,10 +116,10 @@ Next Obligation. pose proof p _ as [? E]. clear dependent p. split. apply _.
   exact (naturals.to_semiring_twice _ _ _ _).
 Qed.
 
-Context `{UnEq _} `{!StandardUnEq Z}.
+Context `{UnEq _} `{!DenialInequality Z}.
 
 Lemma int_nontrivial: 1 ∊ Z ₀.
-Proof. split. apply _. destruct naturals.nat_nontrivial as [_ P]. generalize P. rewrite 2!(standard_uneq _ _).
+Proof. split. apply _. destruct naturals.nat_nontrivial as [_ P]. generalize P. rewrite 2!(denial_inequality _ _).
   intro E. mc_contradict E.
   apply (injective (naturals_to_semiring nat Z) _ _). now preserves_simplify (naturals_to_semiring nat Z).
 Qed.

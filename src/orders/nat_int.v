@@ -142,7 +142,7 @@ Section another_semiring.
     apply (nonneg_plus_lt_compat_r _ _ _). apply (pos_plus_lt_compat_r _ _).
   Qed.
 
-  Instance nat_int_injective `{!StandardUnEq R} : StrongInjective R R2 f.
+  Instance nat_int_injective `{!DenialInequality R} : StrongInjective R R2 f.
   Proof pseudo_order_dec_preserving_inj.
 
   Global Instance nat_int_order_embedding : OrderEmbedding R R2 f | 50.

@@ -44,7 +44,7 @@ Hint Extern 0 (Morphism _ (int_to_nat _ _)) => eapply @int_to_nat_proper : typec
 
 Section contents.
 Context `{Z:Subset} `{N:Subset} {f : N ⇀ Z}.
-Context `{Integers _ (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq Z} `{!FullPseudoSemiRingOrder Z}.
+Context `{Integers _ (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z} `{!FullPseudoSemiRingOrder Z}.
 Context `{Naturals _ (N:=N)} `{!SemiRing_Morphism N Z f} `{!IntAbs Z N}.
 
 Lemma int_to_nat_spec x `{x ∊ Z} :
@@ -122,7 +122,7 @@ Proof. rewrite (Z $ commutativity (.*.) x y), (N $ commutativity (.*.) _ _).
   exact (int_to_nat_mult_nonneg_l y x).
 Qed.
 
-Context `{UnEq _} `{Le _} `{Lt _} `{!StandardUnEq N} `{!FullPseudoSemiRingOrder N}.
+Context `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality N} `{!FullPseudoSemiRingOrder N}.
 
 (*
 Global Instance int_to_nat_nonneg x :

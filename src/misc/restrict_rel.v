@@ -18,8 +18,9 @@ Section restrict_rel.
 End restrict_rel.
 
 Hint Extern 15 (@subrelation _ (@restrict_rel _ _ ?R) ?R) => eapply @restrict_rel_sub : typeclass_instances.
-(*Hint Extern 15 (@Symmetric  _ (@restrict_rel _ _ _)) => eapply @restrict_rel_sym   : typeclass_instances.
-Hint Extern 15 (@Transitive _ (@restrict_rel _ _ _)) => eapply @restrict_rel_trans : typeclass_instances.
+Local Hint Extern 15 (@Symmetric  _ (@restrict_rel _ _ _)) => eapply @restrict_rel_sym   : typeclass_instances.
+Local Hint Extern 15 (@Transitive _ (@restrict_rel _ _ _)) => eapply @restrict_rel_trans : typeclass_instances.
+
 
 Lemma restrict_rel_per `(S:A → Prop) (R:relation A) `{!RelationClasses.PER R}
   : RelationClasses.PER (restrict_rel S R).
@@ -33,6 +34,7 @@ Lemma restrict_antisym `(S:A → Prop) (eq le:relation A) `{!AntiSymmetric eq le
   : AntiSymmetric (restrict_rel S eq)%signature (restrict_rel S le)%signature.
 Proof. intros ?? [[??]?] [[??]?]. split. split; assumption. now apply (antisymmetry le). Qed.
 
+(*
 Hint Extern 15 (@RelationClasses.PER _ (@restrict_rel _ _ _)) => eapply @restrict_rel_per : typeclass_instances.
 Hint Extern 15 (@subrelation   _ (@restrict_rel _ ?S _) (@restrict_rel _ ?S _)) => eapply @restrict_sub_sub : typeclass_instances.
 Hint Extern 15 (@AntiSymmetric _ (@restrict_rel _ ?S _) (@restrict_rel _ ?S _)) => eapply @restrict_antisym : typeclass_instances.

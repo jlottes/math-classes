@@ -327,6 +327,23 @@ Section order_preserving_meet_sl_mor.
   Qed.
 End order_preserving_meet_sl_mor.
 
+Lemma meet_nonneg `{MeetSemiLatticeOrder (L:=L)} `{Zero _} `{0 ∊ L}
+  x `{x ∊ L⁺} y `{y ∊ L⁺} : x ⊓ y ∊ L⁺ .
+Proof. split. apply _. apply (meet_glb _ _ _); firstorder. Qed.
+Hint Extern 5 (_ ⊓ _ ∊ _⁺) => eapply @meet_nonneg : typeclass_instances.
+
+Lemma join_nonneg_l `{JoinSemiLatticeOrder (L:=L)} `{Zero _} `{0 ∊ L}
+  x `{x ∊ L⁺} y `{y ∊ L} : x ⊔ y ∊ L⁺ .
+Proof. split. apply _. subtransitivity x. firstorder. exact (join_ub_l _ _). Qed.
+
+Lemma join_nonneg_r `{JoinSemiLatticeOrder (L:=L)} `{Zero _} `{0 ∊ L}
+  x `{x ∊ L} y `{y ∊ L⁺} : x ⊔ y ∊ L⁺ .
+Proof. split. apply _. subtransitivity y. firstorder. exact (join_ub_r _ _). Qed.
+
+Hint Extern 5 (_ ⊔ _ ∊ _⁺) => eapply @join_nonneg_l : typeclass_instances.
+Hint Extern 5 (_ ⊔ _ ∊ _⁺) => eapply @join_nonneg_r : typeclass_instances.
+
+
 Section full_total_order.
   Context `{MeetSemiLatticeOrder (L:=L)} `{Lt _} `{UnEq _}
     `{!FullPartialOrder L} `{!TotalOrder L}.

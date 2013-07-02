@@ -4,10 +4,10 @@ Require Import
 
 (* We have a notation already for the powerset of X, (⊆ X) *)
 
-Hint Extern 2 (?Svar ∊ (⊆ ?X)) => change (Svar ⊆ X); apply _ : typeclass_instances.
+Hint Extern 2 (_ ∊ (⊆ _)) => red : typeclass_instances.
 
 Lemma powerset_subsetoid `{Setoid (S:=X)} : (⊆ X) ⊆ Setoid.
-Proof. split. apply _.
+Proof. apply subsetoid_alt. apply _.
 + intros ?? E P. red. now rewrite <- E.
 + intros ? P. red in P. exact subsetoid_a.
 Qed.
@@ -24,15 +24,15 @@ Hint Extern 2 (PartialOrder (⊆ _)) => eapply @powerset_partial_order : typecla
 Lemma powerset_meet_semi_lattice_order `{Setoid (S:=X)} : MeetSemiLatticeOrder (Ale:=SubSetoid) (⊆ X).
 Proof. pose proof @subsetoid_a.
   assert (∀ S T, S ⊆ X → T ⊆ X → S ⊓ T ⊆ S) by ( pose proof @subset;
-    intros; split; try apply _; intros ?? E [??]; unfold_sigs; split; now rewrite <-(X $ E)).
+    intros; apply subsetoid_alt; try apply _; intros ?? E [??]; unfold_sigs; split; now rewrite <-(X $ E)).
   assert (∀ S T, S ⊆ X → T ⊆ X → S ⊓ T ⊆ T) by ( pose proof @subset;
-    intros; split; try apply _; intros ?? E [??]; unfold_sigs; split; now rewrite <-(X $ E)).
+    intros; apply subsetoid_alt; try apply _; intros ?? E [??]; unfold_sigs; split; now rewrite <-(X $ E)).
   split.
   * apply _.
   * intros S s1 T s2. red in s1, s2. red. transitivity S; apply _.
   * intros S s1 T s2. red in s1, s2. red. apply _.
   * intros S s1 T s2. red in s1, s2. red. apply _.
-  * intros S s1 T s2 U s3 E1 E2. red in s1, s2, s3, E1, E2. split. apply _.
+  * intros S s1 T s2 U s3 E1 E2. red in s1, s2, s3, E1, E2. apply subsetoid_alt. apply _.
     - intros ?? [[[??][??]]E]. unfold_sigs.
       assert (x ∊ X) by now apply (_:SubsetOf S X).
       assert (y ∊ X) by now apply (_:SubsetOf S X).
@@ -44,7 +44,7 @@ Hint Extern 2 (MeetSemiLatticeOrder (⊆ _)) => eapply @powerset_meet_semi_latti
 Lemma powerset_join_semi_lattice_order `{Setoid (S:=X)} : JoinSemiLatticeOrder (Ale:=SubSetoid) (⊆ X).
 Proof. pose proof @subsetoid_a.
   assert (∀ S T U, U ⊆ X → S ⊆ U → T ⊆ U → S ⊔ T ⊆ U) as lub.
-    intros. split. apply _.
+    intros. apply subsetoid_alt. apply _.
     intros ?? E [?|?]; [left | right]; now rewrite <-E.
     apply (join_lub (L:=every Subset) _ _ _); red; apply _.
   assert (∀ S T, S ⊆ X → T ⊆ X → S ⊔ T ⊆ X). intros. apply lub; apply _.
@@ -71,7 +71,7 @@ Hint Extern 2 (Lattice (⊆ ?X)) => eexact (lattice_order_lattice (Ale:=SubSetoi
 Lemma powerset_bounded_meet_semi_lattice `{Setoid (S:=X)}
   : BoundedSemiLattice (op:=meet_is_sg_op) (unit:=@top_is_mon_unit _ X) (⊆ X).
 Proof. pose proof _ : MeetSemiLattice (⊆ X).
-  split; [split |]; unfold mon_unit, top_is_mon_unit; [ apply _ | red; apply _ | firstorder.. ].
+  split; [split |]; unfold mon_unit, top_is_mon_unit; [apply _ | red; apply _ | firstorder.. ].
 Qed.
 Hint Extern 2 (BoundedMeetSemiLattice (⊆ ?X)) => eapply (@powerset_bounded_meet_semi_lattice _ _ X): typeclass_instances.
 (* The Top instance needs to be resolved (to X) before this hint is consulted. *)
@@ -79,7 +79,7 @@ Hint Extern 2 (BoundedMeetSemiLattice (⊆ ?X)) => eapply (@powerset_bounded_mee
 Lemma powerset_bounded_join_semi_lattice `{Setoid (S:=X)} : BoundedJoinSemiLattice (⊆ X).
 Proof. pose proof _ : JoinSemiLattice (⊆ X).
   split; [split |]; unfold mon_unit, bottom_is_mon_unit. apply _.
-  + split; [ apply _ | firstorder.. ].
+  + apply subsetoid_alt; [ apply _ | firstorder.. ].
   + intros ? s1 x. red in s1. split.
     intros [el|?]; trivial. now lazy in el.
     intro. now right.
@@ -90,6 +90,15 @@ Hint Extern 2 (BoundedJoinSemiLattice (⊆ ?X)) => eapply (@powerset_bounded_joi
 Lemma powerset_distr_lattice `{Setoid (S:=X)} : DistributiveLattice (⊆ X).
 Proof. split. apply _.  intro. intros. exact (join_meet_distr_l (L:=every Subset) _ _ _). Qed.
 Hint Extern 2 (DistributiveLattice (⊆ _)) => eapply @powerset_distr_lattice : typeclass_instances.
+
+Lemma union_subsetoid `{Setoid (S:=X)} U V `{U ⊆ X} `{V ⊆ X} : U ⊔ V ⊆ X.
+Proof. apply (join_lub (L:=(⊆ X)) _ _ _); unfold le; apply _. Qed.
+Hint Extern 5 (_ ⊔ _ ⊆ _) => eapply @union_subsetoid : typeclass_instances.
+
+Lemma intersection_subsetoid `{Setoid (S:=X)} U V `{U ⊆ X} `{V ⊆ X} : U ⊓ V ⊆ X.
+Proof. transitivity U; trivial. apply (meet_lb_l (L:=(⊆ X)) _ _). Qed.
+Hint Extern 5 (_ ⊓ _ ⊆ _) => eapply @intersection_subsetoid : typeclass_instances.
+
 
 Section images.
   Context `{Setoid (S:=X)} `{Setoid (S:=Y)} (f:X ⇀ Y) `{!Morphism (X ⇒ Y) f}.
@@ -148,10 +157,17 @@ Hint Extern 2 (MeetSemiLattice_Morphism _ _ (image _)) => eapply @image_meet_slm
 Hint Extern 2 (Lattice_Morphism _ _ (image _)) => eapply @image_lattice_mor : typeclass_instances.
 Hint Extern 2 (BoundedMeetSemiLattice_Morphism _ _ (image _)) => eapply @image_bounded_meet_slmor : typeclass_instances.
 
-Lemma image_order_preserving `{Setoid (S:=X)} `{Setoid (S:=Y)} (f:X ⇀ Y) `{!Morphism (X ⇒ Y) f} 
+Lemma image_is_order_preserving `{Setoid (S:=X)} `{Setoid (S:=Y)} (f:X ⇀ Y) `{!Morphism (X ⇒ Y) f} 
   : OrderPreserving (Ale:=(⊆)) (Ble:=(⊆)) (⊆ X) (⊆ Y) (image f).
 Proof join_sl_mor_preserving _.
-Hint Extern 2 (OrderPreserving _ _ (image _)) => eapply @image_order_preserving : typeclass_instances.
+Hint Extern 2 (OrderPreserving _ _ (image _)) => eapply @image_is_order_preserving : typeclass_instances.
+
+Lemma image_order_preserving `{Setoid (S:=X)} `{Setoid (S:=Y)} (f:X ⇀ Y) `{!Morphism (X ⇒ Y) f}
+  U V `{V ⊆ X} `{U ⊆ V} : f⁺¹(U) ⊆ f⁺¹(V).
+Proof. assert (U ⊆ X) by now transitivity V.
+  now apply (order_preserving (Ale:=(⊆)) (Ble:=(⊆)) (S:=(⊆ X)) (T:=(⊆ Y)) (image f) U V).
+Qed.
+Hint Extern 5 (?f⁺¹(_) ⊆ ?f⁺¹(_)) => eapply @image_order_preserving : typeclass_instances.
 
 Section inv_images.
   Context `{Setoid (S:=X)} `{Setoid (S:=Y)} (f:X ⇀ Y) `{!Morphism (X ⇒ Y) f}.
@@ -196,8 +212,15 @@ Hint Extern 2 (JoinSemiLattice_Morphism _ _ (inv_image _)) => eapply @bounded_jo
 Hint Extern 2 (MeetSemiLattice_Morphism _ _ (inv_image _)) => eapply @inv_image_meet_slmor : typeclass_instances.
 Hint Extern 2 (Lattice_Morphism _ _ (inv_image _)) => eapply @inv_image_lattice_mor : typeclass_instances.
 
-Lemma inv_image_order_preserving `{Setoid (S:=X)} `{Setoid (S:=Y)} (f:X ⇀ Y) `{!Morphism (X ⇒ Y) f} 
+Lemma inv_image_is_order_preserving `{Setoid (S:=X)} `{Setoid (S:=Y)} (f:X ⇀ Y) `{!Morphism (X ⇒ Y) f} 
   : OrderPreserving (Ale:=(⊆)) (Ble:=(⊆)) (⊆ Y) (⊆ X) (inv_image f).
 Proof join_sl_mor_preserving _.
-Hint Extern 2 (OrderPreserving _ _ (inv_image _)) => eapply @inv_image_order_preserving : typeclass_instances.
+Hint Extern 2 (OrderPreserving _ _ (inv_image _)) => eapply @inv_image_is_order_preserving : typeclass_instances.
+
+Lemma inv_image_order_preserving `{Setoid (S:=X)} `{Setoid (S:=Y)} (f:X ⇀ Y) `{!Morphism (X ⇒ Y) f}
+  U V `{V ⊆ Y} `{U ⊆ V} : f⁻¹(U) ⊆ f⁻¹(V).
+Proof. assert (U ⊆ Y) by now transitivity V.
+  now apply (order_preserving (Ale:=(⊆)) (Ble:=(⊆)) (S:=(⊆ Y)) (T:=(⊆ X)) (inv_image f) U V).
+Qed.
+Hint Extern 5 (?f⁻¹(_) ⊆ ?f⁻¹(_)) => eapply @inv_image_order_preserving : typeclass_instances.
 

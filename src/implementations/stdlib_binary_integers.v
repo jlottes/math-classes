@@ -52,7 +52,7 @@ Qed.
 (* misc: *)
 Instance: ∀ x y, Decision (x = y) := ZArith_dec.Z_eq_dec.
 
-Instance: StandardUnEq Z := _.
+Instance: DenialInequality Z := _.
 
 Add Ring Z: (stdlib_ring_theory Z).
 

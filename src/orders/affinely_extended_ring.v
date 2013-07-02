@@ -20,15 +20,6 @@ Section closed.
   Lemma ae_zero_el_F : 0 ∊ F. Proof. apply (_ : SubsetOf R F). apply _. Qed.
   Lemma ae_one_el_F : 1 ∊ F. Proof. apply (_ : SubsetOf R F). apply _. Qed.
 
-  Lemma ae_le_proper_flip : Proper ((F,=) ==> (F,=) ==> flip impl) le.
-  Proof. intros ?? E1 ?? E2 E. unfold_sigs.
-    exact (ae_le_proper _ _ (F $ subsymmetry _ _ E1) _ _ (F $ subsymmetry _ _ E2) E).
-  Qed.
-  Lemma ae_lt_proper_flip : Proper ((F,=) ==> (F,=) ==> flip impl) lt.
-  Proof. intros ?? E1 ?? E2 E. unfold_sigs.
-    exact (ae_lt_proper _ _ (F $ subsymmetry _ _ E1) _ _ (F $ subsymmetry _ _ E2) E).
-  Qed.
-
   Lemma ae_neg_proper_F : Proper ((F,=) ==> (F,=)) (-). Proof morphism_proper _.
   Lemma ae_plus_proper_F : Proper ((F,=) ==> (F,=) ==> (F,=)) (+). Proof binary_morphism_proper _.
   Lemma ae_mult_proper_F : Proper ((F,=) ==> (F,=) ==> (F,=)) (.*.). Proof binary_morphism_proper _.
@@ -45,15 +36,6 @@ Hint Extern 2 (0 ∊ F) => eapply @ae_zero_el_F : typeclass_instances.
 Hint Extern 2 (1 ∊ F) => eapply @ae_one_el_F : typeclass_instances.
 
 Hint Extern 2 (∞ ∊ notR) => eexact (conj ae_inf_el_F ae_inf_not_el) : typeclass_instances.
-
-Hint Extern 2 (Proper ((F,=) ==> _ ==> impl) (≤)) => eapply @ae_le_proper : typeclass_instances.
-Hint Extern 2 (Proper (_ ==> (F,=) ==> impl) (≤)) => eapply @ae_le_proper : typeclass_instances.
-Hint Extern 2 (Proper ((F,=) ==> _ ==> impl) (<)) => eapply @ae_lt_proper : typeclass_instances.
-Hint Extern 2 (Proper (_ ==> (F,=) ==> impl) (<)) => eapply @ae_lt_proper : typeclass_instances.
-Hint Extern 2 (Proper ((F,=) ==> _ ==> flip impl) (≤)) => eapply @ae_le_proper_flip : typeclass_instances.
-Hint Extern 2 (Proper (_ ==> (F,=) ==> flip impl) (≤)) => eapply @ae_le_proper_flip : typeclass_instances.
-Hint Extern 2 (Proper ((F,=) ==> _ ==> flip impl) (<)) => eapply @ae_lt_proper_flip : typeclass_instances.
-Hint Extern 2 (Proper (_ ==> (F,=) ==> flip impl) (<)) => eapply @ae_lt_proper_flip : typeclass_instances.
 
 Hint Extern 2 (Proper ((F,=) ==> _) (-)) => eapply @ae_neg_proper_F : typeclass_instances.
 Hint Extern 2 (Proper ((F,=) ==> _ ==> _) (+)) => eapply @ae_plus_proper_F : typeclass_instances.
@@ -77,7 +59,7 @@ Section subsetoid.
   Proof. rewrite ae_set_def. right. split. apply _. now left. Qed.
 
   Instance ae_im_subsetoid : R ⊆ R∞.
-  Proof. split. apply _.
+  Proof. apply subsetoid_alt. apply _.
   + intros ?? [[el1 el2] E].
     apply (_ : SubsetOf R∞ F) in el1.
     apply (_ : SubsetOf R∞ F) in el2.
@@ -92,7 +74,7 @@ Section subsetoid.
   Qed.
 
   Lemma ae_notR_subsetoid : notR ⊆ F.
-  Proof. split. apply _.
+  Proof. apply subsetoid_alt. apply _.
     intros ?? [[??] E] [? el]. split. apply _. contradict el. now rewrite (F $ E).
     now intros ?[??].
   Qed.
@@ -103,7 +85,7 @@ Section subsetoid.
   Qed.
 
   Lemma ae_undef_subsetoid : U ⊆ F.
-  Proof. split. apply _.
+  Proof. apply subsetoid_alt. apply _.
     intros ?? [[??] E] [? el]. split. apply _. contradict el. now rewrite (F $ E).
     now intros ?[??].
   Qed.
@@ -115,7 +97,7 @@ Section subsetoid.
   Instance ae_pos_subsetoid    : R∞₊ ⊆ F.   Proof. transitivity R∞; apply _. Qed.
   Instance ae_neg_subsetoid    : R∞₋ ⊆ F.   Proof. transitivity R∞; apply _. Qed.
 
-  Local Ltac solve_cone := split; [ apply _ 
+  Local Ltac solve_cone := apply subsetoid_alt; [ apply _ 
   | intros ?? [[[??][??]]E]; intros [??]; split; [| apply _ ]; now rewrite <- (R∞ $ E)
   | intros ? [??]; split; [apply (_:SubsetOf R (aff_ext R))|]; apply _
   ].
@@ -175,11 +157,10 @@ Section negate.
   Hint Extern 10 (@Subset A) => eexact F : typeclass_instances.
 
   Lemma ae_minf_lt_inf : -∞ < ∞.
-  Proof.
-    apply (subtransitivity (S:=R∞) _ 0 _).
-    exact (ae_minf_slb 0).
-    exact (ae_inf_sub 0).
-  Qed.
+  Proof. subtransitivity 0. exact (ae_minf_slb 0). exact (ae_inf_sub 0). Qed.
+
+  Lemma ae_minf_le_inf : -∞ ≤ ∞.
+  Proof. apply (lt_le _ _). exact ae_minf_lt_inf. Qed.
 
   Lemma ae_minf_inf_uneq : -∞ ≠ ∞.
   Proof. apply (pseudo_order_lt_apart (S:=R∞) _ _). exact ae_minf_lt_inf. Qed.
@@ -198,6 +179,20 @@ Section negate.
 
   Lemma ae_minf_uneq_r x `{x ∊ R} :  x ≠ -∞.
   Proof. subsymmetry. exact (ae_minf_uneq_l _). Qed.
+
+  Lemma ae_le_defined_l x `{x ∊ F} y `{y ∊ R∞} : x ≤ y → x ∊ R∞.
+  Proof. intro E. destruct (ae_decompose_full x); trivial.
+    cut (x<y). intro E2. now destruct (ae_lt_defined _ _ E2).
+    rewrite (lt_iff_le_apart _ _); split; trivial.
+    now apply ae_undef_uneq.
+  Qed.
+
+  Lemma ae_le_defined_r x `{x ∊ R∞} y `{y ∊ F} : x ≤ y → y ∊ R∞.
+  Proof. intro E. destruct (ae_decompose_full y); trivial.
+    cut (x<y). intro E2. now destruct (ae_lt_defined _ _ E2).
+    rewrite (lt_iff_le_apart _ _); split; trivial.
+    subsymmetry. now apply ae_undef_uneq.
+  Qed.
 
   Lemma ae_cases_ext (P: A → Prop) :
     Proper ((F,=) ==> impl) P
@@ -297,10 +292,10 @@ Section negate.
     exact (ae_minf_slb _).
   Qed.
 
-  Instance ae_stduneq_ext `{!StandardUnEq R} : StandardUnEq R∞.
+  Instance ae_denial_inequality_ext `{!DenialInequality R} : DenialInequality R∞.
   Proof. red. apply ae_cases_ext2; [| intros; split; [rewrite <-(tight_apart _ _);tauto|intro E]..].
   + intros ?? E1 ?? E2 ?. unfold_sigs. now rewrite <-(F $ E1), <-(F $ E2).
-  + now rewrite (standard_uneq _ _).
+  + now rewrite (denial_inequality _ _).
   + exact (ae_inf_uneq_r _).
   + exact (ae_minf_uneq_r _).
   + exact (ae_inf_uneq_l _).
@@ -311,11 +306,11 @@ Section negate.
   + now contradict E.
   Qed.
 
-  Instance ae_stduneq `{!StandardUnEq R} : StandardUnEq F.
+  Instance ae_denial_inequality `{!DenialInequality R} : DenialInequality F.
   Proof. intros x ? y ?.
     destruct (ae_decompose_full x) as [Ex|Ex];
     destruct (ae_decompose_full y) as [Ey|Ey].
-    + exact (standard_uneq (S:=R∞) _ _).
+    + exact (denial_inequality (S:=R∞) _ _).
     + split. intros ? E. rewrite (F $ E) in Ex. now destruct Ey.
              intro. subsymmetry. exact (ae_undef_uneq _ _).
     + split. intros ? E. rewrite (F $ E) in Ex. now destruct Ex.
@@ -372,8 +367,8 @@ Section negate.
 
 End negate.
 
-Hint Extern 2 (StandardUnEq R∞) => eapply ae_stduneq_ext : typeclass_instances.
-Hint Extern 2 (StandardUnEq F) => eapply ae_stduneq : typeclass_instances.
+Hint Extern 2 (DenialInequality R∞) => eapply ae_denial_inequality_ext : typeclass_instances.
+Hint Extern 2 (DenialInequality F) => eapply ae_denial_inequality : typeclass_instances.
 Hint Extern 2 (SubDecision R∞ R∞ _) => eapply @ae_sub_dec_ext : typeclass_instances.
 Hint Extern 2 (StrongSubDecision R∞ R∞ _) => eapply @ae_str_sub_dec_ext : typeclass_instances.
 Hint Extern 2 (∞ ∊ R∞⁺) => eexact (conj ae_inf_el_ext (ae_inf_ub 0)) : typeclass_instances.
@@ -446,19 +441,24 @@ Section plus.
   Lemma ae_inf_plus_inf   :  ∞ + ∞ =  ∞.  Proof ae_plus_inf_l    ∞  ae_minf_lt_inf.
   Lemma ae_minf_minus_inf : -∞ - ∞ = -∞.  Proof ae_minus_inf_l (-∞) ae_minf_lt_inf.
 
+  Lemma ae_fin_plus_inf x `{x ∊ R} : x + ∞ = ∞.  Proof ae_plus_inf_r _ (ae_minf_slb _).
+  Lemma ae_inf_plus_fin x `{x ∊ R} : ∞ + x = ∞.  Proof ae_plus_inf_l _ (ae_minf_slb _).
+  Lemma ae_fin_minus_inf x `{x ∊ R} : x - ∞ = -∞.  Proof ae_minus_inf_r _ (ae_inf_sub _).
+  Lemma ae_minf_plus_fin x `{x ∊ R} : -∞ + x = -∞.  Proof ae_minus_inf_l _ (ae_inf_sub _).
+
   Lemma ae_plus_inf_comm x `{x ∊ F} : x + ∞ = ∞ + x.
   Proof. destr_F x. decompose_ext x.
     subtransitivity infty;[|subsymmetry].
-      exact (ae_plus_inf_r _ (ae_minf_slb _)).
-      exact (ae_plus_inf_l _ (ae_minf_slb _)).
+      exact (ae_fin_plus_inf _).
+      exact (ae_inf_plus_fin _).
     subreflexivity. undef_eq.
   Qed.
 
   Lemma ae_plus_minf_comm x `{x ∊ F} : x - ∞ = -∞ + x.
   Proof. destr_F x. decompose_ext x.
     subtransitivity (-infty);[|subsymmetry].
-      exact (ae_minus_inf_r _ (ae_inf_sub _)).
-      exact (ae_minus_inf_l _ (ae_inf_sub _)).
+      exact (ae_fin_minus_inf _).
+      exact (ae_minf_plus_fin _).
     undef_eq. subreflexivity.
   Qed.
 
@@ -479,32 +479,32 @@ Section plus.
       repeat match goal with
       | |- context [ ∞  + ∞ ] => rewrite (F $ ae_inf_plus_inf)
       | |- context [ -∞ - ∞ ] => rewrite (F $ ae_minf_minus_inf)
-      | |- context [ ?x + ∞ ] => rewrite (F $ ae_plus_inf_r x (ae_minf_slb _))
-      | |- context [ ∞ + ?x ] => rewrite (F $ ae_plus_inf_l x (ae_minf_slb _))
-      | |- context [ ?x - ∞ ] => rewrite (F $ ae_minus_inf_r x (ae_inf_sub x))
-      | |- context [ -∞ + ?x] => rewrite (F $ ae_minus_inf_l x (ae_inf_sub x))
+      | |- context [ ?x + ∞ ] => rewrite (F $ ae_fin_plus_inf _)
+      | |- context [ ∞ + ?x ] => rewrite (F $ ae_inf_plus_fin _)
+      | |- context [ ?x - ∞ ] => rewrite (F $ ae_fin_minus_inf _)
+      | |- context [ -∞ + ?x] => rewrite (F $ ae_minf_plus_fin _)
       end; try undef_eq; try subreflexivity.
     exact (associativity (+) _ _ _).
   Qed.
 
   Lemma ae_nonneg_plus_inf_r x `{x ∊ R∞⁺} : x + ∞ = ∞.
   Proof. decompose_nonneg x.
-    exact ae_inf_plus_inf. exact (ae_plus_inf_r x (ae_minf_slb _)).
+    exact ae_inf_plus_inf. exact (ae_fin_plus_inf _).
   Qed.
 
   Lemma ae_nonneg_plus_inf_l x `{x ∊ R∞⁺} : ∞ + x = ∞.
   Proof. decompose_nonneg x.
-    exact ae_inf_plus_inf. exact (ae_plus_inf_l x (ae_minf_slb _)).
+    exact ae_inf_plus_inf. exact (ae_inf_plus_fin _).
   Qed.
 
   Lemma ae_nonpos_minus_inf_r x `{x ∊ R∞⁻} : x - ∞ = -∞.
   Proof. decompose_nonpos x.
-    exact ae_minf_minus_inf. exact (ae_minus_inf_r x (ae_inf_sub _)).
+    exact ae_minf_minus_inf. exact (ae_fin_minus_inf _).
   Qed.
 
   Lemma ae_nonpos_minus_inf_l x `{x ∊ R∞⁻} : -∞ + x = -∞.
   Proof. decompose_nonpos x.
-    exact ae_minf_minus_inf. exact (ae_minus_inf_l x (ae_inf_sub _)).
+    exact ae_minf_minus_inf. exact (ae_minf_plus_fin _).
   Qed.
 
   Lemma ae_plus_0_l x `{x ∊ F} : 0 + x = x.
@@ -520,6 +520,15 @@ Section plus.
     exact (ae_nonneg_plus_inf_l 0).
     exact (ae_nonpos_minus_inf_l 0).
   Qed.
+
+  Instance ae_fin_plus_compat_l : Closed (R ⇀ R∞ ⇀ R∞) (+).
+  Proof. intros x ? y ?. decompose_ext y. apply _.
+    rewrite (_ $ ae_fin_plus_inf _); apply _.
+    rewrite (_ $ ae_fin_minus_inf _); apply _.
+  Qed.
+
+  Instance ae_fin_plus_compat_r : Closed (R∞ ⇀ R ⇀ R∞) (+).
+  Proof. intros x ? y ?. rewrite (F $ commutativity (+) _ _). now apply ae_fin_plus_compat_l. Qed.
 
   Instance ae_nonneg_plus_compat : Closed (R∞⁺ ⇀ R∞⁺ ⇀ R∞⁺) (+).
   Proof. intros x ? y ?.
@@ -564,11 +573,66 @@ End plus.
 Hint Extern 2 (Commutative (+) F) => eapply @ae_plus_comm : typeclass_instances.
 Hint Extern 2 (Associative (+) F) => eapply @ae_plus_ass : typeclass_instances.
 
+Hint Extern 3 (_ + _ ∊ R∞) => eapply @ae_fin_plus_compat_l : typeclass_instances. 
+Hint Extern 3 (_ + _ ∊ R∞) => eapply @ae_fin_plus_compat_r: typeclass_instances. 
 Hint Extern 3 (_ + _ ∊ R∞⁺) => eapply @ae_nonneg_plus_compat : typeclass_instances. 
 Hint Extern 3 (_ + _ ∊ R∞⁻) => eapply @ae_nonpos_plus_compat : typeclass_instances. 
 Hint Extern 3 (_ + _ ∊ R∞₊) => eapply @ae_nonneg_pos_plus : typeclass_instances. 
 Hint Extern 3 (_ + _ ∊ R∞₊) => eapply @ae_pos_nonneg_plus : typeclass_instances. 
 Hint Extern 3 (_ + _ ∊ R∞₋) => eapply @ae_neg_plus_compat : typeclass_instances. 
+
+Section plus_order.
+  Context `{AffinelyExtendedRing A (R:=R)}.
+  Hint Extern 10 (@Subset A) => eexact F : typeclass_instances.
+
+  Global Instance ae_plus_order_embedding_l `{z ∊ R} : OrderEmbedding F F (z+).
+  Proof. split; (split; [split; try apply _; apply (submorphism_1 (X:=F) _ _) |..]); intros x ? y ?.
+  + cut (∀ `{x ∊ R∞} `{y ∊ R∞}, x ≤ y → z + x ≤ z + y). intro P.
+      destruct (ae_decompose_full x); destruct (ae_decompose_full y). now apply P.
+      intro E. pose proof (ae_le_defined_r _ _ E). now destruct (_ : y ∊ U).
+      intro E. pose proof (ae_le_defined_l _ _ E). now destruct (_ : x ∊ U).
+      intros _. apply (eq_le (P:=F) _ _). undef_eq.
+    clear dependent x. clear dependent y.
+    apply (ae_cases_ext2 (λ x y, x ≤ y → z + x ≤ z + y)); trivial;
+      [ intros ?? E1 ?? E2 E; unfold_sigs; now rewrite <-(F $ E1), <-(F $ E2) | ..]; intros.
+    * now apply (order_preserving (z+)).
+    * rewrite (_ $ ae_fin_plus_inf _). exact (ae_inf_ub _).
+    * destruct (le_not_lt_flip (-∞) x); trivial. exact (ae_minf_slb _).
+    * destruct (le_not_lt_flip y ∞); trivial. exact (ae_inf_sub _).
+    * subreflexivity.
+    * destruct (le_not_lt_flip (-∞) ∞); trivial. exact ae_minf_lt_inf.
+    * rewrite (_ $ ae_fin_minus_inf _). exact (ae_minf_lb _).
+    * now rewrite (_ $ ae_fin_minus_inf _), (_ $ ae_fin_plus_inf _).
+    * subreflexivity.
+  + cut (∀ `{x ∊ R∞} `{y ∊ R∞}, z + x ≤ z + y → x ≤ y). intro P.
+      destruct (ae_decompose_full x); destruct (ae_decompose_full y). now apply P.
+      intro E. pose proof (ae_le_defined_r _ _ E). now destruct (_ : z+y ∊ U).
+      intro E. pose proof (ae_le_defined_l _ _ E). now destruct (_ : z+x ∊ U).
+      intros _. apply (eq_le (P:=F) _ _). undef_eq.
+    clear dependent x. clear dependent y.
+    apply (ae_cases_ext2 (λ x y, z+x ≤ z+y → x ≤ y)); trivial;
+      [ intros ?? E1 ?? E2 E; unfold_sigs; now rewrite <-(F $ E1), <-(F $ E2) | ..]; intros.
+    * now apply (order_reflecting (z+)).
+    * exact (ae_inf_ub _).
+    * destruct (le_not_lt_flip (z-∞) (z+x)); trivial.
+      rewrite (_ $ ae_fin_minus_inf _). exact (ae_minf_slb _).
+    * destruct (le_not_lt_flip (z+y) (z+∞)); trivial.
+      rewrite (_ $ ae_fin_plus_inf _). exact (ae_inf_sub _).
+    * subreflexivity.
+    * destruct (le_not_lt_flip (z-∞) (z+∞)); trivial.
+      rewrite (_ $ ae_fin_minus_inf _), (_ $ ae_fin_plus_inf _). exact ae_minf_lt_inf.
+    * exact (ae_minf_lb _).
+    * exact ae_minf_le_inf.
+    * subreflexivity.
+  Qed.
+
+  Global Instance ae_plus_order_embedding_r `{z ∊ R} : OrderEmbedding F F (+z).
+  Proof.
+    intros. split.
+     apply order_preserving_flip.
+    apply order_reflecting_flip.
+  Qed.
+End plus_order.
 
 Section mult.
   Context `{AffinelyExtendedRing A (R:=R)}.
@@ -647,11 +711,11 @@ Section mult.
     split. apply _. now destruct (_ : x*y ∊ R₋).
   Qed.
 
-  Context `{!StandardUnEq F} `{!SubDecision F F (=)}.
+  Context `{!DenialInequality F} `{!SubDecision F F (=)}.
 
   Lemma ae_zero_nonzero x `{x ∊ R∞} : x = 0 ∨ x ∊ R∞ ₀.
   Proof. destruct (decide_sub (=) x 0). now left.
-    right. split. apply _. now apply (standard_uneq _ _).
+    right. split. apply _. now apply (denial_inequality _ _).
   Qed.
 
   Lemma ae_decompose_ext_sign x `{x ∊ R∞} : x = 0 ∨ (x ∊ R∞₊ ∨ x ∊ R∞₋).
@@ -728,7 +792,7 @@ Hint Extern 2 (Commutative (.*.) F) => eapply @ae_mult_comm : typeclass_instance
 Section mult_ass.
   Context `{AffinelyExtendedRing A (R:=R)}.
   Hint Extern 10 (@Subset A) => eexact F : typeclass_instances.
-  Context `{!StandardUnEq F} `{!SubDecision F F (=)}.
+  Context `{!DenialInequality F} `{!SubDecision F F (=)}.
 
   Lemma ae_mult_ass_0_1 x `{x ∊ F} y `{y ∊ F} : 0 * (x * y) = 0 * x * y.
   Proof. destruct (ae_decompose_R_notR x). destruct (ae_decompose_R_notR y).
@@ -828,6 +892,11 @@ Section misc.
     split; split; try apply _.
     now destruct (_ : x ∊ R∞₊).
     now destruct (_ : y ∊ R∞₊).
+  Qed.
+
+  Lemma ae_nonneg_finite_bound x `{x ∊ R∞⁺} z `{z ∊ R} : x ≤ z → x ∊ R⁺ .
+  Proof. intro E. rewrite <- (_ $ ae_plus_0_l x) in E.
+    now destruct (ae_nonneg_sum_finite_bound _ _ _ E).
   Qed.
 
   Lemma ae_pos_finite_bound x `{x ∊ R∞₊} z `{z ∊ R} : x ≤ z → x ∊ R₊ .

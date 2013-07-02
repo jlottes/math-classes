@@ -1,0 +1,112 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<link href="coqdoc.css" rel="stylesheet" type="text/css"/>
+<title>MathClasses.implementations.stdlib_ring</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">Library MathClasses.implementations.stdlib_ring</h1>
+
+<div class="code">
+<span class="id" type="keyword">Require</span> <span class="id" type="keyword">Import</span><br/>
+&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.setoid_ring.Ring.html#"><span class="id" type="library">Ring</span></a> <a class="idref" href="MathClasses.interfaces.abstract_algebra.html#"><span class="id" type="library">abstract_algebra</span></a> <a class="idref" href="MathClasses.implementations.subsetsig.html#"><span class="id" type="library">subsetsig</span></a> <a class="idref" href="MathClasses.theory.rings.html#"><span class="id" type="library">theory.rings</span></a>.<br/>
+
+<br/>
+<span class="id" type="keyword">Section</span> <a name="semiring"><span class="id" type="section">semiring</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Context</span> `{<a class="idref" href="MathClasses.interfaces.abstract_algebra.html#CommutativeSemiRing"><span class="id" type="class">CommutativeSemiRing</span></a> (<span class="id" type="var">R</span>:=<span class="id" type="var">R</span>)}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Global Instance</span> : <a class="idref" href="MathClasses.implementations.subsetsig.html#SubsetSig_Closed"><span class="id" type="class">SubsetSig_Closed</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a> 0 := <span class="id" type="var">_</span> : 0 <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'∊'_x"><span class="id" type="notation">∊</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Global Instance</span> : <a class="idref" href="MathClasses.implementations.subsetsig.html#SubsetSig_Closed"><span class="id" type="class">SubsetSig_Closed</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a> 1 := <span class="id" type="var">_</span> : 1 <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'∊'_x"><span class="id" type="notation">∊</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Global Instance</span> : <a class="idref" href="MathClasses.implementations.subsetsig.html#SubsetSig_Closed"><span class="id" type="class">SubsetSig_Closed</span></a> (<a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a><a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'⇀'_x"><span class="id" type="notation">⇀</span></a><a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a><a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'⇀'_x"><span class="id" type="notation">⇀</span></a><a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a>) <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(+)'"><span class="id" type="notation">(+)</span></a>   := <span class="id" type="var">_</span> : <a class="idref" href="MathClasses.interfaces.canonical_names.html#Closed"><span class="id" type="class">Closed</span></a> (<a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a><a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'⇀'_x"><span class="id" type="notation">⇀</span></a><a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a><a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'⇀'_x"><span class="id" type="notation">⇀</span></a><a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a>) <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(+)'"><span class="id" type="notation">(+)</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Global Instance</span> : <a class="idref" href="MathClasses.implementations.subsetsig.html#SubsetSig_Closed"><span class="id" type="class">SubsetSig_Closed</span></a> (<a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a><a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'⇀'_x"><span class="id" type="notation">⇀</span></a><a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a><a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'⇀'_x"><span class="id" type="notation">⇀</span></a><a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a>) <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(.*.)'"><span class="id" type="notation">(.*.)</span></a> := <span class="id" type="var">_</span> : <a class="idref" href="MathClasses.interfaces.canonical_names.html#Closed"><span class="id" type="class">Closed</span></a> (<a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a><a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'⇀'_x"><span class="id" type="notation">⇀</span></a><a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a><a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'⇀'_x"><span class="id" type="notation">⇀</span></a><a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a>) <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(.*.)'"><span class="id" type="notation">(.*.)</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Notation</span> <a name="R'"><span class="id" type="abbreviation">R'</span></a> := (<a class="idref" href="MathClasses.interfaces.canonical_names.html#every"><span class="id" type="definition">every</span></a> (<a class="idref" href="MathClasses.implementations.subsetsig.html#SubsetSig"><span class="id" type="definition">SubsetSig</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a>)).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Instance</span>: <a class="idref" href="MathClasses.interfaces.abstract_algebra.html#CommutativeSemiRing"><span class="id" type="class">CommutativeSemiRing</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#R'"><span class="id" type="abbreviation">R'</span></a> := <a class="idref" href="MathClasses.implementations.subsetsig.html#subsetsig_comsemiring"><span class="id" type="instance">subsetsig_comsemiring</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Lemma</span> <a name="stdlib_semiring_theory"><span class="id" type="lemma">stdlib_semiring_theory</span></a> : <a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.setoid_ring.Ring_theory.html#semi_ring_theory"><span class="id" type="record">Ring_theory.semi_ring_theory</span></a> (0:<a class="idref" href="MathClasses.implementations.subsetsig.html#SubsetSig"><span class="id" type="definition">SubsetSig</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring.R"><span class="id" type="variable">R</span></a>) 1 <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(+)'"><span class="id" type="notation">(+)</span></a> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(.*.)'"><span class="id" type="notation">(.*.)</span></a> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(=)'"><span class="id" type="notation">(=)</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">constructor</span>; <span class="id" type="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<a class="idref" href="MathClasses.theory.rings.html#plus_0_l"><span class="id" type="lemma">plus_0_l</span></a> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<a class="idref" href="MathClasses.interfaces.common_props.html#commutativity"><span class="id" type="definition">commutativity</span></a> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(+)'"><span class="id" type="notation">(+)</span></a> <span class="id" type="var">_</span> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<span class="id" type="keyword">associativity</span> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(+)'"><span class="id" type="notation">(+)</span></a> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<a class="idref" href="MathClasses.interfaces.abstract_algebra.html#mult_1_l"><span class="id" type="method">mult_1_l</span></a> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<a class="idref" href="MathClasses.interfaces.abstract_algebra.html#mult_0_l"><span class="id" type="method">mult_0_l</span></a> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<a class="idref" href="MathClasses.interfaces.common_props.html#commutativity"><span class="id" type="definition">commutativity</span></a> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(.*.)'"><span class="id" type="notation">(.*.)</span></a> <span class="id" type="var">_</span> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<span class="id" type="keyword">associativity</span> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(.*.)'"><span class="id" type="notation">(.*.)</span></a> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<a class="idref" href="MathClasses.interfaces.abstract_algebra.html#plus_mult_distr_r"><span class="id" type="method">plus_mult_distr_r</span></a> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">End</span> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#semiring"><span class="id" type="section">semiring</span></a>.<br/>
+
+<br/>
+<span class="id" type="var">Arguments</span> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#stdlib_semiring_theory"><span class="id" type="lemma">stdlib_semiring_theory</span></a> {<span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span>} <span class="id" type="var">R</span> {<span class="id" type="var">_</span>}.<br/>
+
+<br/>
+<span class="id" type="keyword">Section</span> <a name="ring"><span class="id" type="section">ring</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Context</span> `{<a class="idref" href="MathClasses.interfaces.abstract_algebra.html#CommutativeRing"><span class="id" type="class">CommutativeRing</span></a> (<span class="id" type="var">R</span>:=<span class="id" type="var">R</span>)}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Global Instance</span> : <a class="idref" href="MathClasses.implementations.subsetsig.html#SubsetSig_Closed"><span class="id" type="class">SubsetSig_Closed</span></a> (<a class="idref" href="MathClasses.implementations.stdlib_ring.html#ring.R"><span class="id" type="variable">R</span></a><a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'⇀'_x"><span class="id" type="notation">⇀</span></a><a class="idref" href="MathClasses.implementations.stdlib_ring.html#ring.R"><span class="id" type="variable">R</span></a>) <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(-)'"><span class="id" type="notation">(-)</span></a> := <span class="id" type="var">_</span> : <a class="idref" href="MathClasses.interfaces.canonical_names.html#Closed"><span class="id" type="class">Closed</span></a> (<a class="idref" href="MathClasses.implementations.stdlib_ring.html#ring.R"><span class="id" type="variable">R</span></a><a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'⇀'_x"><span class="id" type="notation">⇀</span></a><a class="idref" href="MathClasses.implementations.stdlib_ring.html#ring.R"><span class="id" type="variable">R</span></a>) <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(-)'"><span class="id" type="notation">(-)</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Notation</span> <a name="R'"><span class="id" type="abbreviation">R'</span></a> := (<a class="idref" href="MathClasses.interfaces.canonical_names.html#every"><span class="id" type="definition">every</span></a> (<a class="idref" href="MathClasses.implementations.subsetsig.html#SubsetSig"><span class="id" type="definition">SubsetSig</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#ring.R"><span class="id" type="variable">R</span></a>)).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Instance</span>: <a class="idref" href="MathClasses.interfaces.abstract_algebra.html#CommutativeRing"><span class="id" type="class">CommutativeRing</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#R'"><span class="id" type="abbreviation">R'</span></a> := <a class="idref" href="MathClasses.implementations.subsetsig.html#subsetsig_comring"><span class="id" type="instance">subsetsig_comring</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#ring.R"><span class="id" type="variable">R</span></a>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Lemma</span> <a name="stdlib_ring_theory"><span class="id" type="lemma">stdlib_ring_theory</span></a> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.setoid_ring.Ring_theory.html#ring_theory"><span class="id" type="record">Ring_theory.ring_theory</span></a> 0 1 <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(+)'"><span class="id" type="notation">(+)</span></a> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(.*.)'"><span class="id" type="notation">(.*.)</span></a> (<a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.Unicode.Utf8_core.html#::'λ'_x_'..'_x_','_x"><span class="id" type="notation">λ</span></a> <span class="id" type="var">x</span> <span class="id" type="var">y</span> : <a class="idref" href="MathClasses.implementations.subsetsig.html#SubsetSig"><span class="id" type="definition">SubsetSig</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#ring.R"><span class="id" type="variable">R</span></a><a class="idref" href="http://coq.inria.fr/distrib/8.4pl3/stdlib/Coq.Unicode.Utf8_core.html#::'λ'_x_'..'_x_','_x"><span class="id" type="notation">,</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#x"><span class="id" type="variable">x</span></a> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:x_'-'_x"><span class="id" type="notation">-</span></a> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#y"><span class="id" type="variable">y</span></a>) <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(-)'"><span class="id" type="notation">(-)</span></a> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(=)'"><span class="id" type="notation">(=)</span></a>.<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Proof</span>.<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">constructor</span>; <span class="id" type="tactic">intros</span>.<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<a class="idref" href="MathClasses.theory.rings.html#plus_0_l"><span class="id" type="lemma">plus_0_l</span></a> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<a class="idref" href="MathClasses.interfaces.common_props.html#commutativity"><span class="id" type="definition">commutativity</span></a> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(+)'"><span class="id" type="notation">(+)</span></a> <span class="id" type="var">_</span> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<span class="id" type="keyword">associativity</span> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(+)'"><span class="id" type="notation">(+)</span></a> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<a class="idref" href="MathClasses.interfaces.abstract_algebra.html#mult_1_l"><span class="id" type="method">mult_1_l</span></a> <span class="id" type="var">x</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<a class="idref" href="MathClasses.interfaces.common_props.html#commutativity"><span class="id" type="definition">commutativity</span></a> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(.*.)'"><span class="id" type="notation">(.*.)</span></a> <span class="id" type="var">_</span> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<span class="id" type="keyword">associativity</span> <a class="idref" href="MathClasses.interfaces.canonical_names.html#:mc_scope:'(.*.)'"><span class="id" type="notation">(.*.)</span></a> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<a class="idref" href="MathClasses.interfaces.abstract_algebra.html#plus_mult_distr_r"><span class="id" type="method">plus_mult_distr_r</span></a> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">reflexivity</span>.<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" type="tactic">exact</span> (<a class="idref" href="MathClasses.theory.rings.html#plus_negate_r"><span class="id" type="lemma">plus_negate_r</span></a> <span class="id" type="var">_</span>).<br/>
+&nbsp;&nbsp;<span class="id" type="keyword">Qed</span>.<br/>
+
+<br/>
+<span class="id" type="keyword">End</span> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#ring"><span class="id" type="section">ring</span></a>.<br/>
+
+<br/>
+<span class="id" type="var">Arguments</span> <a class="idref" href="MathClasses.implementations.stdlib_ring.html#stdlib_ring_theory"><span class="id" type="lemma">stdlib_ring_theory</span></a> {<span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span> <span class="id" type="var">_</span>} <span class="id" type="var">R</span> {<span class="id" type="var">_</span>}.<br/>
+
+<br/>
+<span class="id" type="keyword">Ltac</span> <span class="id" type="var">subring</span> <span class="id" type="var">R</span> := <span class="id" type="var">subsetsig_quote_equiv</span> <span class="id" type="var">R</span>; <span class="id" type="tactic">ring</span>.<br/>
+
+<br/>
+</div>
+</div>
+
+<div id="footer">
+<hr/><a href="index.html">Index</a><hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
