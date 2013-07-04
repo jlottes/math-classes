@@ -24,7 +24,7 @@ Module Type TheRealsSig.
 End TheRealsSig.
 
 Local Notation Q := the_rationals.
-Local Notation X := (CauchyNets Q).
+Local Notation X := (CauchyFamilies Q).
 
 Module TheReals : TheRealsSig.
   Definition A : Type := elt_type X.

@@ -131,7 +131,7 @@ Section maps.
   Hint Extern 0 AmbientSpace => eexact Y : typeclass_instances.
 
   (** Implied by UniformlyContinuous when X is LocallyTotallyBounded
-     and Y has FinitePoints *)
+     and Y has FinitePoints. Perhaps needs a better name. *)
   Class StronglyUniformlyContinuous (f:X ⇀ Y) :=
   { strongly_ufm_cont_ufm_cont :>> UniformlyContinuous f
   ; strongly_ufm_cont U `{!Bounded (X:=X) U} `{!Inhabited U} : Bounded f⁺¹(U)
@@ -190,50 +190,50 @@ Class LocallyTotallyBounded `(X:Subset) `{Equiv X} `{Ball X} :=
 Infix "==>" := UniformlyContinuous (at level 55, right associativity) : subset_scope.
 Infix "-->" :=          Continuous (at level 55, right associativity) : subset_scope.
 
-(* Richman's regular family of subsets *)
+(** Richman's regular family of subsets *)
 
-Inductive Net `(X:Subset) `{Equiv X} := net : (Q∞₊ ⇀ (⊆ X)) → Net X.
-Arguments net {_ X _} _.
-Definition net_to_fun `{X:@Subset A} `{Equiv X} (x : Net X)
-  := match x with net f => (f:AQ→@Subset A) end.
-Coercion net_to_fun : Net >-> Funclass.
+Inductive Family `(X:Subset) `{Equiv X} := family : (Q∞₊ ⇀ (⊆ X)) → Family X.
+Arguments family {_ X _} _.
+Definition family_to_fun `{X:@Subset A} `{Equiv X} (x : Family X)
+  := match x with family f => (f:AQ→@Subset A) end.
+Coercion family_to_fun : Family >-> Funclass.
 
 Section Cauchy.
   Context `{X:Subset} `{Equiv X} `{Ball X}.
 
-  Class Cauchy (S:Net X) : Prop :=
-  { cauchy_net_msp : MetricSpace X
-  ; cauchy_net_mor : Morphism (Q∞₊ ⇒ (⊆ X)) S
-  ; cauchy_net_inhabited q `{q ∊ Q∞₊} : Inhabited (S q)
-  ; cauchy_net_def p `{p ∊ Q₊} q `{q ∊ Q₊} x `{x ∊ S p} y `{y ∊ S q} : ball (p+q) x y
+  Class Cauchy (S:Family X) : Prop :=
+  { cauchy_family_msp : MetricSpace X
+  ; cauchy_family_mor : Morphism (Q∞₊ ⇒ (⊆ X)) S
+  ; cauchy_family_inhabited q `{q ∊ Q∞₊} : Inhabited (S q)
+  ; cauchy_family_def p `{p ∊ Q₊} q `{q ∊ Q₊} x `{x ∊ S p} y `{y ∊ S q} : ball (p+q) x y
   }.
 
-  Definition NetLimit (S:Net X) y := ∀ p `{p ∊ Q₊} x  `{x ∊ S p}, ball p x y.
+  Definition FamilyLimit (S:Family X) y := ∀ p `{p ∊ Q₊} x  `{x ∊ S p}, ball p x y.
 
-  Definition cauchy_ball : Ball (Net X) := λ q S T,
+  Definition cauchy_ball : Ball (Family X) := λ q S T,
       ∀ ε `{ε ∊ Q₊}, ∃ `{a ∊ Q₊} `{b ∊ Q₊} `{c ∊ Q₊} `{s ∊ S a} `{t ∊ T b},
         a + b + c < q + ε ∧ ball c s t.
 
-  Instance net_equiv : Equiv (Net X) := λ S T,
+  Instance family_equiv : Equiv (Family X) := λ S T,
     ∀ p `{p ∊ Q₊} q `{q ∊ Q₊} x `{x ∊ S p} y `{y ∊ T q}, ball (p+q) x y.
 
 End Cauchy.
 
-Definition CauchyNets `(X:Subset) `{Equiv X} `{Ball X} := Cauchy : Subset.
+Definition CauchyFamilies `(X:Subset) `{Equiv X} `{Ball X} := Cauchy : Subset.
 
-Hint Extern 10 (@Subset (Net ?X)) => eexact (CauchyNets X) : typeclass_instances.
+Hint Extern 10 (@Subset (Family ?X)) => eexact (CauchyFamilies X) : typeclass_instances.
 
-Hint Extern 2 (Equiv (Net _)) => eapply @net_equiv : typeclass_instances.
-Hint Extern 2 (Equiv (elt_type (CauchyNets _))) => eapply @net_equiv : typeclass_instances.
-Hint Extern 0 (Proper (_ ==> _) (net_to_fun _)) =>
-   eapply (cauchy_net_mor : Proper ((Q∞₊,=) ==> ((⊆ _),=)) (net_to_fun _)) : typeclass_instances.
+Hint Extern 2 (Equiv (Family _)) => eapply @family_equiv : typeclass_instances.
+Hint Extern 2 (Equiv (elt_type (CauchyFamilies _))) => eapply @family_equiv : typeclass_instances.
+Hint Extern 0 (Proper (_ ==> _) (family_to_fun _)) =>
+   eapply (cauchy_family_mor : Proper ((Q∞₊,=) ==> ((⊆ _),=)) (family_to_fun _)) : typeclass_instances.
 
-Class Limit `(X:Subset) `{Equiv X} `{Ball X} := limit : CauchyNets X ⇀ X.
+Class Limit `(X:Subset) `{Equiv X} `{Ball X} := limit : CauchyFamilies X ⇀ X.
 
 Class CompleteMetricSpace `(X:Subset) `{Equiv X} `{Ball X} `{!Limit X}:=
 { complete_msp_msp :>> MetricSpace X
-; complete_msp_limit_mor : Morphism (CauchyNets X ⇒ X) limit
-; complete_msp S `{S ∊ CauchyNets X} : NetLimit S (limit S)
+; complete_msp_limit_mor : Morphism (CauchyFamilies X ⇒ X) limit
+; complete_msp S `{S ∊ CauchyFamilies X} : FamilyLimit S (limit S)
 }.
 
 Hint Extern 2 (Morphism _ limit) => eapply @complete_msp_limit_mor : typeclass_instances.
@@ -268,19 +268,6 @@ Section archimedean_ordered_field.
   ; arch_ord_field_ball ε `{ε ∊ Q} x `{x ∊ F} y `{y ∊ F}
       : ball ε x y ↔ - rationals_to_field Q F ε ≤ x - y ≤ rationals_to_field Q F ε
   }.
-
-  (*Notation Z := the_integers.
-
-  Class ArchimedeanOrderedField : Prop :=
-  { arch_ord_field_field :>> Field F
-  ; arch_ord_field_order :>> FullPseudoSemiRingOrder F
-  ; archimedean x `{x ∊ F₊} y `{y ∊ F₊} : ∃ `{n ∊ Z₊}, x < (integers_to_ring Z F n) * y
-  ; arch_ord_field_ball_proper : Proper ((Qfull,=)==>(F,=)==>(F,=)==>impl) ball
-  ; arch_ord_field_ball_nonneg ε `{ε ∊ Qfull} x `{x ∊ F} y `{y ∊ F} : ball ε x y → ε ∊ Q∞⁺
-  ; arch_ord_field_ball_inf x `{x ∊ F} y `{y ∊ F} : ball ∞ x y
-  ; arch_ord_field_ball ε `{ε ∊ Q} x `{x ∊ F} y `{y ∊ F}
-      : ball ε x y ↔ - rationals_to_field Q F ε ≤ x - y ≤ rationals_to_field Q F ε
-  }.*)
 End archimedean_ordered_field.
 
 Arguments ArchimedeanOrderedField_Metric {A _ _ _ _ _ _ _} F {_ _}.

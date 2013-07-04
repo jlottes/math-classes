@@ -32,14 +32,6 @@ Section extended_domain.
   Instance ext_domain_contains_image_comp : g⁺¹(∼D) ⊆ ∼D'.
   Proof. transitivity (closure g⁺¹(∼ D)); apply _. Qed.
 
-  (*Instance : g⁺¹(∼D) ⊆ ∼g⁺¹(D).
-  Proof. apply (subsetoid_from_subsetof X' _ _).
-    intros x' [?[x[[? P]E]]]. split. apply _.
-    intros y' [?[y[? E2]]].
-    destruct (P y _) as [q[??]]. exists_sub q.
-    now rewrite <-(_ $ E), <-(_ $ E2), <-(isometric g _ _ _).
-  Qed.*)
-
   Instance ext_domain_contains_image : g⁺¹(D) ⊆ D'.
   Proof.
     apply (subsetoid_from_subsetof X' _ _).
@@ -417,13 +409,13 @@ Section continuous_extension.
   Section def.
     Context f `{!Continuous D R f}.
 
-    Notation C := (CauchyNets Y').
+    Notation C := (CauchyFamilies Y').
 
-    Definition cont_ext_net : D' ⇀ C := λ x, net (λ _ y,
+    Definition cont_ext_family : D' ⇀ C := λ x, family (λ _ y,
       y ∊ R' ∧ ∀ `{U ⊂⊂ D}, x ∊ closure g⁺¹(U) → y = sub_ext f U x
     ).
 
-    Notation S := cont_ext_net.
+    Notation S := cont_ext_family.
 
     Instance: ∀ x `{x ∊ D'} q, S x q ⊆ R'.
     Proof with intuition. intros. apply subsetoid_alt. apply subsetoid_a.
@@ -438,10 +430,10 @@ Section continuous_extension.
     Instance: ∀ x `{x ∊ D'} q, Setoid (S x q).
     Proof. intros. exact (subsetoid_a (T:=R')). Qed.
 
-    Lemma cont_ext_net_proper_1 x `{x ∊ D'} p q : ∀ `{y ∊ S x p}, y ∊ S x q.
+    Lemma cont_ext_family_proper_1 x `{x ∊ D'} p q : ∀ `{y ∊ S x p}, y ∊ S x q.
     Proof. tauto. Qed.
 
-    Lemma cont_ext_net_proper_2 x₁ `{x₁ ∊ D'} x₂ `{x₂ ∊ D'} : x₁ = x₂  →
+    Lemma cont_ext_family_proper_2 x₁ `{x₁ ∊ D'} x₂ `{x₂ ∊ D'} : x₁ = x₂  →
       S x₁ = S x₂.
     Proof. intro E.
       intros q₁ ? q₂ ? y₁ [? P₁].
@@ -456,27 +448,27 @@ Section continuous_extension.
     Instance: ∀ x `{x ∊ D'}, S x ∊ C.
     Proof. intros. split. apply _.
     + intros ?? E. unfold_sigs. red_sig.
-      split; apply cont_ext_net_proper_1; trivial; try apply _.
+      split; apply cont_ext_family_proper_1; trivial; try apply _.
     + intros q ?.
       destruct (proj_subdom_point D g x) as [U[?[?[??]]]].
       exists (sub_ext f U x). split. apply _.
       intros U2 ? ?. now apply subext_proper_point.
-    + now apply cont_ext_net_proper_2.
+    + now apply cont_ext_family_proper_2.
     Qed.
 
-    Instance cont_ext_net_mor : Morphism (D' ⇒ C) S.
-    Proof. intros ???. unfold_sigs. red_sig. now apply cont_ext_net_proper_2. Qed.
+    Instance cont_ext_family_mor : Morphism (D' ⇒ C) S.
+    Proof. intros ???. unfold_sigs. red_sig. now apply cont_ext_family_proper_2. Qed.
 
   End def.
 
-  Definition continuous_extension : (D --> R) ⇀ (D' --> R') := λ f, limit ∘ (cont_ext_net f).
+  Definition continuous_extension : (D --> R) ⇀ (D' --> R') := λ f, limit ∘ (cont_ext_family f).
 
   Section continuity.
     Context f `{!Continuous D R f}.
 
     Notation f' := (continuous_extension f).
 
-    Existing Instance cont_ext_net_mor.
+    Existing Instance cont_ext_family_mor.
 
     Section patch.
       Context U `{U ⊂⊂ D}.
@@ -488,7 +480,7 @@ Section continuous_extension.
       Lemma cont_ext_patch : (f' : U' ⇀ Y') = (sub_ext f U : U' ⇀ Y').
       Proof. intros ?? E. unfold_sigs. unfold continuous_extension. red_sig.
         unfold compose. apply limit_const.
-        apply (morphism_closed _ (m:=cont_ext_net_mor f) _ _). apply _.
+        apply (morphism_closed _ (m:=cont_ext_family_mor f) _ _). apply _.
         intros q ?. split. apply _.
         intros U2 ? ?. subsymmetry in E.
         assert (y ∊ closure g⁺¹(U2)) by now rewrite (_ $ E).

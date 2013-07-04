@@ -42,7 +42,7 @@ Section contents.
 
   Context `{!Ball R} `{!ArchimedeanOrderedField_Metric R}.
 
-  Notation C := (CauchyNets R).
+  Notation C := (CauchyFamilies R).
 
   Instance: Plus C := Creals_plus.
   Instance: Mult C := Creals_mult.
@@ -70,7 +70,7 @@ Section contents.
     assert (x ∊ R) by now eapply (_: SubsetOf (S p) R).
     rewrite <-( R $ to_reals_self_applied (field_to_reals R C ∘ cast R C) x).
     unfold compose. rewrite <- (isometric (field_to_reals R C) _ _ _).
-    subsymmetry. exact (net_const_dist _ _ _).
+    subsymmetry. exact (family_const_dist _ _ _).
   Qed.
 
 End contents.

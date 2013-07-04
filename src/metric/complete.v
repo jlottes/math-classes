@@ -146,7 +146,7 @@ Hint Extern 2 (Isometry _ _ (ufm_completion_map _)) => eapply @ufm_completion_ma
 Local Hint Extern 5 (?x ∊ ?X) => match goal with
   H : x ∊ ?S ?q |- _ => eapply (_: SubsetOf (S q) X)
 end : typeclass_instances.
-Local Hint Extern 5 (Cauchy ?S) => eexact (_ : S ∊ (CauchyNets _)) : typeclass_instances.
+Local Hint Extern 5 (Cauchy ?S) => eexact (_ : S ∊ (CauchyFamilies _)) : typeclass_instances.
 
 (** The space of uniformly continuous functions into a complete space
     is itself compelte. *)
@@ -154,7 +154,7 @@ Local Hint Extern 5 (Cauchy ?S) => eexact (_ : S ∊ (CauchyNets _)) : typeclass
 Section complete_ufm_fun_space.
   Context `{MetricSpace (X:=X)} `{CompleteMetricSpace (X:=Y)}.
 
-  Notation C := (CauchyNets (X==>Y)).
+  Notation C := (CauchyFamilies (X==>Y)).
   Notation m := (to_completion (X==>Y) C).
 
   Instance ufm_fun_space_limit : Limit (X==>Y)
@@ -164,7 +164,7 @@ Section complete_ufm_fun_space.
   Proof. split; unfold limit, ufm_fun_space_limit; try apply _.
     intros S ? p ? f ?. pose proof _ : f ∊ X==>Y as Cf. red in Cf.
     setoid_rewrite <-(ufm_cont_ext_extends id id m p S f).
-    subsymmetry. exact (net_const_dist _ _ _).
+    subsymmetry. exact (family_const_dist _ _ _).
   Qed.
 End complete_ufm_fun_space.
 Hint Extern 2 (Limit (_ ==> _)) => eapply @ufm_fun_space_limit : typeclass_instances.
@@ -175,7 +175,7 @@ Hint Extern 2 (CompleteMetricSpace (_ ==> _)) => eapply @ufm_fun_space_complete 
 Section complete_prod_space.
   Context `{CompleteMetricSpace (X:=X)} `{CompleteMetricSpace (X:=Y)}.
 
-  Notation C := (CauchyNets (X * Y)).
+  Notation C := (CauchyFamilies (X * Y)).
 
   Notation fst' := (ufm_lift_to_completion (X:=X*Y) (Y:=C) fst).
   Notation snd' := (ufm_lift_to_completion (X:=X*Y) (Y:=C) snd).
@@ -193,21 +193,21 @@ Section complete_prod_space.
     destruct (uniform_continuity snd' (ε/2)) as [b[el' C2]].
     ae_rat_set_min c a b Ea Eb. ae_rat_set_min δ c (ε/2) Ec E.
     pose proof (ae_pos_finite_bound δ _ E).
-    destruct (cauchy_net_inhabited (S:=S) δ) as [y ?].
+    destruct (cauchy_family_inhabited (S:=S) δ) as [y ?].
     assert (p+ε/2+ε/2 ≤ p+ε) as Ep by (apply (eq_le _ _); subfield Q).
     apply (ball_weaken_le (X:=X*Y) (p+ε/2+ε/2) _ _); trivial; try apply _.
     apply (ball_triangle (X:=X*Y) _ _ _ (fst' (g y), snd' (g y)) _).
     * setoid_rewrite (ufm_lift_to_completion_extends (X:=X*Y) (Y:=C) fst y y (_:Proper (X*Y,=) y)).
       setoid_rewrite (ufm_lift_to_completion_extends (X:=X*Y) (Y:=C) snd y y (_:Proper (X*Y,=) y)).
       apply (ball_weaken_le (X:=X*Y) (p+δ) _ _); trivial; try apply _.
-      apply (cauchy_net_def (X:=X*Y) _ _ _). now destruct y.
+      apply (cauchy_family_def (X:=X*Y) _ _ _). now destruct y.
       now apply (order_preserving (p+) _ _).
     * split; simpl.
       - apply (C1 _ _ _ _). apply (ball_weaken_le δ _ _); try apply _.
-        subsymmetry. apply (net_const_dist _ _ _).
+        subsymmetry. apply (family_const_dist _ _ _).
         apply (subtransitivity (S:=Q∞)) with c; trivial; apply _.
       - apply (C2 _ _ _ _). apply (ball_weaken_le δ _ _); try apply _.
-        subsymmetry. apply (net_const_dist _ _ _).
+        subsymmetry. apply (family_const_dist _ _ _).
         apply (subtransitivity (S:=Q∞)) with c; trivial; apply _.
   Qed.
 End complete_prod_space.

@@ -18,7 +18,7 @@ Local Hint Extern 5 (?x ∊ ?X) => match goal with
   H : x ∊ ?S ?q |- _ => eapply (_: SubsetOf (S q) X)
 end : typeclass_instances.
 
-Local Hint Extern 5 (Cauchy ?S) => eexact (_ : S ∊ (CauchyNets _)) : typeclass_instances.
+Local Hint Extern 5 (Cauchy ?S) => eexact (_ : S ∊ (CauchyFamilies _)) : typeclass_instances.
 
 Local Hint Extern 2 (_ ∊ (⊆ _)) => red : typeclass_instances.
 
@@ -53,11 +53,11 @@ Section ufm_continuous_extension.
 
     Context f `{f ∊ M}.
 
-    Notation C := (CauchyNets Y₁).
+    Notation C := (CauchyFamilies Y₁).
 
     Let proj_ball q x : Subset := X₁ ⊓ (λ x', ball q x (g x')).
 
-    Definition ufm_cont_ext_net : X₂ ⇀ C := λ x, net (λ q y,
+    Definition ufm_cont_ext_family : X₂ ⇀ C := λ x, family (λ q y,
       ∃ `{a ∊ Q∞⁺} `{b ∊ Q∞⁺}, a + b ≤ q 
         ∧ ∃ (f':X₁ ⇀ Y₁) `{f' ∊ (X₁==>Y₁)}, ball a (m f') f
           ∧ ∃ `{p ∊ Q∞₊} `{ε ∊ Q∞₊},
@@ -65,7 +65,7 @@ Section ufm_continuous_extension.
               ∧ y ∊ f'⁺¹(proj_ball p x)
     ).
 
-    Notation S := ufm_cont_ext_net.
+    Notation S := ufm_cont_ext_family.
 
     Instance: ∀ x `{x ∊ X₂} `{q ∊ Q∞⁺}, proj_ball q x ⊆ X₁.
     Proof. unfold proj_ball. intros. apply subsetoid_alt. apply _.
@@ -84,13 +84,13 @@ Section ufm_continuous_extension.
     Instance: ∀ x `{x ∊ X₂} `{q ∊ Q∞⁺}, Setoid (S x q).
     Proof. intros. exact subsetoid_a. Qed.
 
-    Lemma ufm_cont_ext_net_proper_1 x `{x ∊ X₂} p `{p ∊ Q∞⁺} q `{q ∊ Q∞⁺} : p = q →
+    Lemma ufm_cont_ext_family_proper_1 x `{x ∊ X₂} p `{p ∊ Q∞⁺} q `{q ∊ Q∞⁺} : p = q →
         ∀ `{z ∊ S x p}, z ∊ S x q.
     Proof. intros E z [a[?[b[?[Eab ?]]]]]. rewrite (_ $ E) in Eab.
       exists_sub a b. intuition.
     Qed.
 
-    Lemma ufm_cont_ext_net_proper_2 x₁ `{x₁ ∊ X₂} x₂ `{x₂ ∊ X₂} : x₁ = x₂  →
+    Lemma ufm_cont_ext_family_proper_2 x₁ `{x₁ ∊ X₂} x₂ `{x₂ ∊ X₂} : x₁ = x₂  →
       S x₁ = S x₂.
     Proof. intro E.
       intros q₁ ? q₂ ? y₁ [a₁[el [b₁[elb1[Eab₁ [f₁[Cf₁[Ef₁ [p₁[elp1[e₁[ele1[c₁[elc1[x₁'[[??]Ey₁]]]]]]]] ]]] ]]]]].
@@ -123,7 +123,7 @@ Section ufm_continuous_extension.
     Instance: ∀ x `{x ∊ X₂}, S x ∊ C.
     Proof. intros. split. apply _.
     + intros ?? E. unfold_sigs. red_sig.
-      split; apply ufm_cont_ext_net_proper_1; trivial; try apply _. subsymmetry.
+      split; apply ufm_cont_ext_family_proper_1; trivial; try apply _. subsymmetry.
     + intros q ?. destruct (dense_image m (X₁ ==> Y₁) f (q/2)) as [f'[Cf Bf]]. red in Cf.
       destruct (uniform_continuity_alt f' (q/2)) as [p[el[ε[el' Pc]]]].
       destruct (dense_image g X₁ x p) as [x'[? B1]].
@@ -132,18 +132,18 @@ Section ufm_continuous_extension.
       exists_sub f'. split. subsymmetry.
       exists_sub p ε. unfold proj_ball.
       split. exact Pc. apply _.
-    + now apply ufm_cont_ext_net_proper_2.
+    + now apply ufm_cont_ext_family_proper_2.
     Qed.
 
-    Instance ufm_cont_ext_net_mor : Morphism (X₂ ⇒ C) S.
-    Proof. intros ???. unfold_sigs. red_sig. now apply ufm_cont_ext_net_proper_2. Qed.
+    Instance ufm_cont_ext_family_mor : Morphism (X₂ ⇒ C) S.
+    Proof. intros ???. unfold_sigs. red_sig. now apply ufm_cont_ext_family_proper_2. Qed.
 
   End def.
 
   Definition ufm_cont_extension : M ⇀ (X₂ ==> Y₂)
-    := λ f, (map_limit h) ∘ (ufm_cont_ext_net f).
+    := λ f, (map_limit h) ∘ (ufm_cont_ext_family f).
 
-  Existing Instance ufm_cont_ext_net_mor.
+  Existing Instance ufm_cont_ext_family_mor.
 
   Instance ufm_cont_ext_mor f `{f ∊ M} : Morphism (X₂ ⇒ Y₂) (ufm_cont_extension f).
   Proof. unfold ufm_cont_extension. apply _. Qed.
@@ -151,7 +151,7 @@ Section ufm_continuous_extension.
   Section continuity.
 
   Context f `{f ∊ M}.
-  Notation S := (ufm_cont_ext_net f).
+  Notation S := (ufm_cont_ext_family f).
   Notation cf := (ufm_cont_extension f).
 
   Lemma ufm_cont_ext_cont_nearly  a `{a ∊ Q₊} b `{b ∊ Q₊} p `{p ∊ Q∞₊} 
@@ -218,7 +218,7 @@ Section ufm_continuous_extension.
     ball q (m f') f ↔ ball q (h ∘ f') (ufm_cont_extension f ∘ g).
   Proof.
     assert (∀ `{p ∊ Q⁺} `{r ∊ Q₊} f'' `{!UniformlyContinuous X₁ Y₁ f''} `{x ∊ X₁},
-       ball p (m f'') f → f'' x ∊ ufm_cont_ext_net f (g x) (p+r)) as Pel.
+       ball p (m f'') f → f'' x ∊ ufm_cont_ext_family f (g x) (p+r)) as Pel.
       intros. exists_sub p r. split. now apply (eq_le _ _).
       exists_sub f''. split; trivial.
       destruct (uniform_continuity_alt f'' r) as [p'[el'[ε[el'' Pc]]]].
@@ -227,7 +227,7 @@ Section ufm_continuous_extension.
     split.
   + intro. split. apply _. intros x ?. unfold compose.
     apply (ball_closed _ _ _). intros b ?.
-    assert (f' x ∊ ufm_cont_ext_net f (g x) (q+b)) by now apply Pel.
+    assert (f' x ∊ ufm_cont_ext_family f (g x) (q+b)) by now apply Pel.
     unfold ufm_cont_extension. apply (map_limit_spec _ _ _ _).
   + intros [_ P]. unfold compose in P. apply (ball_closed _ _ _). intros ε ?.
     destruct (dense_image m (X₁ ==> Y₁) f (ε/3)) as [f₂[Cf Bf]]. red in Cf.
@@ -238,7 +238,7 @@ Section ufm_continuous_extension.
     split. apply _. intros x ?. rewrite (isometric h _ _ _).
     apply (ball_triangle _ _ _ (ufm_cont_extension f (g x)) _).
     now apply P.
-    assert (f₂ x ∊ ufm_cont_ext_net f (g x) (ε/3+ε/3)).
+    assert (f₂ x ∊ ufm_cont_ext_family f (g x) (ε/3+ε/3)).
       apply Pel; trivial. apply _. subsymmetry.
     unfold ufm_cont_extension. subsymmetry. apply (map_limit_spec _ _ _ _).
   Qed.
@@ -526,19 +526,6 @@ Section ufm_cont_ext_unique.
         intros y [?[x[? E]]]. rewrite <-(_ $ E). exact (P _ _).
         intros x ?. exact (P _ _).
   Qed.
-
-  (*
-  Lemma cont_ext_preserves_isometry (f:X ⇀ Z) `{!Isometry X Z f}
-  : Isometry Y Z (continuous_extension h f).
-  Proof. apply (extend_isometry _ h⁺¹(X)). split; try apply _.
-    exact sub_metric_space.
-    rewrite <-(_:SubsetOf (Y ⇒ Z) (h⁺¹(X) ⇒ Z)). apply _.
-    intros q ? y1 [?[x1[? E1]]] y2 [?[x2[? E2]]].
-    rewrite <-(_ $ E1), <-(_ $ E2).
-    rewrite 2!(_ $ cont_ext_extends_applied _ _ _).
-    rewrite <-(isometric h _ _ _). exact (isometric f _ _ _).
-  Qed.
-  *)
 
 End ufm_cont_ext_unique.
 
