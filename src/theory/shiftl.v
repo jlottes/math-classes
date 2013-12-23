@@ -3,7 +3,7 @@ Require
 Require Import
   abstract_algebra interfaces.naturals interfaces.integers
   interfaces.additional_operations interfaces.orders
-  theory.setoids theory.rings.
+  theory.setoids theory.rings orders.semirings.
 
 Lemma shiftl_spec_from_nat_pow `{SemiRing (R:=R)} `{SemiRing (R:=N)} `{!NatPowSpec R N pw} sl :
   Closed (R ⇀ N ⇀ R) (≪) → (∀ `{x ∊ R} `{n ∊ N}, x ≪ n = 2 ^ n * x) → ShiftLSpec R N sl.
@@ -23,8 +23,8 @@ Lemma shiftl_spec_from_int_pow
    Closed (F ⇀ Z ⇀ F) (≪) → (∀ `{x ∊ F} `{n ∊ Z}, x ≪ n = 2 ^ n * x) → ShiftLSpec F Z sl.
 Proof. intros ? spec. pose proof @closed_binary. split.
 + apply binary_morphism_proper_back.
-  intros ?? E1 ?? E2. unfold_sigs. red_sig.
-  now rewrite !(F $ spec _ _ _ _), (F $ E1), (Z $ E2).
+  intros x y E1 m n E2. unfold_sigs. red_sig.
+  now rewrite 2!(F $ spec _ _ _ _), (F $ E1), (Z $ E2).
 + intros x ?. now rewrite (F $ spec _ _ _ _), (F $ int_pow.int_pow_0 _), (F $ mult_1_l _).
 + intros x ? n ?. rewrite !(F $ spec _ _ _ _), (F $ int_pow.int_pow_S _ _).
   subsymmetry. exact (associativity (.*.) _ _ _).
@@ -42,11 +42,11 @@ Proof _.
 (* Choose subsets R and N by looking for a ShiftLSpec instance *)
 Hint Extern 3 (@shiftl ?A ?B ?sl _ _ ∊ _) =>
   let X := fresh "X" in let Y := fresh "Y" in
-  evar (X:@Subset A); evar (Y:@Subset B);
+  evar (X:@set A); evar (Y:@set B);
   let X' := eval unfold X in X in clear X;
   let Y' := eval unfold Y in Y in clear Y;
   let spec := constr:(_ : ShiftLSpec X' Y' sl) in
-  instantiate; eapply (@shiftl_closed _ _ _ _ _ _ X' _ _ _ _ _ _ _ Y')
+  instantiate; eapply (shiftl_closed (R:=X') (N:=Y'))
 : typeclass_instances.
 
 Section shiftl.
@@ -70,8 +70,8 @@ Proof. now rewrite <-(N $ plus_0_r 1), (R $ shiftl_S _ _), (R $ shiftl_0 _). Qed
 Lemma shiftl_2 x `{x ∊ R} : x ≪ 2 = 4 * x.
 Proof. now rewrite (R $ shiftl_S _ _), (R $ shiftl_1 _), (R $ associativity (.*.) _ _ _), (R $ mult_2_2). Qed.
 
-Hint Extern 2 (@zero _ ?c ∊ _) => eapply (@monoid_unit_exists _ plus_is_sg_op (@zero_is_mon_unit _ c)) : typeclass_instances.
-Hint Extern 2 (@one  _ ?c ∊ _) => eapply (@monoid_unit_exists _ mult_is_sg_op (@one_is_mon_unit  _ c)) : typeclass_instances.
+Hint Extern 4 (@zero _ ?c ∊ _) => eapply (@monoid_unit_exists _ plus_is_sg_op (@zero_is_mon_unit _ c)) : typeclass_instances.
+Hint Extern 4 (@one  _ ?c ∊ _) => eapply (@monoid_unit_exists _ mult_is_sg_op (@one_is_mon_unit  _ c)) : typeclass_instances.
 
 
 Instance shiftl_base_0: LeftAbsorb (≪) 0 N.
@@ -152,8 +152,9 @@ Proof. split; try apply _. intros x ? y ?. biinduction n.
 Qed.
 
 Instance shiftl_ne_0 `{UnEq A} `{!DenialInequality R} : Closed (R ₀ ⇀ N ⇀ R ₀) (≪).
-Proof. intros x [? E1] n ?. split. apply _. revert E1. rewrite !(denial_inequality _ _).
-  intro E1. mc_contradict E1.
+Proof. intros x [? E1] n ?. red in E1.
+  split. apply _. red. revert E1. rewrite !(denial_inequality _ _).
+  intro E1. contradict E1.
   apply (injective (≪ n) _ _).
   now rewrite (R $ shiftl_base_0 _ _).
 Qed.
@@ -200,12 +201,12 @@ Lemma shiftl_le_flip_l `{Negate _} `{!Ring N} x `{x ∊ R} y `{y ∊ R} n `{n �
 Proof. now rewrite <-(shiftl_le_flip_r _ _ _), (N $ negate_involutive _). Qed.
 
 Instance shiftl_nonneg  : Closed (R⁺ ⇀ N ⇀ R⁺) (≪).
-Proof. intros x [??] n ?. split. apply _.
+Proof. intros x [??] n ?. split. apply _. red.
   rewrite <- (R $ shiftl_base_0 n _). now apply (order_preserving (≪ n) _ _).
 Qed.
 
 Instance shiftl_pos  : Closed (R₊ ⇀ N ⇀ R₊) (≪).
-Proof. intros x [??] n ?. split. apply _.
+Proof. intros x [??] n ?. split. apply _. red.
   rewrite <- (R $ shiftl_base_0 n _). now apply (strictly_order_preserving (≪ n) _ _).
 Qed.
 
@@ -224,10 +225,10 @@ Hint Extern 5 (_ ≪ _ ∊ _₊) => eapply @shiftl_pos : typeclass_instances.
 
 (* Choose subsets R and N by looking for a ShiftLSpec instance *)
 Hint Extern 2 (@shiftl ?A ?B ?sl _ _ ∊ ?X ₀) =>
-  let Y := fresh "Y" in evar (Y:@Subset B);
+  let Y := fresh "Y" in evar (Y:@set B);
   let Y' := eval unfold Y in Y in clear Y;
   let spec := constr:(_ : ShiftLSpec X Y' sl) in
-  instantiate; eapply (@shiftl_ne_0 _ _ _ _ _ _ X _ _ _ _ _ _ _ _ Y')
+  instantiate; eapply (shiftl_ne_0 (R:=X) (N:=Y'))
 : typeclass_instances.
 
 Section preservation.

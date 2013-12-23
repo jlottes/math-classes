@@ -14,7 +14,7 @@ Instance pos_mult_inv_compat : Closed (F₊ ⇀ F₊) (⁻¹).
 Proof. intros x ?. split. apply _.
   apply (strictly_order_reflecting (x *.) _ _).
   rewrite_on F -> (mult_0_r x), (field_inv_r x).
-  solve_propholds.
+  exact (lt_0_1).
 Qed.
 
 Instance neg_mult_inv_compat : Closed (F₋ ⇀ F₋) (⁻¹).
@@ -69,7 +69,7 @@ Proof. rewrite (mult_inv_le_cancel_r _ _ _).
 Qed.
 
 Let gt_pos_pos x `{x ∊ F} y `{y ∊ F₊} : y < x → x ∊ F₊.
-Proof. split. apply _. subtransitivity y. firstorder. Qed.
+Proof. split. apply _. red. subtransitivity y. firstorder. Qed.
 
 Lemma flip_lt_mult_inv x `{x ∊ F} y `{y ∊ F₊} : y < x → x⁻¹ < y⁻¹.
 Proof. intro E. pose proof gt_pos_pos x y E.

@@ -14,14 +14,13 @@ In particular, we show that given another non trivial pseudo semiring order
 the rationals or the reals), any morphism to it is an order embedding.
 *)
 Section to_semiring_nonneg.
-  Context `{Naturals (N:=N)} `{FullPseudoSemiRingOrder (R:=R)}
+  Context `{Naturals (N:=N)} `{SemiRingOrder (R:=R)} `{1 ∊ R⁺}
     {f: N ⇀ R} `{!SemiRing_Morphism N R f}.
-
-  Existing Instance pseudo_srorder_semiring.
+  Instance: SemiRing R := srorder_semiring.
 
   Instance to_semiring_nonneg n `{n ∊ N} : f n ∊ R⁺.
   Proof.
-    pose proof pseudo_srorder_semiring (R:=R).
+    pose proof srorder_semiring (R:=R).
     generalize dependent n. apply naturals.induction; [ solve_proper |..];
     intros; preserves_simplify f; apply _.
   Qed.
@@ -45,10 +44,10 @@ Existing Instance to_semiring_nonneg.
 
 (* Hmm, can we avoid using nat here? *)
 Notation nat := (every nat).
+Notation "#" := (naturals_to_semiring nat R).
+Ltac pres_simp := preserves_simplify #.
 
-Ltac pres_simp := preserves_simplify (naturals_to_semiring nat R).
-
-Lemma nat_int_to_semiring x `{x ∊ R} : ∃ z, x = naturals_to_semiring nat R z ∨ x + naturals_to_semiring nat R z = 0.
+Lemma nat_int_to_semiring x `{x ∊ R} : ∃ z, x = #z ∨ x + #z = 0.
 Proof. generalize dependent x. apply biinduction. solve_proper.
   exists (0:nat). left. now pres_simp.
   intros n ?. split.
@@ -57,23 +56,23 @@ Proof. generalize dependent x. apply biinduction. solve_proper.
     - destruct z as [|z].
       * exists (1:nat). left. rewrite O_nat_0, (R $ preserves_0), (R $ plus_0_r _) in Ez.
         pres_simp. rewrite_on R -> Ez. exact (plus_0_r _).
-      * exists z. right. rewrite_on R <- Ez. rewrite S_nat_1_plus. pres_simp. subring R.
+      * exists z. right. rewrite_on R <- Ez. rewrite S_nat_1_plus. pres_simp. setring R.
   + intros [z [Ez|Ez]].
     - destruct z as [|z].
       * exists (1:nat). right. rewrite O_nat_0, (R $ preserves_0) in Ez.
         pres_simp. rewrite_on R <- Ez. exact (commutativity (+) _ _).
       * exists z. left. apply (left_cancellation (+) 1 R _ _).
         rewrite (R $ Ez), S_nat_1_plus. now pres_simp.
-    - exists (1+z). right. pres_simp. rewrite_on R <- Ez. subring R.
+    - exists (1+z). right. pres_simp. rewrite_on R <- Ez. setring R.
 Qed.
 
-Lemma nat_int_nonneg_decompose x `{x ∊ R⁺} : ∃ z, x = naturals_to_semiring nat R z.
+Lemma nat_int_nonneg_decompose x `{x ∊ R⁺} : ∃ z, x = # z.
 Proof. destruct (nat_int_to_semiring x) as [z [Ez1 | Ez2]]. now exists z.
-  exists (0:nat). pres_simp. apply (subantisymmetry (≤) _ _); [|firstorder].
+  exists (0:nat). pres_simp. apply (antisymmetry (≤) _ _); [|firstorder].
   rewrite_on R <- Ez2. apply (nonneg_plus_le_compat_r _ _).
 Qed.
 
-Lemma nat_int_le_plus x `{x ∊ R} y `{y ∊ R} : x ≤ y ↔ ∃ z, y = x + naturals_to_semiring nat R z.
+Lemma nat_int_le_plus x `{x ∊ R} y `{y ∊ R} : x ≤ y ↔ ∃ z, y = x + # z.
 Proof.
   split.
    intros E. destruct (decompose_le E) as [z [? Ez]].
@@ -83,7 +82,7 @@ Proof.
   apply (nonneg_plus_le_compat_r _ _).
 Qed.
 
-Lemma nat_int_lt_plus x `{x ∊ R} y `{y ∊ R} : x < y ↔ ∃ z, y = x + 1 + naturals_to_semiring nat R z.
+Lemma nat_int_lt_plus x `{x ∊ R} y `{y ∊ R} : x < y ↔ ∃ z, y = x + 1 + # z.
 Proof.
   split.
    intros E. destruct (proj1 (nat_int_le_plus x y)) as [[|z] Ez].
@@ -109,7 +108,7 @@ Qed.
 
 Lemma ge_1_pos x `{x ∊ R} : 1 ≤ x → x ∊ R₊.
 Proof.
-  intros E. split. apply _. apply (lt_le_trans _ 1 _); [solve_propholds | easy].
+  intros E. split. apply _. red. apply (lt_le_trans _ 1 _); [exact lt_0_1 | easy].
 Qed.
 
 Lemma le_iff_lt_plus_1 x `{x ∊ R} y `{y ∊ R} : x ≤ y ↔ x < y + 1.

@@ -1,10 +1,21 @@
 Require Import
   abstract_algebra interfaces.orders orders.maps theory.setoids theory.lattices.
 
+Ltac lattice_order_tac :=
+    match goal with
+      | |- ?x ⊓ _ ≤ ?x => apply (meet_lb_l x _)
+      | |- _ ⊓ ?x ≤ ?x => apply (meet_lb_r _ x)
+      | |- ?x ≤ ?x ⊔ _ => apply (join_ub_l x _)
+      | |- ?x ≤ _ ⊔ ?x => apply (join_ub_r _ x)
+      | |- ?x ⊔ _ ≤ ?x => apply (join_lub _ _ _); [ subreflexivity |]
+      | |- _ ⊔ ?x ≤ ?x => apply (join_lub _ _ _); [| subreflexivity ]
+      | |- ?x ≤ ?x ⊓ _ => apply (meet_glb _ _ _); [ subreflexivity |]
+      | |- ?x ≤ _ ⊓ ?x => apply (meet_glb _ _ _); [| subreflexivity ]
+    end.
+
 (*
 We prove that the algebraic definition of a lattice corresponds to the
-order theoretic one. Note that we do not make any of these instances global,
-because that would cause loops.
+order theoretic one.
 *)
 Section join_semilattice_order.
   Context `{JoinSemiLatticeOrder (L:=L)}.
@@ -17,30 +28,30 @@ Section join_semilattice_order.
   Lemma join_ub_3_r x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : z ≤ x ⊔ y ⊔ z.
   Proof join_ub_r _ _.
   Lemma join_ub_3_m x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : y ≤ x ⊔ y ⊔ z.
-  Proof. subtransitivity (x ⊔ y). now apply join_ub_r. apply join_ub_l; apply _. Qed.
+  Proof. subtransitivity (x ⊔ y); lattice_order_tac. Qed.
   Lemma join_ub_3_l x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ≤ x ⊔ y ⊔ z.
-  Proof. subtransitivity (x ⊔ y); apply join_ub_l; apply _. Qed.
+  Proof. subtransitivity (x ⊔ y); lattice_order_tac. Qed.
 
   Lemma join_ub_3_assoc_l x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ≤ x ⊔ (y ⊔ z).
   Proof join_ub_l _ _.
   Lemma join_ub_3_assoc_m x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : y ≤ x ⊔ (y ⊔ z).
-  Proof. subtransitivity (y ⊔ z). now apply join_ub_l. apply join_ub_r; apply _. Qed.
+  Proof. subtransitivity (y ⊔ z); lattice_order_tac. Qed.
   Lemma join_ub_3_assoc_r x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : z ≤ x ⊔ (y ⊔ z).
-  Proof. subtransitivity (y ⊔ z); apply join_ub_r; apply _. Qed.
+  Proof. subtransitivity (y ⊔ z); lattice_order_tac. Qed.
 
   Instance: Morphism (L ⇒ L ⇒ L) (⊔).
-  Proof. apply binary_morphism_proper_back.
+  Proof with lattice_order_tac. apply binary_morphism_proper_back.
     intros ? ? E1 ? ? E2. unfold_sigs. red_sig.
-    apply (subantisymmetry (≤) _ _); apply (join_lub _ _ _).
-    + rewrite (L $ E1). now apply join_ub_l.
-    + rewrite (L $ E2). now apply join_ub_r.
-    + rewrite <-(L $ E1). now apply join_ub_l.
-    + rewrite <-(L $ E2). now apply join_ub_r.
+    apply (antisymmetry (≤) _ _); apply (join_lub _ _ _).
+    + rewrite (L $ E1)...
+    + rewrite (L $ E2)...
+    + rewrite <-(L $ E1)...
+    + rewrite <-(L $ E2)...
   Qed.
 
   Global Instance join_sl_order_join_sl: JoinSemiLattice L.
   Proof. split. split. split; try apply _.
-  + intros x ? y ? z ?. apply (subantisymmetry (≤) _ _).
+  + intros x ? y ? z ?. apply (antisymmetry (≤) _ _).
     * apply (join_lub _ _ _). 2: apply (join_lub _ _ _).
       - now apply join_ub_3_l.
       - now apply join_ub_3_m.
@@ -49,28 +60,29 @@ Section join_semilattice_order.
       - now apply join_ub_3_assoc_l.
       - now apply join_ub_3_assoc_m.
       - now apply join_ub_3_assoc_r.
-  + intros x ? y ?. apply (subantisymmetry (≤) _ _); apply (join_lub _ _ _);
-      now first [apply join_ub_l | try apply join_ub_r].
-  + intros x ?. apply (subantisymmetry (≤) _ _). now apply join_lub. now apply join_ub_l.
+  + change (Commutative (⊔) L). intros x ? y ?.
+    apply (antisymmetry (≤) _ _); apply (join_lub _ _ _); lattice_order_tac.
+  + change (BinaryIdempotent (⊔) L). intros x ?.
+    apply (antisymmetry (≤) _ _); now lattice_order_tac.
   Qed.
 
   Lemma join_le_compat_r x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : z ≤ x → z ≤ x ⊔ y.
-  Proof. intros E. subtransitivity x. now apply join_ub_l. Qed.
+  Proof. intros E. subtransitivity x. lattice_order_tac. Qed.
   Lemma join_le_compat_l x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : z ≤ y → z ≤ x ⊔ y.
   Proof. intros E. rewrite (L $ commutativity _ _ _). now apply join_le_compat_r. Qed.
 
   Lemma join_l x `{x ∊ L} y `{y ∊ L} : y ≤ x → x ⊔ y = x.
-  Proof. intros E. apply (subantisymmetry (≤) _ _). now apply join_lub. now apply join_ub_l. Qed.
+  Proof. intros E. apply (antisymmetry (≤) _ _); now lattice_order_tac. Qed.
   Lemma join_r x `{x ∊ L} y `{y ∊ L} : x ≤ y → x ⊔ y = y.
   Proof. intros E. rewrite (L $ commutativity _ _ _). now apply join_l. Qed.
 
   Lemma join_sl_le_spec x `{x ∊ L} y `{y ∊ L} : x ≤ y ↔ x ⊔ y = y.
-  Proof. split; intros E. now apply join_r. rewrite <-(L $ E). now apply join_ub_l. Qed.
+  Proof. split; intros E. now apply join_r. rewrite <-(L $ E). lattice_order_tac. Qed.
 
   Global Instance: ∀ `{z ∊ L}, OrderPreserving L L (z ⊔).
   Proof.
     intros. repeat (split; try apply _). intros.
-    apply (join_lub _ _ _). now apply join_ub_l. now apply  join_le_compat_l.
+    apply (join_lub _ _ _). lattice_order_tac. now apply  join_le_compat_l.
   Qed.
   Global Instance: ∀ `{z ∊ L}, OrderPreserving L L (⊔ z).
   Proof. intros. apply maps.order_preserving_flip. Qed.
@@ -83,8 +95,6 @@ Section join_semilattice_order.
     now apply (order_preserving (⊔ y₂)).
   Qed.
 
-  Lemma join_le x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ≤ z → y ≤ z → x ⊔ y ≤ z.
-  Proof. intros. rewrite <-(L $ idempotency (⊔) z). now apply join_le_compat. Qed.
 End join_semilattice_order.
 
 Section bounded_join_semilattice.
@@ -108,30 +118,30 @@ Section meet_semilattice_order.
   Lemma meet_lb_3_r x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ⊓ y ⊓ z ≤ z.
   Proof meet_lb_r _ _.
   Lemma meet_lb_3_m x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ⊓ y ⊓ z ≤ y.
-  Proof. subtransitivity (x ⊓ y). apply meet_lb_l; apply _. now apply meet_lb_r. Qed.
+  Proof. subtransitivity (x ⊓ y); lattice_order_tac. Qed.
   Lemma meet_lb_3_l x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ⊓ y ⊓ z ≤ x.
-  Proof. subtransitivity (x ⊓ y); apply meet_lb_l; apply _. Qed.
+  Proof. subtransitivity (x ⊓ y); lattice_order_tac. Qed.
 
   Lemma meet_lb_3_assoc_l x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ⊓ (y ⊓ z) ≤ x.
   Proof meet_lb_l _ _.
   Lemma meet_lb_3_assoc_m x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ⊓ (y ⊓ z) ≤ y.
-  Proof. subtransitivity (y ⊓ z). apply meet_lb_r; apply _. now apply meet_lb_l. Qed.
+  Proof. subtransitivity (y ⊓ z); lattice_order_tac. Qed.
   Lemma meet_lb_3_assoc_r x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ⊓ (y ⊓ z) ≤ z.
-  Proof. subtransitivity (y ⊓ z); apply meet_lb_r; apply _. Qed.
+  Proof. subtransitivity (y ⊓ z); lattice_order_tac. Qed.
 
   Instance: Morphism (L ⇒ L ⇒ L) (⊓).
-  Proof. apply binary_morphism_proper_back.
+  Proof with lattice_order_tac. apply binary_morphism_proper_back.
     intros ? ? E1 ? ? E2. unfold_sigs. red_sig.
-    apply (subantisymmetry (≤) _ _); apply (meet_glb _ _ _).
-    + rewrite <-(L $ E1). now apply meet_lb_l.
-    + rewrite <-(L $ E2). now apply meet_lb_r.
-    + rewrite (L $ E1). now apply meet_lb_l.
-    + rewrite (L $ E2). now apply meet_lb_r.
+    apply (antisymmetry (≤) _ _); apply (meet_glb _ _ _).
+    + rewrite <-(L $ E1)...
+    + rewrite <-(L $ E2)...
+    + rewrite (L $ E1)...
+    + rewrite (L $ E2)...
   Qed.
 
   Global Instance meet_sl_order_meet_sl: MeetSemiLattice L.
   Proof. split. split. split; try apply _.
-  + intros x ? y ? z ?. apply (subantisymmetry (≤) _ _).
+  + intros x ? y ? z ?. apply (antisymmetry (≤) _ _).
     * apply (meet_glb _ _ _). apply (meet_glb _ _ _).
       - now apply meet_lb_3_assoc_l.
       - now apply meet_lb_3_assoc_m.
@@ -140,29 +150,30 @@ Section meet_semilattice_order.
       - now apply meet_lb_3_l.
       - now apply meet_lb_3_m.
       - now apply meet_lb_3_r.
-  + intros x ? y ?. apply (subantisymmetry (≤) _ _); apply (meet_glb _ _ _);
-      now first [apply meet_lb_l | try apply meet_lb_r].
-  + intros x ?. apply (subantisymmetry (≤) _ _). now apply meet_lb_l. now apply meet_glb.
+  + change (Commutative (⊓) L). intros x ? y ?.
+    apply (antisymmetry (≤) _ _); apply (meet_glb _ _ _); lattice_order_tac.
+  + change (BinaryIdempotent (⊓) L). intros x ?.
+    apply (antisymmetry (≤) _ _); now lattice_order_tac.
   Qed.
 
 
   Lemma meet_le_compat_r x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ≤ z → x ⊓ y ≤ z.
-  Proof. intros E. subtransitivity x. now apply meet_lb_l. Qed.
+  Proof. intros E. subtransitivity x. lattice_order_tac. Qed.
   Lemma meet_le_compat_l x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : y ≤ z → x ⊓ y ≤ z.
   Proof. intros E. rewrite (L $ commutativity _ _ _). now apply meet_le_compat_r. Qed.
 
   Lemma meet_l x `{x ∊ L} y `{y ∊ L} : x ≤ y → x ⊓ y = x.
-  Proof. intros E. apply (subantisymmetry (≤) _ _). now apply meet_lb_l. now apply meet_glb. Qed.
+  Proof. intros E. apply (antisymmetry (≤) _ _); now lattice_order_tac. Qed.
   Lemma meet_r x `{x ∊ L} y `{y ∊ L} : y ≤ x → x ⊓ y = y.
   Proof. intros E. rewrite (L $ commutativity _ _ _). now apply meet_l. Qed.
 
   Lemma meet_sl_le_spec x `{x ∊ L} y `{y ∊ L} : x ≤ y ↔ x ⊓ y = x.
-  Proof. split; intros E. now apply meet_l. rewrite <-(L $ E). now apply meet_lb_r. Qed.
+  Proof. split; intros E. now apply meet_l. rewrite <-(L $ E). lattice_order_tac. Qed.
 
   Global Instance: ∀ `{z ∊ L}, OrderPreserving L L (z ⊓).
   Proof.
     intros. repeat (split; try apply _). intros.
-    apply (meet_glb _ _ _). now apply meet_lb_l. now apply  meet_le_compat_l.
+    apply (meet_glb _ _ _). lattice_order_tac. now apply  meet_le_compat_l.
   Qed.
   Global Instance: ∀ `{z ∊ L}, OrderPreserving L L (⊓ z).
   Proof. intros. apply maps.order_preserving_flip. Qed.
@@ -175,50 +186,48 @@ Section meet_semilattice_order.
     now apply (order_preserving (⊓ y₂)).
   Qed.
 
-  Lemma meet_le x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : z ≤ x → z ≤ y → z ≤ x ⊓ y.
-  Proof. intros. rewrite <-(L $ idempotency (⊓) z). now apply meet_le_compat. Qed.
 End meet_semilattice_order.
+
+Ltac lattice_order_simplify L :=
+    repeat match goal with
+      | E : ?x ≤ ?y |- context [ ?x ⊔ ?y ] => rewrite (L $ join_r _ _ E)
+      | E : ?x ≤ ?y |- context [ ?y ⊔ ?x ] => rewrite (L $ join_l _ _ E)
+      | E : ?x ≤ ?y |- context [ ?x ⊓ ?y ] => rewrite (L $ meet_l _ _ E)
+      | E : ?x ≤ ?y |- context [ ?y ⊓ ?x ] => rewrite (L $ meet_r _ _ E)
+      | |- context [ ?x ⊔ ?x ] => rewrite (L $ idempotency (⊔) x)
+      | |- context [ ?x ⊓ ?x ] => rewrite (L $ idempotency (⊓) x)
+    end.
 
 Section lattice_order.
   Context `{LatticeOrder (L:=L)}.
 
   Instance: Absorption (⊓) (⊔) L L.
-  Proof.
-    intros x ? y ?. apply (subantisymmetry (≤) _ _).
-     apply (meet_lb_l _ _).
-    apply (meet_le _ _ _). easy. now apply join_ub_l.
-  Qed.
+  Proof. intros x ? y ?. apply (antisymmetry (≤) _ _); repeat lattice_order_tac. Qed.
 
   Instance: Absorption (⊔) (⊓) L L.
-  Proof.
-    intros x ? y ?. apply (subantisymmetry (≤) _ _).
-     apply (join_le _ _ _). easy. now apply meet_lb_l.
-    apply (join_ub_l _ _).
-  Qed.
+  Proof. intros x ? y ?. apply (antisymmetry (≤) _ _); repeat lattice_order_tac. Qed.
 
   Global Instance lattice_order_lattice: Lattice L := {}.
 
   Lemma meet_join_distr_l_le x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : (x ⊓ y) ⊔ (x ⊓ z) ≤ x ⊓ (y ⊔ z).
-  Proof. apply (meet_le _ _ _).
-  + apply (join_le _ _ _); now apply meet_lb_l.
-  + apply (join_le _ _ _).
-    * subtransitivity y. now apply meet_lb_r. now apply join_ub_l.
-    * subtransitivity z. now apply meet_lb_r. now apply join_ub_r.
+  Proof with try lattice_order_tac.
+    apply (meet_glb _ _ _); apply (join_lub _ _ _)...
+    subtransitivity y...
+    subtransitivity z...
   Qed.
 
   Lemma join_meet_distr_l_le x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ⊔ (y ⊓ z) ≤ (x ⊔ y) ⊓ (x ⊔ z).
-  Proof. apply (meet_le _ _ _).
-  + apply (join_le _ _ _). now apply join_ub_l.
-     subtransitivity y. now apply meet_lb_l. now apply join_ub_r.
-  + apply (join_le _ _ _). now apply join_ub_l.
-     subtransitivity z. now apply meet_lb_r. now apply join_ub_r.
+  Proof with try lattice_order_tac.
+    apply (meet_glb _ _ _); apply (join_lub _ _ _)...
+    subtransitivity y...
+    subtransitivity z...
   Qed.
 End lattice_order.
 
 Definition default_join_sl_le `{Equiv A} `{Join A} : Le A :=  λ x y, x ⊔ y = y.
 
 Section join_sl_order_alt.
-  Context {A} {L:@Subset A} `{Equiv A} `{Join A} `{!JoinSemiLattice L}.
+  Context {A} {L:@set A} `{Equiv A} `{Join A} `{!JoinSemiLattice L}.
   Context `{Le A} (le_correct : ∀ `{x ∊ L} `{y ∊ L}, x ≤ y ↔ x ⊔ y = y).
 
   Lemma alt_Build_JoinSemiLatticeOrder : JoinSemiLatticeOrder L.
@@ -240,7 +249,7 @@ End join_sl_order_alt.
 Definition default_meet_sl_le `{Equiv A} `{Meet A} : Le A :=  λ x y, x ⊓ y = x.
 
 Section meet_sl_order_alt.
-  Context {A} {L:@Subset A} `{Equiv A} `{Meet A} `{!MeetSemiLattice L}.
+  Context {A} {L:@set A} `{Equiv A} `{Meet A} `{!MeetSemiLattice L}.
   Context `{Le A} (le_correct : ∀ `{x ∊ L} `{y ∊ L}, x ≤ y ↔ x ⊓ y = x).
 
   Lemma alt_Build_MeetSemiLatticeOrder : MeetSemiLatticeOrder L.
@@ -306,9 +315,10 @@ Section order_preserving_join_sl_mor.
   Lemma order_preserving_join_sl_mor: JoinSemiLattice_Morphism L K f.
   Proof.
     repeat (split; try apply _).
-    intros x ? y ?. change (f (x ⊔ y) = f x ⊔ f y). case (total (≤) x y); intros E.
-    + rewrite (L $ join_r _ _ E). subsymmetry. apply (join_r _ _). now apply (order_preserving _).
-    + rewrite (L $ join_l _ _ E). subsymmetry. apply (join_l _ _). now apply (order_preserving _).
+    intros x ? y ?. change (f (x ⊔ y) = f x ⊔ f y). subsymmetry.
+    case (total (≤) x y); intro; lattice_order_simplify L;
+    [ apply (join_r _ _) | apply (join_l _ _) ];
+    now apply (order_preserving f).
   Qed.
 End order_preserving_join_sl_mor.
 
@@ -321,44 +331,179 @@ Section order_preserving_meet_sl_mor.
   Lemma order_preserving_meet_sl_mor: MeetSemiLattice_Morphism L K f.
   Proof.
     repeat (split; try apply _).
-    intros x ? y ?. change (f (x ⊓ y) = f x ⊓ f y). case (total (≤) x y); intros E.
-    + rewrite (L $ meet_l _ _ E). subsymmetry. apply (meet_l _ _). now apply (order_preserving _).
-    + rewrite (L $ meet_r _ _ E). subsymmetry. apply (meet_r _ _). now apply (order_preserving _).
+    intros x ? y ?. change (f (x ⊓ y) = f x ⊓ f y). subsymmetry.
+    case (total (≤) x y); intro; lattice_order_simplify L;
+    [ apply (meet_l _ _) | apply (meet_r _ _) ];
+    now apply (order_preserving f).
   Qed.
 End order_preserving_meet_sl_mor.
 
-Lemma meet_nonneg `{MeetSemiLatticeOrder (L:=L)} `{Zero _} `{0 ∊ L}
-  x `{x ∊ L⁺} y `{y ∊ L⁺} : x ⊓ y ∊ L⁺ .
-Proof. split. apply _. apply (meet_glb _ _ _); firstorder. Qed.
-Hint Extern 5 (_ ⊓ _ ∊ _⁺) => eapply @meet_nonneg : typeclass_instances.
+Require Import orders.orders.
 
-Lemma join_nonneg_l `{JoinSemiLatticeOrder (L:=L)} `{Zero _} `{0 ∊ L}
-  x `{x ∊ L⁺} y `{y ∊ L} : x ⊔ y ∊ L⁺ .
-Proof. split. apply _. subtransitivity x. firstorder. exact (join_ub_l _ _). Qed.
+Section join_strict.
+  Context `{JoinSemiLatticeOrder (L:=L)} `{Lt _} `{UnEq _} `{!FullPartialOrder L}.
 
-Lemma join_nonneg_r `{JoinSemiLatticeOrder (L:=L)} `{Zero _} `{0 ∊ L}
-  x `{x ∊ L} y `{y ∊ L⁺} : x ⊔ y ∊ L⁺ .
-Proof. split. apply _. subtransitivity y. firstorder. exact (join_ub_r _ _). Qed.
+  Lemma join_lt_compat_r x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : z < x → z < x ⊔ y.
+  Proof. intros E. apply (lt_le_trans _ x _); trivial; lattice_order_tac. Qed.
+  Lemma join_lt_compat_l x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : z < y → z < x ⊔ y.
+  Proof. intros E. rewrite (L $ commutativity _ _ _). now apply join_lt_compat_r. Qed.
+End join_strict.
 
-Hint Extern 5 (_ ⊔ _ ∊ _⁺) => eapply @join_nonneg_l : typeclass_instances.
-Hint Extern 5 (_ ⊔ _ ∊ _⁺) => eapply @join_nonneg_r : typeclass_instances.
+Section meet_strict.
+  Context `{MeetSemiLatticeOrder (L:=L)} `{Lt _} `{UnEq _} `{!FullPartialOrder L}.
 
+  Lemma meet_lt_compat_r x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x < z → x ⊓ y < z.
+  Proof. intros E. apply (le_lt_trans _ x _); trivial; lattice_order_tac. Qed.
+  Lemma meet_lt_compat_l x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : y < z → x ⊓ y < z.
+  Proof. intros E. rewrite (L $ commutativity _ _ _). now apply meet_lt_compat_r. Qed.
+End meet_strict.
 
-Section full_total_order.
-  Context `{MeetSemiLatticeOrder (L:=L)} `{Lt _} `{UnEq _}
-    `{!FullPartialOrder L} `{!TotalOrder L}.
+Section join_full.
+  Context `{FullJoinSemiLatticeOrder (L:=L)}.
 
-  Lemma total_meet_lt x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : z < x → z < y → z < x ⊓ y.
-  Proof.
-    destruct (total (≤) x y) as [E|E];
-    [ rewrite (_ $ meet_l _ _ E) | rewrite (_ $ meet_r _ _ E) ]; tauto.
+  Global Instance: JoinSemiLatticeOrder L.
+  Proof. split. apply _.
+  + exact full_join_closed.
+  + exact full_join_ub_l.
+  + exact full_join_ub_r.
+  + intros x ? y ? z ?. assert (x ⊔ y ∊ L) by now apply full_join_closed.
+    rewrite 3!(le_iff_not_lt_flip _ _). intros E1 E2 E3.
+    destruct (join_sub _ _ _ E3). now destruct E1. now destruct E2.
   Qed.
 
-  Context `{Zero _} `{0 ∊ L}.
+  Lemma join_sub_l x `{x ∊ L} y `{y ∊ L} : x < x ⊔ y → x < y.
+  Proof. intro E. destruct (join_sub _ _ _ E); trivial. now destruct (irreflexivity (<) x). Qed.
 
-  Lemma total_meet_pos x `{x ∊ L₊} y `{y ∊ L₊} : x ⊓ y ∊ L₊ .
-  Proof. split. apply _. apply (total_meet_lt _ _ _); firstorder. Qed.
-End full_total_order.
+  Lemma join_sub_r x `{x ∊ L} y `{y ∊ L} : y < x ⊔ y → y < x.
+  Proof. intro E. destruct (join_sub _ _ _ E); trivial. now destruct (irreflexivity (<) y). Qed.
 
-Hint Extern 5 (_ ⊓ _ ∊ _₊) => eapply @total_meet_pos : typeclass_instances.
+  Lemma join_lt x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x < z → y < z → x ⊔ y < z.
+  Proof. intros E1 E2.
+    destruct (cotransitivity E1 (x ⊔ y)); trivial.
+    assert (x ≤ y) as E3 by now apply (lt_le _ _); apply (join_sub_l _ _).
+    now lattice_order_simplify L.
+  Qed.
 
+  Lemma join_lt_compat x₁ `{x₁ ∊ L} x₂ `{x₂ ∊ L} y₁ `{y₁ ∊ L} y₂ `{y₂ ∊ L}
+  : x₁ < x₂ → y₁ < y₂ → x₁ ⊔ y₁ < x₂ ⊔ y₂.
+  Proof. intros E1 E2. apply (join_lt _ _ _).
+    apply (lt_le_trans _ x₂ _); trivial; lattice_order_tac.
+    apply (lt_le_trans _ y₂ _); trivial; lattice_order_tac.
+  Qed.
+End join_full.
+
+Section meet_full.
+  Context `{FullMeetSemiLatticeOrder (L:=L)}.
+
+  Global Instance: MeetSemiLatticeOrder L.
+  Proof. split. apply _.
+  + exact full_meet_closed.
+  + exact full_meet_lb_l.
+  + exact full_meet_lb_r.
+  + intros x ? y ? z ?. assert (x ⊓ y ∊ L) by now apply full_meet_closed.
+    rewrite 3!(le_iff_not_lt_flip _ _). intros E1 E2 E3.
+    destruct (meet_slb _ _ _ E3). now destruct E1. now destruct E2.
+  Qed.
+
+  Lemma meet_slb_l x `{x ∊ L} y `{y ∊ L} : x ⊓ y < x → y < x.
+  Proof. intro E. destruct (meet_slb _ _ _ E); trivial. now destruct (irreflexivity (<) x). Qed.
+
+  Lemma meet_slb_r x `{x ∊ L} y `{y ∊ L} : x ⊓ y < y → x < y.
+  Proof. intro E. destruct (meet_slb _ _ _ E); trivial. now destruct (irreflexivity (<) y). Qed.
+
+  Lemma meet_lt x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : z < x → z < y → z < x ⊓ y.
+  Proof. intros E1 E2.
+    destruct (cotransitivity E1 (x ⊓ y)); trivial.
+    assert (y ≤ x) as E3 by now apply (lt_le _ _); apply (meet_slb_l _ _).
+    now lattice_order_simplify L.
+  Qed.
+
+  Lemma meet_lt_compat x₁ `{x₁ ∊ L} x₂ `{x₂ ∊ L} y₁ `{y₁ ∊ L} y₂ `{y₂ ∊ L}
+  : x₁ < x₂ → y₁ < y₂ → x₁ ⊓ y₁ < x₂ ⊓ y₂.
+  Proof. intros E1 E2. apply (meet_lt _ _ _).
+    apply (le_lt_trans _ x₁ _); trivial; lattice_order_tac.
+    apply (le_lt_trans _ y₁ _); trivial; lattice_order_tac.
+  Qed.
+End meet_full.
+
+Global Instance: ∀ `{FullLatticeOrder (L:=L)}, LatticeOrder L := {}.
+
+Section dec_full_lattice_order.
+  Context `{FullPseudoOrder (S:=L)} `{!SubDecision L L (<)}.
+
+  Instance dec_full_join_semilattice_order `{Join _} `{!JoinSemiLatticeOrder L}
+    : FullJoinSemiLatticeOrder L.
+  Proof. split; try apply _.
+  + exact join_ub_l.
+  + exact join_ub_r.
+  + intros x ? y ? z ? E.
+    destruct (decide_sub (<) z x) as [?| E1]. now left.
+    destruct (decide_sub (<) z y) as [?| E2]. now right.
+    cut False. tauto. revert E. apply (le_iff_not_lt_flip _ _).
+    revert E1 E2. rewrite <-2!(le_iff_not_lt_flip _ _).
+    exact (join_lub _ _ _).
+  Qed.
+
+  Instance dec_full_meet_semilattice_order `{Meet _} `{!MeetSemiLatticeOrder L}
+    : FullMeetSemiLatticeOrder L.
+  Proof. split; try apply _.
+  + exact meet_lb_l.
+  + exact meet_lb_r.
+  + intros x ? y ? z ? E.
+    destruct (decide_sub (<) x z) as [?| E1]. now left.
+    destruct (decide_sub (<) y z) as [?| E2]. now right.
+    cut False. tauto. revert E. apply (le_iff_not_lt_flip _ _).
+    revert E1 E2. rewrite <-2!(le_iff_not_lt_flip _ _).
+    exact (meet_glb _ _ _).
+  Qed.
+
+  Instance dec_full_lattice_order `{Join _} `{Meet _} `{!LatticeOrder L}
+    : FullLatticeOrder L := {}.
+End dec_full_lattice_order.
+
+Section strictly_order_reflecting_join_sl_mor.
+  Context `{FullJoinSemiLatticeOrder (L:=L)} `{FullJoinSemiLatticeOrder (L:=K)}
+    (f: L ⇀ K) `{!StrictlyOrderReflecting L K f}.
+
+  Existing Instance full_pseudo_order_preserving.
+  Existing Instance strict_order_morphism_mor.
+
+  Global Instance strictly_order_reflecting_join_sl_mor: JoinSemiLattice_Morphism L K f.
+  Proof.
+    repeat (split; try apply _).
+    intros x ? y ?. change (f (x ⊔ y) = f x ⊔ f y).
+    apply (antisymmetry le _ _).
+    + apply (le_iff_not_lt_flip _ _). intro.
+      destruct (irreflexivity (<) x). subtransitivity y;
+      [ apply (join_sub_l _ _) | apply (join_sub_r _ _) ];
+      apply (strictly_order_reflecting f _ _);
+      apply (le_lt_trans _ (f x ⊔ f y) _); trivial; lattice_order_tac.
+    + apply (join_lub _ _ _); apply (order_preserving f _ _); lattice_order_tac.
+  Qed.
+End strictly_order_reflecting_join_sl_mor.
+
+Section strictly_order_reflecting_meet_sl_mor.
+  Context `{FullMeetSemiLatticeOrder (L:=L)} `{FullMeetSemiLatticeOrder (L:=K)}
+    (f: L ⇀ K) `{!StrictlyOrderReflecting L K f}.
+
+  Existing Instance full_pseudo_order_preserving.
+  Existing Instance strict_order_morphism_mor.
+
+  Global Instance strictly_order_reflecting_meet_sl_mor: MeetSemiLattice_Morphism L K f.
+  Proof.
+    repeat (split; try apply _).
+    intros x ? y ?. change (f (x ⊓ y) = f x ⊓ f y).
+    apply (antisymmetry le _ _).
+    + apply (meet_glb _ _ _); apply (order_preserving f _ _); lattice_order_tac.
+    + apply (le_iff_not_lt_flip _ _). intro.
+      destruct (irreflexivity (<) x). subtransitivity y;
+      [ apply (meet_slb_r _ _) | apply (meet_slb_l _ _) ];
+      apply (strictly_order_reflecting f _ _);
+      apply (lt_le_trans _ (f x ⊓ f y) _); trivial; lattice_order_tac.
+  Qed.
+End strictly_order_reflecting_meet_sl_mor.
+
+Instance strictly_order_reflecting_lattice_mor
+  `{FullLatticeOrder (L:=L)} `{FullLatticeOrder (L:=K)}
+  (f: L ⇀ K) `{!StrictlyOrderReflecting L K f}
+  : Lattice_Morphism L K f := {}.

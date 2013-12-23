@@ -1,13 +1,13 @@
 Require Import
   abstract_algebra theory.setoids.
 
-Lemma prod_el `{X:Subset} `{Y:Subset} x `{x ∊ X} y `{y ∊ Y} : (x, y) ∊ X * Y.
+Lemma prod_el `{X:set} `{Y:set} x `{x ∊ X} y `{y ∊ Y} : (x, y) ∊ X * Y.
 Proof. firstorder. Qed.
 Hint Extern 5 ((_, _) ∊ _ * _) => eapply @prod_el : typeclass_instances.
 
-Lemma prod_subsetof {A B} `{@SubsetOf A X1 X2} `{@SubsetOf B Y1 Y2} : SubsetOf (X1*Y1) (X2*Y2).
+Lemma prod_subset {A B} `{@Subset A X1 X2} `{@Subset B Y1 Y2} : Subset (X1*Y1) (X2*Y2).
 Proof. intros [x y]. firstorder. Qed.
-Hint Extern 5 (SubsetOf (_ * _) (_ * _)) => eapply @prod_subsetof : typeclass_instances.
+Hint Extern 5 (Subset (_ * _) (_ * _)) => eapply @prod_subset : typeclass_instances.
 
 Lemma prod_setoid `{Setoid (S:=X)} `{Setoid (S:=Y)} : Setoid (X * Y).
 Proof. split.
@@ -29,11 +29,11 @@ Hint Extern 5 (_ * _ ⊆ _ * _) => eapply @prod_subsetoid : typeclass_instances.
 
 Lemma prod_strongsetoid `{StrongSetoid (S:=X)} `{StrongSetoid (S:=Y)} : StrongSetoid (X * Y).
 Proof. split. split.
-+ intros [??][??] [E|E]; contradict E; apply (subirreflexivity _ _).
++ intros [??][??] [E|E]; contradict E; apply (irreflexivity _ _).
 + intros [??][??][??][??] [E|E]; do 2 red; subsymmetry in E; tauto.
 + intros [a b][??][c d][??] [E|E] [x y][??].
-  destruct (subcotransitivity E x); [left | right]; do 2 red; tauto.
-  destruct (subcotransitivity E y); [left | right]; do 2 red; tauto.
+  destruct (cotransitivity E x); [left | right]; do 2 red; tauto.
+  destruct (cotransitivity E y); [left | right]; do 2 red; tauto.
 + intros [??][??][??][??]. unfold equiv, uneq, prod_equiv, prod_uneq.
   rewrite <-2!(tight_apart _ _). tauto.
 Qed.
@@ -44,23 +44,34 @@ Lemma pair_proper: Find_Proper_Signature (@pair) 0
 Proof. red. intros. intros ?? E1 ?? E2. unfold_sigs. red_sig. now split. Qed.
 Hint Extern 0 (Find_Proper_Signature (@pair) 0 _) => eexact pair_proper : typeclass_instances.
 
-Lemma fst_closed `{X:Subset} `{Y:Subset} : Closed (X * Y ⇀ X) fst.
-Proof. intros [??]. firstorder. Qed.
+Section funs.
+  Context `{X:set} `{Y:set} `{Equiv X} `{Equiv Y}.
 
-Lemma snd_closed `{X:Subset} `{Y:Subset} : Closed (X * Y ⇀ Y) snd.
-Proof. intros [??]. firstorder. Qed.
+  Lemma pair_morphism `{!Setoid X} : Morphism (X ⇒ Y ⇒ X*Y) pair.
+  Proof. intros ?? E1. unfold_sigs. split;[split|];
+    (intros ?? E; unfold_sigs; red_sig; now split).
+  Qed.
 
-Lemma fst_morphism `{X:Subset} `{Y:Subset} `{Equiv X} `{Equiv Y} : Morphism (X * Y ⇒ X) fst.
-Proof. intros [??][??] [[[??][??]][??]]. now red_sig. Qed.
-Hint Extern 2 (Morphism _ fst) => class_apply @fst_morphism : typeclass_instances.
+  Lemma fst_closed : Closed (X * Y ⇀ X) fst.
+  Proof. intros [??]. firstorder. Qed.
 
-Lemma snd_morphism `{X:Subset} `{Y:Subset} `{Equiv X} `{Equiv Y} : Morphism (X * Y ⇒ Y) snd.
-Proof. intros [??][??] [[[??][??]][??]]. now red_sig. Qed.
-Hint Extern 2 (Morphism _ snd) => class_apply @snd_morphism : typeclass_instances.
+  Lemma snd_closed : Closed (X * Y ⇀ Y) snd.
+  Proof. intros [??]. firstorder. Qed.
+
+  Lemma fst_morphism : Morphism (X * Y ⇒ X) fst.
+  Proof. intros [??][??] [[[??][??]][??]]. now red_sig. Qed.
+
+  Lemma snd_morphism : Morphism (X * Y ⇒ Y) snd.
+  Proof. intros [??][??] [[[??][??]][??]]. now red_sig. Qed.
+End funs.
+
+Hint Extern 2 (Morphism _ pair) => class_apply @pair_morphism : typeclass_instances.
+Hint Extern 2 (Morphism _ fst)  => class_apply @fst_morphism  : typeclass_instances.
+Hint Extern 2 (Morphism _ snd)  => class_apply @snd_morphism  : typeclass_instances.
 
 Hint Extern 2 (fst ?p ∊ ?X) =>
   let A := type of (snd p) in
-  let S := fresh "S" in evar (S:@Subset A);
+  let S := fresh "S" in evar (S:@set A);
   let Y := eval unfold S in S in clear S;
   let el := fresh "el" in assert (p ∊ X * Y) as el by typeclasses eauto;
   eapply (@fst_closed _ X _ Y p el)
@@ -68,13 +79,13 @@ Hint Extern 2 (fst ?p ∊ ?X) =>
 
 Hint Extern 2 (snd ?p ∊ ?Y) =>
   let A := type of (fst p) in
-  let S := fresh "S" in evar (S:@Subset A);
+  let S := fresh "S" in evar (S:@set A);
   let X := eval unfold S in S in clear S;
   let el := fresh "el" in assert (p ∊ X * Y) as el by typeclasses eauto;
   eapply (@snd_closed _ X _ Y p el)
 : typeclass_instances.
 
-Lemma prod_equal_components `{X:Subset} `{Y:Subset} `{Equiv X} `{Equiv Y}
+Lemma prod_equal_components `{X:set} `{Y:set} `{Equiv X} `{Equiv Y}
  (x y : X * Y) : fst x = fst y → snd x = snd y → x = y.
 Proof. destruct x,y. firstorder. Qed.
 
@@ -99,38 +110,38 @@ Section product.
 End product.
 Hint Extern 2 (Decision (@equiv _ prod_equiv _ _)) => eapply @prod_dec : typeclass_instances.
 
-Lemma prod_inhabited `{X:Subset} `{Y:Subset} `{!Inhabited X} `{!Inhabited Y} : Inhabited (X*Y).
+Lemma prod_inhabited `{X:set} `{Y:set} `{!Inhabited X} `{!Inhabited Y} : Inhabited (X*Y).
 Proof. destruct (inhabited X) as [x ?]. destruct (inhabited Y) as [y ?]. exists (x,y). apply _. Qed.
 Hint Extern 2 (Inhabited (_ * _)) => eapply @prod_inhabited : typeclass_instances.
 
-Definition prod_map `{X1:Subset} `{X2:Subset} `{Y1:Subset} `{Y2:Subset}
-  (f:X1⇀X2) (g:Y1⇀Y2) : X1*Y1 ⇀ X2*Y2 := λ x, (f (fst x), g (snd x)).
+Definition prod_map `{X₁:set} `{X₂:set} `{Y₁:set} `{Y₂:set}
+  (f:X₁⇀X₂) (g:Y₁⇀Y₂) : X₁*Y₁ ⇀ X₂*Y₂ := λ x, (f (fst x), g (snd x)).
 
 Section prod_map.
-  Context `{Setoid (S:=X1)} `{Setoid (S:=X2)}.
-  Context `{Setoid (S:=Y1)} `{Setoid (S:=Y2)}.
+  Context `{Setoid (S:=X₁)} `{Setoid (S:=X₂)}.
+  Context `{Setoid (S:=Y₁)} `{Setoid (S:=Y₂)}.
 
-  Context (f:X1⇀X2) (g:Y1⇀Y2).
+  Context (f:X₁⇀X₂) (g:Y₁⇀Y₂).
 
-  Lemma prod_map_image U V : (prod_map f g)⁺¹(U*V) = (f⁺¹(U) * g⁺¹(V))%subset .
+  Lemma prod_map_image U V : (prod_map f g)⁺¹(U*V) = (f⁺¹(U) * g⁺¹(V))%set .
   Proof. unfold prod_map. intros [x y]. split.
     intros [[??][[x' y'][[??][??]]]]. firstorder.
     intros [ [? [x' [??]]] [? [y' [??]]] ]. split. apply _.
       exists_sub (x',y'). now split.
   Qed.
 
-  Context `{!Morphism (X1 ⇒ X2) f} `{!Morphism (Y1 ⇒ Y2) g}.
+  Context `{!Morphism (X₁ ⇒ X₂) f} `{!Morphism (Y₁ ⇒ Y₂) g}.
 
-  Lemma prod_map_image_el U V `{!SubsetOf U X1} `{!SubsetOf V Y1} x `{x ∊ U} y `{y ∊ V}
+  Lemma prod_map_image_el U V `{!Subset U X₁} `{!Subset V Y₁} x `{x ∊ U} y `{y ∊ V}
     : (f x, g y) ∊ (prod_map f g)⁺¹(U*V).
   Proof. rewrite (prod_map_image U V). apply _. Qed.
 
-  Instance prod_map_mor : Morphism (X1*Y1 ⇒ X2*Y2) (prod_map f g).
+  Instance prod_map_mor : Morphism (X₁*Y₁ ⇒ X₂*Y₂) (prod_map f g).
   Proof. intros [??][??][[[??][??]][E1 E2]]. unfold prod_map. simpl.
     red_sig. now rewrite (_ $ E1), (_ $ E2).
   Qed.
 
-  Lemma prod_map_image_subsetoid U V `{!U ⊆ X1} `{!V ⊆ Y1} : (prod_map f g)⁺¹(U*V) ⊆ X2*Y2.
+  Lemma prod_map_image_subsetoid U V `{!U ⊆ X₁} `{!V ⊆ Y₁} : (prod_map f g)⁺¹(U*V) ⊆ X₂*Y₂.
   Proof. rewrite (prod_map_image U V). apply _. Qed.
 End prod_map.
 Hint Extern 2 (Morphism _ (prod_map _ _)) => eapply @prod_map_mor : typeclass_instances.
@@ -174,8 +185,8 @@ Hint Extern 2 (prod_assoc_l _ ∊ (?X * ?Y) * ?Z) =>
 Section proj_image.
   Context `{Setoid (S:=X)} `{Setoid (S:=Y)}.
 
-  Lemma prod_diag_image U `{U ⊆ X} : image (X:=X) (Y:=X*X) prod_diag U ⊆ (U*U)%subset .
-  Proof. apply (subsetoid_from_subsetof (X*X) _ _).
+  Lemma prod_diag_image U `{U ⊆ X} : image (X:=X) (Y:=X*X) prod_diag U ⊆ U*U.
+  Proof. apply (subsetoid_from_subset (X*X) _ _).
     intros [??] [[??][?[?[E1 E2]]]]. split. now rewrite <-(X $ E1). now rewrite <-(X $ E2).
   Qed.
 
@@ -185,20 +196,20 @@ Section proj_image.
   Context U `{U ⊆ X*Y}.
 
   Lemma fst_snd_image : U ⊆ π₁⁺¹(U)*π₂⁺¹(U).
-  Proof. apply (subsetoid_from_subsetof (X*Y) _ _). intros [a b] ?.
+  Proof. apply (subsetoid_from_subset (X*Y) _ _). intros [a b] ?.
     destruct (_ : (a,b) ∊ X*Y).
     split; (split; [ apply _ | now exists_sub (a,b) ]).
   Qed.
 
   Lemma fst_image_inhabited `{!Inhabited U} : Inhabited π₁⁺¹(U).
   Proof. destruct (inhabited U) as [[x y]?].
-    destruct (_ : (x,y) ∊ (X*Y)%subset ).
+    destruct (_ : (x,y) ∊ X*Y ).
     exists x. split; trivial. now exists_sub (x,y).
   Qed.
 
   Lemma snd_image_inhabited `{!Inhabited U} : Inhabited π₂⁺¹(U).
   Proof. destruct (inhabited U) as [[x y]?].
-    destruct (_ : (x,y) ∊ (X*Y)%subset ).
+    destruct (_ : (x,y) ∊ X*Y ).
     exists y. split; trivial. now exists_sub (x,y).
   Qed.
 End proj_image.

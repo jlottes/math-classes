@@ -4,6 +4,13 @@ Require Import
 
 (* We have a notation already for the powerset of X, (⊆ X) *)
 
+Class UniverseSet {A} := universe_set : @set A.
+Identity Coercion Id_UniverseSet_set : UniverseSet >-> set.
+
+Instance universe_top `{X:UniverseSet} : Top set := X.
+
+Hint Extern 10 (@set set) => exact (_:UniverseSet) : typeclass_instances.
+
 Hint Extern 2 (_ ∊ (⊆ _)) => red : typeclass_instances.
 
 Lemma powerset_subsetoid `{Setoid (S:=X)} : (⊆ X) ⊆ Setoid.
@@ -34,10 +41,10 @@ Proof. pose proof @subsetoid_a.
   * intros S s1 T s2. red in s1, s2. red. apply _.
   * intros S s1 T s2 U s3 E1 E2. red in s1, s2, s3, E1, E2. apply subsetoid_alt. apply _.
     - intros ?? [[[??][??]]E]. unfold_sigs.
-      assert (x ∊ X) by now apply (_:SubsetOf S X).
-      assert (y ∊ X) by now apply (_:SubsetOf S X).
+      assert (x ∊ X) by now apply (_:Subset S X).
+      assert (y ∊ X) by now apply (_:Subset S X).
       intro. now rewrite <-(X $ E).
-    - apply (meet_glb (L:=every Subset) _ _ _); red; apply _.
+    - apply (meet_glb (L:=Sets) _ _ _); red; apply _.
 Qed.
 Hint Extern 2 (MeetSemiLatticeOrder (⊆ _)) => eapply @powerset_meet_semi_lattice_order : typeclass_instances.
 
@@ -46,7 +53,7 @@ Proof. pose proof @subsetoid_a.
   assert (∀ S T U, U ⊆ X → S ⊆ U → T ⊆ U → S ⊔ T ⊆ U) as lub.
     intros. apply subsetoid_alt. apply _.
     intros ?? E [?|?]; [left | right]; now rewrite <-E.
-    apply (join_lub (L:=every Subset) _ _ _); red; apply _.
+    apply (join_lub (L:=Sets) _ _ _); red; apply _.
   assert (∀ S T, S ⊆ X → T ⊆ X → S ⊔ T ⊆ X). intros. apply lub; apply _.
   split.
   * apply _.
@@ -88,7 +95,7 @@ Qed.
 Hint Extern 2 (BoundedJoinSemiLattice (⊆ ?X)) => eapply (@powerset_bounded_join_semi_lattice _ _ X): typeclass_instances.
 
 Lemma powerset_distr_lattice `{Setoid (S:=X)} : DistributiveLattice (⊆ X).
-Proof. split. apply _.  intro. intros. exact (join_meet_distr_l (L:=every Subset) _ _ _). Qed.
+Proof. split. apply _.  intro. intros. exact (join_meet_distr_l (L:=Sets) _ _ _). Qed.
 Hint Extern 2 (DistributiveLattice (⊆ _)) => eapply @powerset_distr_lattice : typeclass_instances.
 
 Lemma union_subsetoid `{Setoid (S:=X)} U V `{U ⊆ X} `{V ⊆ X} : U ⊔ V ⊆ X.

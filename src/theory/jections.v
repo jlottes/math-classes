@@ -47,23 +47,16 @@ End contents.
 
 Hint Extern 5 (Morphism _ (_⁻¹)) => eapply @inverse_mor : typeclass_instances.
 
-(*
+Instance id_inverse `{X:set} {Y} : Inverse (id : X ⇀ Y) := (id : Y ⇀ X).
 
-Lemma injective_ne `{Equiv A} `{Equiv B} `(f : A → B) `{!Injective f} x y :
-  x ≠ y → f x ≠ f y.
-Proof. intros E1 E2. apply E1. now apply (injective f). Qed.
-*)
-
-Instance id_inverse `{X:Subset} {Y} : Inverse (id : X ⇀ Y) := (id : Y ⇀ X).
-
-Instance id_injective `{Equiv} `{!Setoid X} `{!Setoid Y} `{!SubsetOf X Y} : Injective X Y id.
+Instance id_injective `{Equiv} `{!Setoid X} `{!Setoid Y} `{!Subset X Y} : Injective X Y id.
 Proof. split; try apply _. easy. Qed.
 Instance id_surjective `{Equiv} `{!Setoid X} : Surjective X X id.
 Proof. split; try apply _. change (Morphism (X ⇒ X) id). apply _. Qed.
 Instance id_bijective `{Equiv} `{!Setoid X} : Bijective X X id := {}.
 
 Section compositions.
-  Context `{X:Subset} `{Y:Subset} `{Z:Subset}.
+  Context `{X:set} `{Y:set} `{Z:set}.
   Context (g: X ⇀ Y) (f: Y ⇀ Z) `{!Inverse f} `{!Inverse g}.
 
   Instance compose_inverse: Inverse (f ∘ g) := g⁻¹ ∘ f⁻¹.
@@ -91,8 +84,8 @@ Lemma alt_Build_Injective `{Setoid (S:=X)} `{Setoid (S:=Y)} (f: X ⇀ Y) `{!Inve
   Morphism (X ⇒ Y) f → Morphism (Y ⇒ X) f⁻¹ → f⁻¹ ∘ f = id → Injective X Y f.
 Proof.
   intros ?? E. split; try apply _. intros x ? y ? F.
-  rewrite <- (E _ _ (X $ subreflexivity x)).
-  rewrite <- (E _ _ (X $ subreflexivity y)).
+  rewrite <- (E _ _ (X $ reflexivity x)).
+  rewrite <- (E _ _ (X $ reflexivity y)).
   unfold compose. now rewrite_on Y -> F.
 Qed.
 
@@ -111,7 +104,7 @@ Lemma flip_bijection `{Setoid (S:=X)} `{Setoid (S:=Y)} (f: X ⇀ Y) `{!Inverse f
 Proof. apply alt_Build_Bijective; try apply _. apply (surjective f). apply (bijective f). Qed.
 Hint Extern 4 (Bijective _ _ _⁻¹) => eapply @flip_bijection : typeclass_instances.
 
-Lemma inverse_involutive `{X:Subset} `{Y:Subset} (f : X ⇀ Y) `{!Inverse f} : (f⁻¹)⁻¹ ≡ f.
+Lemma inverse_involutive `{X:set} `{Y:set} (f : X ⇀ Y) `{!Inverse f} : (f⁻¹)⁻¹ ≡ f.
 Proof. reflexivity. Qed.
 
 (* This second version is strictly for manual application. *)

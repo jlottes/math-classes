@@ -1,7 +1,7 @@
 Require Import
   abstract_algebra interfaces.metric_spaces
   theory.setoids theory.jections metric.metric_spaces metric.maps
-  orders.affinely_extended_field stdlib_field.
+  orders.affinely_extended_field stdlib_field_dec.
 
 Local Notation AQ := TheAERationals.A.
 Local Notation Q := the_ae_rationals.
@@ -38,7 +38,7 @@ Proof. destruct (_ : Dense (X:=Y) X) as [?? _].
   exists_sub (1+q+1).
   apply (ball_triangle _ _ _ x₂ _).
   apply (ball_triangle _ _ _ x₁ _); trivial.
-  now apply (subsymmetry (S:=Y) _ _).
+  now apply (symmetry (S:=Y) _ _).
 Qed.
 Arguments dense_subset_finite_points {_ Y _ _} X {_ _} _ {_} _ {_}.
 
@@ -75,17 +75,17 @@ Proof. destruct (_ : Dense (X:=Y) X) as [?? _].
   destruct (dense X y₁ (a/2)) as [x₁[??]].
   destruct (dense X y₂ (a/2)) as [x₂[??]].
   assert (p+a < q-a) as E2. apply (flip_pos_minus _ _). unfold a.
-    mc_replace (q - (q-p)/3 - (p + (q-p)/3)) with ((q-p)/3) on Q by subfield Q. apply _.
+    mc_replace (q - (q-p)/3 - (p + (q-p)/3)) with ((q-p)/3) on Q by decfield Q. apply _.
   destruct (located_points x₁ x₂ _ _ E2) as [?|B]; [left|right].
-    apply (ball_weaken_le) with (a/2+(q-a)+a/2); try apply _; [| apply (eq_le _ _); subfield Q].
+    apply (ball_weaken_le) with (a/2+(q-a)+a/2); try apply _; [| apply (eq_le _ _); decfield Q].
     apply (ball_triangle _ _ _ x₂ _).
     apply (ball_triangle _ _ _ x₁ _); trivial.
-    now apply (subsymmetry (S:=Y) _ _).
+    now apply (symmetry (S:=Y) _ _).
   contradict B.
-  apply (ball_weaken_le) with (a/2+p+a/2); try apply _; [| apply (eq_le _ _); subfield Q].
+  apply (ball_weaken_le) with (a/2+p+a/2); try apply _; [| apply (eq_le _ _); decfield Q].
   apply (ball_triangle _ _ _ y₂ _); trivial.
   apply (ball_triangle _ _ _ y₁ _); trivial.
-  now apply (subsymmetry (S:=Y) _ _).
+  now apply (symmetry (S:=Y) _ _).
 Qed.
 Arguments dense_subset_located_points {_ Y _ _} X {_ _} _ {_} _ {_} _ {_} _ {_} _.
 
@@ -97,20 +97,6 @@ Proof.
 Qed.
 
 (* Prelength space *)
-
-Lemma prelength `{MetricSpace (X:=X)} `{!PrelengthSpace X}
-  x `{x ∊ X} y `{y ∊ X} ε `{ε ∊ Q∞₊} δ₁ `{δ₁ ∊ Q∞₊} δ₂ `{δ₂ ∊ Q∞₊}
-: ε < δ₁ + δ₂ → ball ε x y → ∃ `{z ∊ X}, ball δ₁ x z ∧ ball δ₂ z y.
-Proof. intro E.
-  destruct (ae_decompose_pos ε) as [E'|?]. rewrite (_ $ E') in E.
-    pose proof (_ : δ₁ + δ₂ ∊ Q∞₊). destruct (lt_not_le_flip (P:=Q∞) _ _ E). exact (ae_inf_ub _).
-  intro. destruct (ae_decompose_pos δ₁) as [E'|?].
-    exists_sub y. split; [| easy]. rewrite (_ $ E'). exact (msp_ball_inf _ _).
-  destruct (ae_decompose_pos δ₂) as [E'|?].
-    exists_sub x. split; [easy |]. rewrite (_ $ E'). exact (msp_ball_inf _ _).
-  now apply (prelength_msp _ _ ε).
-Qed.
-
 
 Lemma isometric_image_prelength `{MetricSpace (X:=X)} `{!PrelengthSpace X} `{MetricSpace (X:=Y)}
   f `{!Isometry X Y f} : PrelengthSpace f⁺¹(X).
@@ -145,29 +131,29 @@ Proof. destruct (_ : Dense (X:=Y) X) as [?? _].
   destruct (dense (X:=Y) X y₂ b) as [x₂ [??]].
   set( d₁ := δ₁ - a ). assert (d₁ ∊ Q₊). subst d₁ f₁ a p.
     match goal with |- ?q ∊ _ =>
-      mc_replace q with (δ₁/(δ₁ + δ₂)*(2*δ₁ + 2*δ₂ + ε) / 3) on Q by subfield Q
+      mc_replace q with (δ₁/(δ₁ + δ₂)*(2*δ₁ + 2*δ₂ + ε) / 3) on Q by decfield Q
     end. apply _.
   set( d₂ := δ₂ - b ). assert (d₂ ∊ Q₊). subst d₂ f₂ b p.
     match goal with |- ?q ∊ _ =>
-      mc_replace q with (δ₂/(δ₁ + δ₂)*(2*δ₁ + 2*δ₂ + ε) / 3) on Q by subfield Q
+      mc_replace q with (δ₂/(δ₁ + δ₂)*(2*δ₁ + 2*δ₂ + ε) / 3) on Q by decfield Q
     end. apply _.
   destruct (prelength x₁ x₂ (a+ε+b) d₁ d₂) as [z [?[??]]].
   + subst d₁ d₂. rewrite <-(flip_pos_minus _ _).
     match goal with |- ?q ∊ _ => cut (q = p) end.
     intro E. now rewrite (_ $ E).
-    subtransitivity (3*p - 2*(a+b)). subst p. subfield Q.
-    assert (a+b=p) as E. subst a b f₁ f₂. subfield Q. rewrite (_ $ E). subring Q.
+    subtransitivity (3*p - 2*(a+b)). subst p. decfield Q.
+    assert (a+b=p) as E. subst a b f₁ f₂. decfield Q. rewrite (_ $ E). setring Q.
   + apply (ball_triangle _ _ _ y₂ _); trivial.
     apply (ball_triangle _ _ _ y₁ _); trivial.
-    now apply (subsymmetry (S:=Y) _ _).
+    now apply (symmetry (S:=Y) _ _).
   + exists_sub z. subst d₁ d₂. split.
-    assert (a + (δ₁ - a) = δ₁) as Ea by subring Q.
-    apply (ball_proper1 _ _ _ Y _ _ _ (_ $ Ea) _ _ (_ $ subreflexivity (S:=Y) y₁) _ _ (_ $ subreflexivity (S:=Y) z)).
-    apply (ball_triangle _ _ _ x₁ _); trivial.
-    assert (δ₂ - b + b = δ₂) as Eb by subring Q.
-    apply (ball_proper1 _ _ _ Y _ _ _ (_ $ Eb) _ _ (_ $ subreflexivity (S:=Y) z) _ _ (_ $ subreflexivity (S:=Y) y₂)).
-    apply (ball_triangle _ _ _ x₂ _); trivial.
-    now apply (subsymmetry (S:=Y) _ _).
+    apply ball_weaken_le with (a + (δ₁ - a)); try apply _.
+      apply (ball_triangle _ _ _ x₁ _); trivial.
+      apply (eq_le _ _); setring Q.
+    apply ball_weaken_le with (δ₂ - b + b); try apply _.
+      apply (ball_triangle _ _ _ x₂ _); trivial.
+      now apply (symmetry (S:=Y) _ _).
+      apply (eq_le _ _); setring Q.
 Qed.
 Arguments dense_subset_prelength {_ Y _ _} X {_ _} _ {_} _ {_} _ {_} _ {_} _ {_} _ _.
 

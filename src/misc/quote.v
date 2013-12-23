@@ -1,10 +1,8 @@
 Require Import abstract_algebra interfaces.orders.
 Require Import theory.strong_setoids theory.fields.
 
-(* Todo: unify with subsetsig somehow *)
-
 Section quote.
-  Context {A B} {R1:@Subset A} {R2:@Subset B} (f:R1 ⇀ R2) `{Equiv B}.
+  Context {A B} {R1:@set A} {R2:@set B} (f:R1 ⇀ R2) `{Equiv B}.
 
   Definition Quote x y := (x ∊ R1 ∧ f x ∊ R2 ∧ y ∊ R2) ∧ f x = y.
 
@@ -94,10 +92,8 @@ Section quote.
   End semiring.
 
   Section rng.
-    Context `{Rng_Morphism A B (Be:=_) (R:=R1) (S:=R2) (f:=f)}.
-
-    Existing Instance rngmor_a.
-    Existing Instance rngmor_b.
+    Context `{SemiRng_Morphism A B (Be:=_) (R:=R1) (S:=R2) (f:=f)}.
+    Context `{Negate A} `{Negate B} `{!Rng R1} `{!Rng R2}.
 
     Lemma quote_negate `(Ex : Quote x x2) : Quote (-x) (-x2).
     Proof. quote_tac. rewrite_on R2 <- Ex. exact (preserves_negate _). Qed.
@@ -105,7 +101,7 @@ Section quote.
 
   Section field.
     Context `{Field A (F:=R1)} `{Field B (Ae:=_) (F:=R2)}
-      `{!Strong_Morphism R1 R2 f} `{!Ring_Morphism R1 R2 f}.
+      `{!Strong_Morphism R1 R2 f} `{!SemiRing_Morphism R1 R2 f}.
 
     Lemma quote_mult_inv `{x ∊ R1 ₀} `(Ex : Quote x x2) : Quote (inv x) (inv x2).
     Proof. destruct Ex as [[? [??]] Ex].
@@ -130,7 +126,7 @@ Lemma quote_lt_id `{StrictSetoidOrder (S:=X)} `(Ex:Quote id x x2) `(Ey:Quote id 
 Proof. assert (StrictOrderEmbedding X X id). split; split; try tauto; split; apply _. exact (quote_lt id Ex Ey). Qed.
 
 
-Lemma quote_id `{R1:Subset} `{Setoid (S:=R2)} (f:R1 ⇀ R2)
+Lemma quote_id `{R1:set} `{Setoid (S:=R2)} (f:R1 ⇀ R2)
   `(E:Quote f x y) : Quote id (f x) y.
 Proof. destruct E as [[?[??]] E]. split. intuition (apply _). trivial. Qed.
 
@@ -218,18 +214,18 @@ Ltac preserves_simplify f :=
 (*
 Section test.
 
-  Context `{Ring (R:=R1)} `{Ring (R:=R2)} `{!Ring_Morphism f R1 R2}.
+  Context `{Ring (R:=R1)} `{Ring (R:=R2)} (f:R1 ⇀ R2) `{!SemiRing_Morphism R1 R2 f}.
 
   Context `{a ∊ R1} `{b ∊ R1} `{c ∊ R1} `{x ∊ R2} `{y ∊ R2} `{z ∊ R2}.
 
   Goal x * f (a + b*c + 0*1) = y -> f (a *b) = f 0.
-  preserves_simplify f R1 R2.
+  preserves_simplify f.
   Abort.
 
-  Context `{!Injective f R1 R2}.
+  Context `{!Injective R1 R2 f}.
 
   Goal a * b + c = 0.
-  quote_inj f R1 R2.
+  quote_inj f.
 
 End test.
 *)

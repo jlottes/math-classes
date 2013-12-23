@@ -1,16 +1,22 @@
 Require
   stdlib_binary_integers theory.integers orders.semirings.
 Require Import
-  NSig NSigNAxioms NArith ZArith
+  NSig NSigNAxioms NProperties NArith ZArith
   abstract_algebra interfaces.naturals interfaces.integers
   interfaces.orders interfaces.additional_operations
-  theory.setoids theory.jections theory.rings theory.shiftl.
+  theory.setoids theory.jections theory.rings theory.shiftl theory.nat_pow
+  orders.naturals
+  orders.lattices orders.minmax lattice_ordered_rings.
 
 Module NType_Integers (Import anyN: NType).
 
-Module axioms := NTypeIsNAxioms anyN.
+Module axioms.
+  Include anyN.
+  Include NTypeIsNAxioms <+ NProp.
+End axioms.
 
 Instance NType_equiv : Equiv t := eq.
+Instance NType_uneq : UnEq t := _.
 Instance NType_plus : Plus t := add.
 Instance NType_0 : Zero t := zero.
 Instance NType_1 : One t := one.
@@ -19,7 +25,12 @@ Instance NType_mult : Mult t := mul.
 Instance  NType_le: Le t := le.
 Instance  NType_lt: Lt t := lt.
 
-Hint Extern 10 (@Subset t) => eexact (every t) : typeclass_instances.
+Instance NType_div: DivEuclid t := div.
+Instance NType_mod: ModEuclid t := modulo.
+
+Instance NType_log2 : Log2 (every t) := log2.
+
+Hint Extern 10 (@set t) => eexact (every t) : typeclass_instances.
 
 Local Notation T := (every t).
 Local Notation N := (every N).
@@ -27,6 +38,9 @@ Local Notation Z := (every Z).
 Local Open Scope mc_fun_scope.
 
 Instance: Setoid T | 10 := {}.
+
+Instance: DenialInequality T.
+Proof. unfold NType_uneq. apply _. Qed.
 
 Program Instance: ∀ x y: t, Decision (x = y) := λ x y, match compare x y with
   | Eq => left _
@@ -40,19 +54,19 @@ Next Obligation.
   apply Zcompare_Eq_iff_eq in E. auto.
 Qed.
 
-Instance: DenialInequality T := _.
 Instance: StrongSetoid T := strong_setoids.dec_strong_setoid.
+
+Local Ltac binary_mor_tac := apply binary_morphism_proper_back; intros ?? [_ E1] ?? [_ E2];
+      unfold equiv, NType_equiv in E1,E2; red_sig; now rewrite E1,E2.
 
 Instance: CommutativeSemiRing T | 10.
 Proof. repeat match goal with
- | |- Morphism _ (@sg_op _ ?op) =>
-      apply binary_morphism_proper_back; intros ?? [_ E1] ?? [_ E2];
-      unfold equiv, NType_equiv in E1,E2; red_sig; now rewrite E1,E2
+ | |- Morphism _ (@sg_op _ ?op) => binary_mor_tac
  | _ => split; try apply _
  end; repeat intro; lazy; axioms.zify; auto with zarith.
 Qed.
 
-Ltac unfold_equiv := unfold equiv, NType_equiv, eq in *.
+Local Ltac unfold_equiv := unfold equiv, NType_equiv, eq in *.
 
 Instance inject_NType_N: Cast T N := to_N.
 
@@ -70,11 +84,12 @@ Instance inject_N_NType: Cast N T := of_N.
 Instance: Inverse (cast T N) := cast N T.
 
 Instance: Surjective T N (').
-Proof.
-  split; try apply _. intros x y [_ E]. red_sig.
+Proof. split.
++ intros x y [_ E]. red_sig.
   rewrite <-E. change (to_N (of_N x) = x). unfold to_N. rewrite spec_of_N.
   apply N2Z.id.
-  intros ??; apply _.
++ apply _.
++ intros ??. apply _.
 Qed.
 
 Instance: Injective T N (').
@@ -128,7 +143,7 @@ Proof.
   intros x _ y _. split.
    intro. split.
     apply axioms.lt_eq_cases. now left.
-   intros E. destruct (subirreflexivity (<) (to_Z x)).
+   intros E. destruct (irreflexivity (<) (to_Z x)).
    unfold_equiv. now rewrite E at 2.
   intros [E1 E2].
   now destruct (proj1 (axioms.lt_eq_cases _ _) E1).
@@ -150,6 +165,12 @@ Next Obligation.
    now apply Zeq_le.
   now apply orders.lt_le.
 Qed.
+
+Instance NType_max : Join t := minmax.max.
+Instance NType_min : Meet t := minmax.min.
+Instance: LatticeOrder T := minmax_lattice.
+Instance: FullLatticeOrder T := dec_full_lattice_order.
+Instance: SemiRingLatticeOrder T := dec_semiring_lattice_order.
 
 Lemma NType_preserves_1 : to_Z 1 ≡ 1.
 Proof preserves_1.
@@ -198,4 +219,26 @@ Qed.
 
 (* Efficient [shiftr] *)
 Program Instance: ShiftR t t := shiftr.
+
+Instance: EuclidSpec T.
+Proof. split.
++ binary_mor_tac.
++ binary_mor_tac.
++ intros x ? y [??]. now apply axioms.div_mod.
++ intros x ? y ?. left. apply axioms.mod_bound_pos.
+  now destruct (nat_nonneg x).
+  now destruct (nat_ne_0_pos y).
+Qed.
+
+Instance: NatLogSpec T 2 additional_operations.log2.
+Proof. split; unfold additional_operations.log2, NType_log2.
++ intros ?? E. unfold_sigs. red_sig. change (eq x y) in E. now rewrite E.
++ apply _.
++ intros x ?. split. apply _. red. apply axioms.log2_nonneg.
++ intros pw spec x ?. rewrite <-(nats_is_nonneg (N:=T)) in spec.
+  setoid_rewrite (_ $ preserves_nat_pow (N:=T) (pw2:=NType_pow) (f := id : T ⇀ T) _ _).
+  rewrite <-(_ $ NType_two_2), <-(NType_succ_1_plus _). unfold id.
+  apply axioms.log2_spec. apply (_ : x ∊ T₊).
+Qed.
+
 End NType_Integers.

@@ -43,7 +43,7 @@ End proper.
 Hint Extern 0 (Morphism _ (int_to_nat _ _)) => eapply @int_to_nat_proper : typeclass_instances.
 
 Section contents.
-Context `{Z:Subset} `{N:Subset} {f : N ⇀ Z}.
+Context `{Z:set} `{N:set} {f : N ⇀ Z}.
 Context `{Integers _ (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z} `{!FullPseudoSemiRingOrder Z}.
 Context `{Naturals _ (N:=N)} `{!SemiRing_Morphism N Z f} `{!IntAbs Z N}.
 
@@ -61,7 +61,7 @@ Lemma int_to_nat_nat n `{n ∊ N} :
   int_to_nat Z N (f n) = n.
 Proof.
   apply (injective f _ _). destruct (int_to_nat_spec (f n)) as [[? E]|[? E]]; intuition.
-  pose proof nonneg_nonpos_zero (f n). subtransitivity (0:A). subsymmetry.
+  pose proof nonneg_nonpos_0 (f n). now subtransitivity (0:Z).
 Qed.
 
 Lemma int_to_nat_cancel_l x `{x ∊ Z} n `{n ∊ N} :
@@ -80,7 +80,7 @@ Lemma int_to_nat_negate_nat n `{n ∊ N} :
 Proof.
   apply (injective f _ _). destruct (int_to_nat_spec (-f n)) as [[? E]|[? E]];
   subtransitivity (0:A); try match goal with |- 0 = f 0 => subsymmetry; exact preserves_0 end.
-  rewrite_on Z -> (nonneg_nonpos_zero (- f n)).
+  rewrite_on Z -> (nonneg_nonpos_0 (- f n)).
   rewrite_on N -> int_to_nat_0. exact preserves_0.
 Qed. 
 
@@ -88,14 +88,14 @@ Lemma int_to_nat_nonneg x `{x ∊ Z⁺} :
   f (int_to_nat Z N x) = x.
 Proof.
   destruct (int_to_nat_spec x); intuition.
-  subtransitivity (0:A). subsymmetry. exact (nonneg_nonpos_zero x).
+  subtransitivity (0:A). subsymmetry. exact (nonneg_nonpos_0 x).
 Qed.
 
 Lemma int_to_nat_nonpos x `{x ∊ Z⁻} :
   f (int_to_nat Z N x) = 0.
 Proof.
   destruct (int_to_nat_spec x); intuition.
-  subtransitivity x. exact (nonneg_nonpos_zero x).
+  subtransitivity x. exact (nonneg_nonpos_0 x).
 Qed.
 
 Lemma int_to_nat_1 : int_to_nat Z N 1 = 1.
@@ -135,7 +135,7 @@ Qed.
 *)
 
 Lemma int_to_nat_pos x `{x ∊ Z₊} : int_to_nat Z N x ∊ N₊ .
-Proof. split. apply _. cut (0 < x). rewrite !(lt_iff_le_ne _ _). intros [_ E].
+Proof. split. apply _. red. cut (0 < x). rewrite !(lt_iff_le_ne _ _). intros [_ E].
   split. now destruct (_ : int_to_nat Z N x ∊ N⁺). contradict E.
   subtransitivity (f 0). subsymmetry. exact preserves_0.
   rewrite_on N -> E. exact (int_to_nat_nonneg x).

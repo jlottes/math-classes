@@ -1,28 +1,29 @@
 Require Import
+  List
   abstract_algebra interfaces.metric_spaces interfaces.orders
-  theory.setoids theory.products metric.metric_spaces metric.maps
+  theory.setoids theory.products metric.metric_spaces
+  metric.totally_bounded metric.maps_continuous
   orders.affinely_extended_field the_ae_rationals
   orders.lattices orders.minmax
-  stdlib_field.
+  stdlib_field_dec.
 
 Local Notation AQ := TheAERationals.A.
 Local Notation Q := the_ae_rationals.
 Local Notation "Q∞" := (aff_ext Q).
 Local Notation Qfull := (aff_ext_full Q).
 
-Definition prod_sup_ball `{X:Subset} `{Y:Subset} `{Ball X} `{Ball Y} : Ball (X * Y)
+Definition prod_sup_ball `{X:set} `{Y:set} `{Ball X} `{Ball Y} : Ball (X * Y)
   := λ ε x y, ball ε (fst x) (fst y) ∧ ball ε (snd x) (snd y).
-Hint Extern 4 (Ball (elt_type (prod_subset ?X ?Y))) => eexact (prod_sup_ball (X:=X) (Y:=Y)) : typeclass_instances.
+Hint Extern 4 (Ball (elt_type (prod_set ?X ?Y))) => eexact (prod_sup_ball (X:=X) (Y:=Y)) : typeclass_instances.
 Hint Extern 4 (Ball (elt_type ?X * elt_type ?Y)) => eexact (prod_sup_ball (X:=X) (Y:=Y)) : typeclass_instances.
 
 Hint Extern 2 (@AmbientSpace (?A * ?B)) =>
-  exact ((_:AmbientSpace)*(_:AmbientSpace))%subset : typeclass_instances.
+  exact ((_:AmbientSpace)*(_:AmbientSpace))%set : typeclass_instances.
 
 Section contents.
   Context `{MetricSpace (X:=X)} `{MetricSpace (X:=Y)}.
   Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
   Hint Extern 0 AmbientSpace => eexact Y : typeclass_instances.
-  (*Hint Extern 0 AmbientSpace => eexact (X*Y)%subset : typeclass_instances.*)
 
   Instance prod_msp : MetricSpace (X * Y).
   Proof. split; unfold ball, prod_sup_ball. apply _.
@@ -69,7 +70,7 @@ Section contents.
     intros [??]; now destruct P.
   + intros [q[? P]].
     assert (q/2<q) as E. apply (flip_pos_minus _ _).
-      mc_replace (q-q/2) with (q/2) on Q by subfield Q. apply _.
+      mc_replace (q-q/2) with (q/2) on Q by decfield Q. apply _.
     destruct (located_points a c (q/2) q E).
     destruct (located_points b d (q/2) q E).
     destruct P. now split.
@@ -92,8 +93,8 @@ Section contents.
     Lemma fst_bounded `{!Bounded U} : Bounded π₁⁺¹(U).
     Proof. split; try apply _. destruct (bounded U) as [d[eld P]].
       exists_sub d. intros x [?[[xa xb][? Ex]]] y [?[[ya yb][? Ey]]]. simpl in Ex,Ey.
-      destruct (_ : (xa, xb) ∊ (X*Y)%subset ).
-      destruct (_ : (ya, yb) ∊ (X*Y)%subset ).
+      destruct (_ : (xa, xb) ∊ X*Y ).
+      destruct (_ : (ya, yb) ∊ X*Y ).
       rewrite <-(_ $ Ex), <-(_ $ Ey).
       now destruct (P (xa,xb) _ (ya,yb) _).
     Qed.
@@ -101,8 +102,8 @@ Section contents.
     Lemma snd_bounded `{!Bounded U} : Bounded π₂⁺¹(U).
     Proof. split; try apply _. destruct (bounded U) as [d[eld P]].
       exists_sub d. intros x [?[[xa xb][? Ex]]] y [?[[ya yb][? Ey]]]. simpl in Ex,Ey.
-      destruct (_ : (xa, xb) ∊ (X*Y)%subset ).
-      destruct (_ : (ya, yb) ∊ (X*Y)%subset ).
+      destruct (_ : (xa, xb) ∊ X*Y ).
+      destruct (_ : (ya, yb) ∊ X*Y ).
       rewrite <-(_ $ Ex), <-(_ $ Ey).
       now destruct (P (xa,xb) _ (ya,yb) _).
     Qed.
@@ -110,9 +111,6 @@ Section contents.
   End projections.
   Existing Instance fst_bounded.
   Existing Instance snd_bounded.
-
-  Instance fst_str_ufm_cont : StronglyUniformlyContinuous (X*Y) X fst := {}.
-  Instance snd_str_ufm_cont : StronglyUniformlyContinuous (X*Y) Y snd := {}.
 
   Instance prod_bounded U V : Bounded (X:=X) U → Bounded (X:=Y) V → Bounded (U*V).
   Proof. intros ??. split; try apply _.
@@ -130,7 +128,7 @@ Section contents.
   Lemma prod_open U V : Open (X:=X) U → Open (X:=Y) V → Open (U*V).
   Proof. intros ??. split; try apply _.
     pose proof _ : U ⊆ X. pose proof _ : V ⊆ Y. pose proof _ : U*V ⊆ X*Y.
-    apply subsetof_antisym. apply _.
+    apply subset_antisym. apply _.
     intros [x y] [??].
     destruct (open U x) as [p[? OU]].
     destruct (open V y) as [q[? OV]].
@@ -140,14 +138,14 @@ Section contents.
       rewrite <-OV. split; [| apply _]. red. now rewrite <-(Q∞ $ Er).
   Qed.
 
-  Instance prod_complement_l U V `{U ⊆ X} `{V ⊆ Y} : (∼U)*Y ⊆ ∼(U*V)%subset.
-  Proof. apply (subsetoid_from_subsetof (X*Y) _ _).
+  Instance prod_complement_l U V `{U ⊆ X} `{V ⊆ Y} : (∼U)*Y ⊆ ∼(U*V)%set.
+  Proof. apply (subsetoid_from_subset (X*Y) _ _).
     intros [x y][[? P]?]. split. apply _. intros [u v][??].
     destruct (P u _) as [q[? B]]. exists_sub q. intros [??]. now destruct B.
   Qed. 
 
-  Instance prod_complement_r U V `{U ⊆ X} `{V ⊆ Y} : X*(∼V) ⊆ ∼(U*V)%subset.
-  Proof. apply (subsetoid_from_subsetof (X*Y) _ _).
+  Instance prod_complement_r U V `{U ⊆ X} `{V ⊆ Y} : X*(∼V) ⊆ ∼(U*V)%set.
+  Proof. apply (subsetoid_from_subset (X*Y) _ _).
     intros [x y][?[? P]]. split. apply _. intros [u v][??].
     destruct (P v _) as [q[? B]]. exists_sub q. intros [??]. now destruct B.
   Qed. 
@@ -158,12 +156,12 @@ Section contents.
   Proof. intros [x y]. split.
   + intros [[??][q[? P]]]. split.
     * rewrite <-(metric_complement_stable U). split. apply _. exists_sub q.
-      intros s ?. assert ((s,y) ∊ ∼(U * V)%subset).
-        apply (_ : ∼U * Y ⊆ ∼(U * V)%subset). apply _.
+      intros s ?. assert ((s,y) ∊ ∼(U * V)%set).
+        apply (_ : ∼U * Y ⊆ ∼(U * V)%set). apply _.
       intro B. destruct (P (s,y) _). now split.
     * rewrite <-(metric_complement_stable V). split. apply _. exists_sub q.
-      intros s ?. assert ((x,s) ∊ ∼(U * V)%subset).
-        apply (_ : X * ∼V ⊆ ∼(U * V)%subset). apply _.
+      intros s ?. assert ((x,s) ∊ ∼(U * V)%set).
+        apply (_ : X * ∼V ⊆ ∼(U * V)%set). apply _.
       intro B. destruct (P (x,s) _). now split.
   + intros [??].
     assert (x ∊ -∼U) by now rewrite (metric_complement_stable U).
@@ -189,19 +187,19 @@ Section contents.
   Instance prod_set_apart_complement U₁ U₂ V₁ V₂ `{U₁ ⊆ X} `{U₂ ⊆ Y} `{V₁ ⊆ X} `{V₂ ⊆ Y}
     `{!MetricComplementStable V₁} `{!MetricComplementStable V₂}
     `{!SetApart U₁ (∼V₁)} `{!SetApart U₂ (∼V₂)}
-  : SetApart (U₁ * U₂) (∼(V₁ * V₂)%subset).
+  : SetApart (U₁ * U₂) (∼(V₁ * V₂)%set).
   Proof.
     destruct (set_apart U₁ (∼V₁)) as [q1[? P1]].
     destruct (set_apart U₂ (∼V₂)) as [q2[? P2]].
     ae_rat_set_min q q1 q2 E1 E2.
-    exists_sub (q/2). intros [a b] [??] [va vb] [[??] P] [B1 B2]. simpl in B1,B2.
+    exists_sub (q/2). intros [a b] [??] [va vb] [[??] P] [B1 B2]. simpl in B1,B2. simpl in *.
     assert (va ∊ V₁). rewrite <-(metric_complement_stable V₁).
       split; try apply _. exists_sub (q/2). intros s ??.
       destruct (P1 a _ s _). assert (s ∊ X) by now apply (_ : ∼V₁ ⊆ X).
       assert (a ∊ X) by now apply (_ : U₁ ⊆ X).
       apply (ball_weaken_le) with (q/2+q/2); try apply _.
         now apply (ball_triangle _ _ _ va _).
-        apply (subtransitivity (S:=Qfull) _ q _); trivial.
+        apply (transitivity (S:=Qfull) _ q _); trivial.
         apply (eq_le _ _). exact (ae_in_halves q).
     assert (vb ∊ V₂). rewrite <-(metric_complement_stable V₂).
       split; try apply _. exists_sub (q/2). intros s ??.
@@ -209,45 +207,112 @@ Section contents.
       assert (b ∊ Y) by now apply (_ : U₂ ⊆ Y).
       apply (ball_weaken_le) with (q/2+q/2); try apply _.
         now apply (ball_triangle _ _ _ vb _).
-        apply (subtransitivity (S:=Qfull) _ q _); trivial.
+        apply (transitivity (S:=Qfull) _ q _); trivial.
         apply (eq_le _ _). exact (ae_in_halves q).
     destruct (P (va,vb) _) as [?[?[]]].
-    apply (subreflexivity (S:=X*Y) _).
+    apply (reflexivity (S:=X*Y) _).
+  Qed.
+
+  Instance prod_set_contained U₁ U₂ V₁ V₂ `{U₁ ⊆ X} `{U₂ ⊆ Y} `{V₁ ⊆ X} `{V₂ ⊆ Y}
+    `{!SetContained U₁ V₁} `{!SetContained U₂ V₂}
+  : SetContained (U₁ * U₂) (V₁ * V₂).
+  Proof.
+    destruct (set_contained U₁ V₁) as [q1[? P1]].
+    destruct (set_contained U₂ V₂) as [q2[? P2]].
+    ae_rat_set_min q q1 q2 E1 E2.
+    exists_sub q. intros [a b][??] [ua ub][??] [??]. simpl in *.
+    split. apply (P1 a _ ua _). now rewrite <-(Qfull $ E1).
+           apply (P2 b _ ub _). now rewrite <-(Qfull $ E2).
   Qed.
 
   Lemma prod_well_contained U₁ U₂ V₁ V₂
-    `{!MetricComplementStable (X:=X) V₁} `{!MetricComplementStable (X:=Y) V₂}
-    `{U₁ ⊂⊂ V₁} `{U₂ ⊂⊂ V₂} : U₁ * U₂ ⊂⊂ V₁ * V₂ .
-  Proof. apply (well_contained_stable _ _); apply _. Qed.
+    `{!WellContained (X:=X) U₁ V₁} `{!WellContained (X:=Y) U₂ V₂}
+  : U₁ * U₂ ⊂⊂ V₁ * V₂ .
+  Proof. apply (well_contained_alt _ _); apply _. Qed.
 
   Section projections_wc.
-    Context D₁ D₂ `{D₁ ⊆ X} `{D₂ ⊆ Y}
-           `{!MetricComplementStable (X:=X) D₁}
-           `{!MetricComplementStable (X:=Y) D₂}.
-    Context U `{U ⊂⊂ D₁*D₂}.
+    Context D₁ D₂ `{D₁ ⊆ X} `{D₂ ⊆ Y} U `{U ⊂⊂ D₁*D₂}.
 
     Lemma fst_wc : π₁⁺¹(U) ⊂⊂ D₁.
-    Proof. apply (well_contained_stable _ _); try apply _.
-      destruct (set_apart U (∼(D₁*D₂)%subset)) as [q[? P]].
-      exists_sub q. intros u [?[[ua ub][? Eu]]] v ? B. simpl in Eu.
+    Proof. apply (well_contained_alt _ _); try apply _.
+      destruct (set_contained U (D₁*D₂)) as [q[elq P]].
+      exists_sub q. intros x ? u [?[[ua ub][? Eu]]] ?. simpl in Eu.
       assert ((ua, ub) ∊ D₁*D₂) as E by now apply (_ : U ⊂⊂ D₁*D₂). destruct E.
-      rewrite <-(_ : ∼D₁ * Y ⊆ ∼(D₁ * D₂)%subset ) in P.
-      destruct (P (ua,ub) _ (v,ub) _). split; [|easy]. simpl.
-      assert (v ∊ X) by now apply (_ : ∼D₁ ⊆ X).
-      now rewrite (_ $ Eu).
+      apply (P (x, ub) _ (ua,ub) _). split; simpl. 2:easy. now rewrite (_ $ Eu).
     Qed.
 
     Lemma snd_wc : π₂⁺¹(U) ⊂⊂ D₂.
-    Proof. apply (well_contained_stable _ _); try apply _.
-      destruct (set_apart U (∼(D₁*D₂)%subset)) as [q[? P]].
-      exists_sub q. intros u [?[[ua ub][? Eu]]] v ? B. simpl in Eu.
+    Proof. apply (well_contained_alt _ _); try apply _.
+      destruct (set_contained U (D₁*D₂)) as [q[elq P]].
+      exists_sub q. intros x ? u [?[[ua ub][? Eu]]] ?. simpl in Eu.
       assert ((ua, ub) ∊ D₁*D₂) as E by now apply (_ : U ⊂⊂ D₁*D₂). destruct E.
-      rewrite <-(_ : X * ∼D₂ ⊆ ∼(D₁ * D₂)%subset ) in P.
-      destruct (P (ua,ub) _ (ua,v) _). split; [easy|]. simpl.
-      assert (v ∊ Y) by now apply (_ : ∼D₂ ⊆ Y).
-      now rewrite (_ $ Eu).
+      apply (P (ua, x) _ (ua,ub) _). split; simpl. easy. now rewrite (_ $ Eu).
     Qed.
+
   End projections_wc.
+
+  Lemma prod_join_distr_l U `{U ⊆ X} V₁ `{V₁ ⊆ Y} V₂ `{V₂ ⊆ Y} :
+    ( U * (V₁ ⊔ V₂) = U * V₁ ⊔ U * V₂  )%set.
+  Proof. apply subset_antisym.
+    intros [??][?[?|?]]; [left|right]; now split.
+    intros [??][[??]|[??]]; split; trivial; apply _.
+  Qed.
+
+  Lemma prod_join_distr_r U₁ `{U₁ ⊆ X} U₂ `{U₂ ⊆ X} V `{V ⊆ Y} :
+    ( (U₁ ⊔ U₂) * V = U₁ * V ⊔ U₂ * V  )%set.
+  Proof. apply subset_antisym.
+    intros [??][[?|?]?]; [left|right]; now split.
+    intros [??][[??]|[??]]; split; trivial; apply _.
+  Qed.
+
+  Lemma B_prod ε `{ε ∊ Qfull} x `{x ∊ X} y `{y ∊ Y} :
+    B ε (x, y) = (B ε x * B ε y)%set .
+  Proof. apply subset_antisym.
+    intros [a b][[??][??]]. simpl in *. split; now split.
+    intros [a b][[??][??]]. simpl in *. split; [|apply _]. now split.
+  Qed.
+
+  Lemma union_of_balls_product ε `{ε ∊ Qfull} {U} `{U ⊆ X} {V} `{V ⊆ Y}
+      (l₁ : list { x | x ∊ U }) (l₂ : list { y | y ∊ V })
+   : ∃ (l : list { x | x ∊ U*V }),
+       union_of_balls ε l = (union_of_balls ε l₁ * union_of_balls ε l₂)%set .
+  Proof.
+    cut (∀ x, x ∊ U → ∃ l : list {x | x ∊ U * V},
+           union_of_balls ε l = (B ε x * union_of_balls ε l₂)%set).
+    * intro P. induction l₁.
+      + exists ([]:list { x | x ∊ U*V }). simpl.
+        apply subset_antisym. intros [??][]. intros [??][[]?].
+      + destruct IHl₁ as [l E]. destruct a as [x ?]. simpl.
+        destruct (P x _) as [lx Ex].
+        destruct (union_of_balls_union (X:=X*Y) ε l lx) as [l' E'].
+        exists l'. rewrite E'. rewrite (Sets $ E), (Sets $ Ex).
+        symmetry. exact (prod_join_distr_r _ _ _).
+    * intros x ?. induction l₂.
+      + exists ([]:list { x | x ∊ U*V }). simpl.
+        apply subset_antisym. intros [??][]. intros [??][?[]].
+      + destruct IHl₂ as [l E]. destruct a as [y ?]. simpl.
+        exists (exist _ (x,y) (_ : (x,y) ∊ U * V) :: l). simpl.
+        now rewrite (Sets $ prod_join_distr_l _ _ _), (Sets $ E), (Sets $ B_prod _ _ _).
+  Qed.
+
+  Lemma totally_bounded_product U V `{!TotallyBounded (X:=X) U} `{!TotallyBounded (X:=Y) V}
+    : TotallyBounded (U * V) .
+  Proof. split; try apply _. intros ε ?.
+    destruct (totally_bounded U ε) as [l1 E1].
+    destruct (totally_bounded V ε) as [l2 E2].
+    destruct (union_of_balls_product ε l1 l2) as [l E].
+    exists l. rewrite E. apply _.
+  Qed.
+
+  Lemma locally_totally_bounded_product `{!LocallyTotallyBounded X} `{!LocallyTotallyBounded Y}
+    : LocallyTotallyBounded (X * Y) .
+  Proof. intros U ?? ε ?.
+    destruct (locally_totally_bounded π₁⁺¹(U) ε) as [l1 E1].
+    destruct (locally_totally_bounded π₂⁺¹(U) ε) as [l2 E2].
+    destruct (union_of_balls_product ε l1 l2) as [l E].
+    exists l. transitivity (π₁⁺¹(U) * π₂⁺¹(U))%set. apply _.
+    rewrite E. apply _.
+  Qed.
 
 End contents.
 Hint Extern 2 (MetricSpace (_ * _)) => eapply @prod_msp : typeclass_instances.
@@ -257,13 +322,16 @@ Hint Extern 2 (PrelengthSpace (_ * _)) => eapply @prod_prelength : typeclass_ins
 Hint Extern 2 (MetricInequality (_ * _)) => eapply @prod_metric_inequality : typeclass_instances.
 Hint Extern 2 (UniformlyContinuous _ _ fst) => eapply @fst_ufm_cont : typeclass_instances.
 Hint Extern 2 (UniformlyContinuous _ _ snd) => eapply @snd_ufm_cont : typeclass_instances.
-Hint Extern 2 (StronglyUniformlyContinuous _ _ fst) => eapply @fst_str_ufm_cont : typeclass_instances.
-Hint Extern 2 (StronglyUniformlyContinuous _ _ snd) => eapply @snd_str_ufm_cont : typeclass_instances.
+Hint Extern 5 (Bounded fst⁺¹(_)) => eapply @fst_bounded : typeclass_instances.
+Hint Extern 5 (Bounded snd⁺¹(_)) => eapply @snd_bounded : typeclass_instances.
 Hint Extern 5 (Bounded (_ * _)) => eapply @prod_bounded : typeclass_instances.
 Hint Extern 5 (Open (_ * _)) => eapply @prod_open : typeclass_instances.
 Hint Extern 4 (MetricComplementStable (_ * _)) => eapply @prod_metric_complement_stable : typeclass_instances.
-Hint Extern 4 (SetApart (_ * _) (∼(_ * _)%subset)) => eapply @prod_set_apart_complement : typeclass_instances.
+Hint Extern 4 (SetApart (_ * _) (∼(_ * _)%set)) => eapply @prod_set_apart_complement : typeclass_instances.
+Hint Extern 4 (SetContained (_ * _) (_ * _)) => eapply @prod_set_contained : typeclass_instances.
 Hint Extern 3 (_ * _ ⊂⊂ _ * _) => eapply @prod_well_contained : typeclass_instances.
+Hint Extern 3 (TotallyBounded (_ * _)) => eapply @totally_bounded_product : typeclass_instances.
+Hint Extern 3 (LocallyTotallyBounded (_ * _)) => eapply @locally_totally_bounded_product : typeclass_instances.
 
 Section uncurry.
   Context `{MetricSpace (X:=X)} `{MetricSpace (X:=Y)} `{MetricSpace (X:=Z)}.
@@ -295,8 +363,8 @@ Lemma prod_map_ufm_cont
   `{UniformlyContinuous (X:=X₂) (Y:=Y₂) (f:=g)}
  : UniformlyContinuous (X₁*X₂) (Y₁*Y₂) (prod_map f g).
 Proof.
-  destruct ( _ : (X₁ ==> Y₁)%subset f ) as [?? _ _].
-  destruct ( _ : (X₂ ==> Y₂)%subset g ) as [?? _ _].
+  destruct ( _ : (X₁ ==> Y₁)%set f ) as [?? _ _].
+  destruct ( _ : (X₂ ==> Y₂)%set g ) as [?? _ _].
   split; try apply _.
   intros ε ?.
   destruct (uniform_continuity f ε) as [δ₁[? Cf]].
@@ -309,6 +377,7 @@ Proof.
   apply (Cg _ _ _ _). now rewrite <-(Qfull $ E2).
 Qed.
 Hint Extern 2 (UniformlyContinuous _ _ (prod_map _ _)) => eapply @prod_map_ufm_cont : typeclass_instances.
+
 
 Lemma prod_diag_iso `{MetricSpace (X:=X)}
   : Isometry X (X*X) prod_diag.
@@ -358,13 +427,11 @@ Section prod_map_dense.
 End prod_map_dense.
 Hint Extern 2 (Dense (prod_map _ _)⁺¹(_ * _)) => eapply @prod_map_dense : typeclass_instances.
 
-
 Section prod_diag_continuous.
-  Context `{MetricSpace (X:=X)}.
+  Context `{MetricSpace (X:=X)} `{!LocallyTotallyBounded X}.
   Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
 
-  Lemma prod_diag_continuous `{R ⊆ X} `{D ⊆ R}
-    `{!MetricComplementStable D} `{!MetricComplementStable R}
+  Lemma prod_diag_continuous `{R ⊆ X} `{D ⊆ R} `{!Open D} `{!Open R}
   : Continuous D (R*R) prod_diag.
   Proof.
     cut (Continuous R (R*R) prod_diag).
@@ -374,10 +441,10 @@ Section prod_diag_continuous.
     apply continuity_alt. apply _. intros U ?.
     assert (∀ x, x ∊ U → x ∊ R) by (intros; now apply (_ :  U ⊂⊂ R)).
     split. split; try apply _. exact (sub_metric_space).
-      rewrite <-(_ : SubsetOf (R ⇒ R*R) (U ⇒ R*R)); apply _ .
+      rewrite <-(_ : Subset (R ⇒ R*R) (U ⇒ R*R)); apply _ .
       intros q ?. exists_sub q. intros x ? y ? ?. unfold prod_diag. now split.
     cut (image (X:=R) (Y:=R*R) prod_diag U ⊂⊂ R*R). intro. split; apply _.
-    rewrite (Inhabited $ (_ : image (X:=R) (Y:=R*R) prod_diag U ⊆ (U*U)%subset)). apply _.
+    rewrite (Inhabited $ (_ : image (X:=R) (Y:=R*R) prod_diag U ⊆ (U*U)%set)). apply _.
   Qed.
 End prod_diag_continuous.
 Hint Extern 2 (Continuous _ _ prod_diag) => eapply @prod_diag_continuous : typeclass_instances.
@@ -395,6 +462,11 @@ Section prod_map_continuous.
   Instance: MetricSpace X₂.  Proof. now destruct Cg. Qed.
   Instance: MetricSpace Y₂.  Proof. now destruct Cg. Qed.
 
+  Instance: LocallyTotallyBounded X₁.  Proof. now destruct Cf. Qed.
+  Instance: LocallyTotallyBounded Y₁.  Proof. now destruct Cf. Qed.
+  Instance: LocallyTotallyBounded X₂.  Proof. now destruct Cg. Qed.
+  Instance: LocallyTotallyBounded Y₂.  Proof. now destruct Cg. Qed.
+
   Instance: MetricSpace (R₁*R₂) (Aball := _:Ball (Y₁*Y₂)).
   Proof. apply (sub_metric_space (X:=Y₁*Y₂)). Qed.
 
@@ -405,6 +477,8 @@ Section prod_map_continuous.
 
     Instance: U₁ ⊂⊂ D₁ := fst_wc D₁ D₂ U.
     Instance: U₂ ⊂⊂ D₂ := snd_wc D₁ D₂ U.
+    Instance: U₁ ⊆ X₁ := bounded_subsetoid.
+    Instance: U₂ ⊆ X₂ := bounded_subsetoid.
 
     Instance: UniformlyContinuous U₁ R₁ f := continuity_ufm _.
     Instance: UniformlyContinuous U₂ R₂ g := continuity_ufm _.
@@ -427,7 +501,7 @@ Section prod_map_continuous.
     Qed.
 
     Instance: (prod_map f g)⁺¹(U) ⊆ Y₁*Y₂.
-    Proof. transitivity (R₁*R₂)%subset; apply _. Qed.
+    Proof. transitivity (R₁*R₂)%set; apply _. Qed.
 
     Hint Extern 2 (_ ∊ X₁) => apply (_ : D₁ ⊆ X₁) : typeclass_instances.
     Hint Extern 2 (_ ∊ Y₁) => apply (_ : R₁ ⊆ Y₁) : typeclass_instances.
@@ -435,9 +509,9 @@ Section prod_map_continuous.
     Hint Extern 2 (_ ∊ Y₂) => apply (_ : R₂ ⊆ Y₂) : typeclass_instances.
 
     Instance prod_map_patch_subsetoid : (prod_map f g)⁺¹(U) ⊆ f⁺¹(U₁) * g⁺¹(U₂).
-    Proof. apply (subsetoid_from_subsetof (Y₁*Y₂) _ _).
+    Proof. apply (subsetoid_from_subset (Y₁*Y₂) _ _).
       intros [y1 y2] [[??][[x1 x2][?[E1 E2]]]].
-      assert ((x1,x2) ∊ (D₁ * D₂)%subset) as E by now apply (_:U ⊂⊂ D₁ * D₂). destruct E.
+      assert ((x1,x2) ∊ (D₁ * D₂)%set) as E by now apply (_:U ⊂⊂ D₁ * D₂). destruct E.
       split.
       split. apply _. assert (x1 ∊ U₁). split. apply _. now exists_sub (x1,x2). now exists_sub x1.
       split. apply _. assert (x2 ∊ U₂). split. apply _. now exists_sub (x1,x2). now exists_sub x2.
@@ -446,7 +520,7 @@ Section prod_map_continuous.
     Instance prod_map_patch_bounded : Bounded (prod_map f g)⁺¹(U).
     Proof. rewrite prod_map_patch_subsetoid. apply _. Qed.
 
-    Instance prod_map_patch_apart : SetApart (prod_map f g)⁺¹(U) (∼(R₁ * R₂)%subset).
+    Instance prod_map_patch_contained : SetContained (prod_map f g)⁺¹(U) (R₁ * R₂).
     Proof. rewrite prod_map_patch_subsetoid. apply _. Qed.
   End patch.
 
@@ -454,7 +528,7 @@ Section prod_map_continuous.
   Proof. apply (continuity_alt _). intros U ?.
     split. exact (prod_map_patch_ufm_cont U).
     split. exact (prod_map_patch_bounded U).
-           exact (prod_map_patch_apart U).
+           exact (prod_map_patch_contained U).
   Qed.
 End prod_map_continuous.
 Hint Extern 2 (Continuous _ _ (prod_map _ _)) => eapply @prod_map_cont : typeclass_instances.

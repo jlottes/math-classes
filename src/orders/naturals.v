@@ -2,7 +2,8 @@ Require
   theory.naturals.
 Require Import
   abstract_algebra interfaces.naturals interfaces.orders
-  theory.setoids theory.common_props theory.rings orders.rings.
+  theory.setoids theory.common_props theory.rings orders.rings
+  lattice_ordered_rings.
 Require Import misc.quote.
 Require Export
   orders.nat_int.
@@ -12,6 +13,9 @@ Context `{Naturals (N:=N)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality N} `{!F
 
 Instance nat_nonneg x `{x ∊ N} : x ∊ N⁺.
 Proof. now apply (to_semiring_nonneg (f:=id)). Qed.
+
+Lemma nats_is_nonneg : N = N⁺ .
+Proof. intro x. split. apply nat_nonneg. intro. apply _. Qed.
 
 Lemma nat_le_plus `{x ∊ N} `{y ∊ N} : x ≤ y ↔ ∃ `{z ∊ N}, y = x + z.
 Proof.
@@ -35,7 +39,7 @@ Lemma nat_0_or_ge_1 x `{x ∊ N} : x = 0 ∨ 1 ≤ x.
 Proof. destruct (nat_0_or_pos x); [left|right]. trivial. exact (pos_ge_1 x). Qed.
 
 Lemma nat_ne_0_pos x `{x ∊ N ₀} : x ∊ N₊.
-Proof. destruct (_:x ∊ N ₀) as [_ E]. rewrite (denial_inequality _ _) in E.
+Proof. destruct (_:x ∊ N ₀) as [_ E]. red in E. rewrite (denial_inequality _ _) in E.
   destruct (nat_0_or_pos x); intuition.
 Qed.
 
@@ -61,6 +65,23 @@ Global Program Instance slow_nat_le_dec: StrongSubDecision N N (≤) | 10 := λ 
   | right E => right _
   end.
 Next Obligation. now apply (order_reflecting (naturals_to_semiring N (every nat))). Qed.
+
+Lemma strong_induction
+  P `{!Proper ((N,=) ==> iff) P}:
+  (∀ `{n ∊ N}, (∀ `{m ∊ N}, m < n → P m) → P n) → ∀ `{n ∊ N}, P n.
+Proof.
+  intros IH. intros n el. apply (IH _ _). pattern n. revert n el.
+  assert (Proper ((N,=) ==> iff) (λ n, ∀ m, m ∊ N → m < n → P m)).
+    intros n1 n2 E. unfold_sigs. split.
+      intros Q ?? E1. apply (Q _ _). now rewrite (_ $ E).
+      intros Q ?? E1. apply (Q _ _). now rewrite <-(_ $ E).
+  apply (naturals.induction (λ n, ∀ m, m ∊ N → m < n → P m)).
+  intros m ??. destruct (nat_not_neg m). now split.
+  intros n ? IH2 m ? Em. rewrite <-(le_iff_lt_S _ _) in Em.
+  destruct (le_equiv_lt m n Em) as [E | E].
+    rewrite (N $ E). now apply IH.
+  now apply IH2.
+Qed.
 
 Section another_ring.
   Context `{Ring B (R:=R)} `{UnEq B} `{Le B} `{Lt B} `{!FullPseudoSemiRingOrder R}
@@ -115,6 +136,8 @@ Proof. split. apply _. apply _.
 Qed.
 
 Notation n_to_sr := (naturals_to_semiring N (every nat)).
+
+Existing Instance naturals.naturals_to_naturals_injective.
 
 Instance: TotalRelation N (≤).
 Proof.

@@ -9,18 +9,18 @@ Local Notation Q := the_ae_rationals.
 Local Notation "Q∞" := (aff_ext Q).
 Local Notation Qfull := (aff_ext_full Q).
 
-Class Ball A := ball : AQ → A → @Subset A.
+Class Ball A := ball : AQ → A → @set A.
 
 Section contents.
-  Context `{X:@Subset A} {Ae:Equiv X} {Aball:Ball X}.
+  Context `{X:@set A} {Ae:Equiv X} {Aball:Ball X}.
 
   Class MetricSpace : Prop :=
   { msp_setoid :>> Setoid X
   ; msp_ball_proper : Proper ((Qfull,=)==>(X,=)==>(X,=)==>impl) ball
   ; msp_nonneg ε `{ε ∊ Qfull} x `{x ∊ X} y `{y ∊ X} : ball ε x y → ε ∊ Q∞⁺
   ; msp_ball_inf x `{x ∊ X} y `{y ∊ X} : ball ∞ x y
-  ; msp_refl ε `{ε ∊ Q⁺} : SubReflexive X (ball ε)
-  ; msp_sym  ε `{ε ∊ Q⁺} : SubSymmetric X (ball ε)
+  ; msp_refl ε `{ε ∊ Q⁺} : Reflexive X (ball ε)
+  ; msp_sym  ε `{ε ∊ Q⁺} : Symmetric X (ball ε)
   ; msp_eq x `{x ∊ X} y `{y ∊ X} : ball 0 x y → x = y
   ; msp_triangle ε₁ `{ε₁ ∊ Q⁺} ε₂ `{ε₂ ∊ Q⁺} x `{x ∊ X} y `{y ∊ X} z `{z ∊ X}
       : ball ε₁ x y → ball ε₂ y z → ball (ε₁ + ε₂) x z
@@ -52,66 +52,66 @@ Arguments MetricInequality {A} X {_ _}.
 
 (** Operations like closure and interior implicitly refer to some ambient metric space.
     The following typeclass enables this implicit parameter to be resolved predictably. *)
-Class AmbientSpace {A} := ambient_space : @Subset A.
-Identity Coercion Id_AmbientSpace_Subset : AmbientSpace >-> Subset.
+Class AmbientSpace {A} := ambient_space : @set A.
+Identity Coercion Id_AmbientSpace_Subset : AmbientSpace >-> set.
 
-Definition B `{X:AmbientSpace} `{Ball X} : Qfull ⇀ X ⇀ every Subset := λ q x, ball q x ⊓ X .
+Definition B `{X:AmbientSpace} `{Ball X} : Qfull ⇀ X ⇀ every set := λ q x, ball q x ⊓ X .
 
-Definition closure `{X:AmbientSpace} `{Ball X} : Subset → Subset := λ S x, x ∊ X ∧
+Definition closure `{X:AmbientSpace} `{Ball X} : set → set := λ S x, x ∊ X ∧
     ∀ `{ε ∊ Q∞₊}, ∃ `{s ∊ S}, ball ε x s.
 
-Definition interior `{X:AmbientSpace} `{Ball X} : Subset → Subset := λ S x, x ∊ S ∧
-    ∃ `{q ∊ Q∞₊}, SubsetOf (B q x) S.
+Definition interior `{X:AmbientSpace} `{Ball X} : set → set := λ S x, x ∊ S ∧
+    ∃ `{q ∊ Q∞₊}, Subset (B q x) S.
 Notation "S °" := (interior S) (at level 1, format "S °") : mc_metric_scope.
 Open Scope mc_metric_scope.
 
-Class Dense `{X:AmbientSpace} `{Equiv X} `{Ball X} (S:Subset) :=
+Class Dense `{X:AmbientSpace} `{Equiv X} `{Ball X} (S:set) :=
 { dense_msp : MetricSpace X
 ; dense_subsetoid :>> S ⊆ X
 ; dense_def  : closure S = X
 }.
 
-Class Closed `{X:AmbientSpace} `{Equiv X} `{Ball X} (S:Subset) :=
+Class Closed `{X:AmbientSpace} `{Equiv X} `{Ball X} (S:set) :=
 { closed_msp : MetricSpace X
 ; closed_subsetoid :>> S ⊆ X
 ; closed_def  : closure S = S
 }.
 Notation ClosedFun := canonical_names.Closed.
 
-Class Open `{X:AmbientSpace} `{Equiv X} `{Ball X} (S:Subset) :=
+Class Open `{X:AmbientSpace} `{Equiv X} `{Ball X} (S:set) :=
 { open_msp : MetricSpace X
 ; open_subsetoid :>> S ⊆ X
 ; open_def : S° = S
 }.
 
-Class Bounded `{X:AmbientSpace} `{Equiv X} `{Ball X} (S:Subset) :=
+Class Bounded `{X:AmbientSpace} `{Equiv X} `{Ball X} (S:set) :=
 { bounded_msp : MetricSpace X
 ; bounded_subsetoid :>> S ⊆ X
 ; bounded : ∃ `{d ∊ Q⁺}, ∀ `{x ∊ S} `{y ∊ S}, ball d x y
 }.
 Arguments bounded {_ X _ _} S {Bounded}.
 
-Definition complement `{X:AmbientSpace} `{Ball X} : Tilde Subset
-  := λ S x, x ∊ X ∧ ∀ `{s ∊ S}, ∃ q `{q ∊ Q∞₊}, ¬ ball q x s.
-Hint Extern 2 (Tilde Subset) => eapply @complement : typeclass_instances.
+Definition complement `{X:AmbientSpace} `{Ball X} : Tilde set
+  := λ S x, x ∊ X ∧ ∀ `{s ∊ S}, ∃ q `{q ∊ Q₊}, ¬ ball q x s.
+Hint Extern 5 (Tilde set) => eapply @complement : typeclass_instances.
 
-Definition metric_complement `{X:AmbientSpace} `{Ball X} : Negate Subset
+Definition metric_complement `{X:AmbientSpace} `{Ball X} : Negate set
   := λ S x, x ∊ X ∧ ∃ q `{q ∊ Q∞₊}, ∀ `{s ∊ S}, ¬ ball q x s.
-Hint Extern 2 (Negate Subset) => eapply @metric_complement : typeclass_instances.
+Hint Extern 5 (Negate set) => eapply @metric_complement : typeclass_instances.
 
-Class MetricComplementStable `{X:AmbientSpace} `{Ball X} (S:Subset) : Prop :=
+Class MetricComplementStable `{X:AmbientSpace} `{Ball X} (S:set) : Prop :=
   metric_complement_stable : -∼S = S.
 Arguments metric_complement_stable {_ X _} S {_} _.
 
 Definition set_separated `{X:AmbientSpace} `{Ball X} q U V
   := ∀ u `{u ∊ U} v `{v ∊ V}, ¬ ball q u v.
 
-Class SetApart `{X:AmbientSpace} `{Ball X} (U V:Subset) :=
+Class SetApart `{X:AmbientSpace} `{Ball X} (U V:set) :=
   set_apart : ∃ q `{q ∊ Q∞₊}, set_separated q U V.
 Arguments set_apart { _ X _} U V {_}.
 
 Section maps.
-  Context `(X:Subset) `(Y:Subset) `{MetricSpace _ (X:=X)} `{MetricSpace _ (X:=Y)}.
+  Context `(X:set) `(Y:set) `{MetricSpace _ (X:=X)} `{MetricSpace _ (X:=Y)}.
 
   Class UniformlyContinuous (f:X ⇀ Y) :=
   { uniform_cont_X : MetricSpace X
@@ -127,79 +127,83 @@ Section maps.
   ; isometry_mor :>> Morphism (X ⇒ Y) f
   ; isometric_def ε `{ε ∊ Q₊} x `{x ∊ X} y `{y ∊ X} : ball ε x y ↔ ball ε (f x) (f y)
   }.
-
-  Hint Extern 0 AmbientSpace => eexact Y : typeclass_instances.
-
-  (** Implied by UniformlyContinuous when X is LocallyTotallyBounded
-     and Y has FinitePoints. Perhaps needs a better name. *)
-  Class StronglyUniformlyContinuous (f:X ⇀ Y) :=
-  { strongly_ufm_cont_ufm_cont :>> UniformlyContinuous f
-  ; strongly_ufm_cont U `{!Bounded (X:=X) U} `{!Inhabited U} : Bounded f⁺¹(U)
-  }.
 End maps.
-(*Arguments strongly_ufm_cont {_ X _ Y _ _ _ _} f {_} U {_ _}.*)
 
-Class WellContained `{X:AmbientSpace} `{Equiv X} `{Ball X} (U V : Subset) :=
-{ well_contained_X : MetricSpace X
-; well_contained_U :>> U ⊆ X
-; well_contained_V :>> V ⊆ X
-; well_contained_subsetoid :>> U ⊆ V
-; well_contained_bounded :>> Bounded U
-; well_contained_inhabited :>> Inhabited U
-; well_contained :>> SetApart U (∼V)
-}.
-Notation "S ⊂⊂ T" := (WellContained S T) (at level 70) : mc_metric_scope.
-Notation "(⊂⊂)" := (WellContained) (only parsing) : mc_metric_scope.
-Notation "( S ⊂⊂)" := (WellContained S) (only parsing) : mc_metric_scope.
-Notation "(⊂⊂ T )" := ((λ S, S ⊂⊂ T) : Subset) (only parsing) : mc_metric_scope.
-
-Class Continuous
-  `{X:AmbientSpace} `{Equiv X} `{Ball X} `{Y:AmbientSpace} `{Equiv Y} `{Ball Y}
-   D R (f:D ⇀ R) : Prop :=
-{ cont_X : MetricSpace X
-; cont_Y : MetricSpace Y
-; cont_D :>> D ⊆ X
-; cont_R :>> R ⊆ Y
-; cont_D_stable :>> MetricComplementStable D
-; cont_R_stable :>> MetricComplementStable R
-; cont_mor :>> Morphism (D ⇒ R) f
-; continuity_ufm      U `{U ⊂⊂ D} : UniformlyContinuous U R f
-; continuity_wc_range U `{U ⊂⊂ D} : f⁺¹(U) ⊂⊂ R
-}.
-
-Class Located `{X:AmbientSpace} `{Equiv X} `{Ball X} (S:Subset) :=
+Class Located `{X:AmbientSpace} `{Equiv X} `{Ball X} (S:set) :=
 { located_msp : MetricSpace X
 ; located_subsetoid :>> S ⊆ X
 ; located_def x `{x ∊ X} p `{p ∊ Q⁺} q `{q ∊ Q₊} :
     p < q → (∃ `{y ∊ S}, ball q x y) ∨ (∀ `{y ∊ S}, ¬ ball p x y)
 }.
 
-Definition union_of_balls `{X:AmbientSpace} `{Ball X} {S:Subset} ε (l : list { x | x ∊ S }) :=
-  fold_right (λ (a:{ x | x ∊ S }) (b:Subset), b ⊔ B ε (` a)) ⊥ l .
+Definition union_of_balls `{X:AmbientSpace} `{Ball X} {S:set} ε (l : list { x | x ∊ S }) :=
+  fold_right (λ (a:{ x | x ∊ S }) (b:set), b ⊔ B ε (` a)) ⊥ l .
 
-Class TotallyBounded `{X:AmbientSpace} `{Equiv X} `{Ball X} (S:Subset) :=
+Class TotallyBounded `{X:AmbientSpace} `{Equiv X} `{Ball X} (S:set) :=
 { totally_bounded_msp : MetricSpace X
 ; totally_bounded_subsetoid :>> S ⊆ X
-; totally_bounded ε `{ε ∊ Q₊} : ∃ (l : list { x | x ∊ S }), S ⊆ union_of_balls ε l
+; totally_bounded_def ε `{ε ∊ Q₊} : ∃ (l : list { x | x ∊ S }), S ⊆ union_of_balls ε l
 }.
-Arguments totally_bounded {_ X _ _} S {TotallyBounded} ε {_}.
+Arguments totally_bounded_def {_ X _ _} S {TotallyBounded} ε {_}.
 
-Class LocallyTotallyBounded `(X:Subset) `{Equiv X} `{Ball X} :=
-  locally_totally_bounded_def q `{q ∊ Q₊} x `{x ∊ X} : TotallyBounded (X:=X) (B (X:=X) q x).
+Class LocallyTotallyBounded `(X:set) `{Equiv X} `{Ball X} :=
+  locally_totally_bounded_def U `{!Bounded (X:=X) U} `{!Inhabited U}
+  ε `{ε ∊ Q₊} : ∃ (l : list { x | x ∊ X }), U ⊆ union_of_balls (X:=X) ε l .
+(*  : ∃ (V:set), U ⊆ V ∧ TotallyBounded (X:=X) V. *)
+(* locally_totally_bounded_def q `{q ∊ Q₊} x `{x ∊ X} : TotallyBounded (X:=X) (B (X:=X) q x). *)
 
-Infix "==>" := UniformlyContinuous (at level 55, right associativity) : subset_scope.
-Infix "-->" :=          Continuous (at level 55, right associativity) : subset_scope.
+
+Definition set_within `{X:AmbientSpace} `{Ball X} t U V
+  := ∀ x `{x ∊ X} u `{u ∊ U}, ball t x u → x ∊ V.
+
+Class SetContained `{X:AmbientSpace} `{Ball X} (U V:set) :=
+  set_contained : ∃ q `{q ∊ Q∞₊}, set_within q U V.
+Arguments set_contained { _ X _} U V {_}.
+
+Class WellContained `{X:AmbientSpace} `{Equiv X} `{Ball X} (U V : set) :=
+{ well_contained_V :>> V ⊆ X
+; well_contained_subsetoid :>> U ⊆ V
+; well_contained_bounded :>> Bounded U
+; well_contained_inhabited :>> Inhabited U
+; well_contained :>> SetContained U V
+}.
+Notation "S ⊂⊂ T" := (WellContained S T) (at level 70) : mc_metric_scope.
+Notation "(⊂⊂)" := (WellContained) (only parsing) : mc_metric_scope.
+Notation "( S ⊂⊂)" := (WellContained S) (only parsing) : mc_metric_scope.
+Notation "(⊂⊂ T )" := ((λ S, S ⊂⊂ T) : Subset) (only parsing) : mc_metric_scope.
+
+Notation "x ⊆ y ⊂⊂ z"  := (x ⊆  y ∧ y ⊂⊂ z) (at level 70, y at next level) : mc_scope.
+Notation "x ⊂⊂ y ⊂⊂ z" := (x ⊂⊂ y ∧ y ⊂⊂ z) (at level 70, y at next level) : mc_scope.
+Notation "x ⊂⊂ y ⊆ z"  := (x ⊂⊂ y ∧ y ⊆  z) (at level 70, y at next level) : mc_scope.
+
+Class Continuous
+  `{X:AmbientSpace} `{Equiv X} `{Ball X} `{Y:AmbientSpace} `{Equiv Y} `{Ball Y}
+   D R (f:D ⇀ R) : Prop :=
+{ cont_X : MetricSpace X
+; cont_Y : MetricSpace Y
+; cont_X_ltb : LocallyTotallyBounded X
+; cont_Y_ltb : LocallyTotallyBounded Y
+; cont_D_open :>> Open (X:=X) D
+; cont_R_open :>> Open (X:=Y) R
+; cont_mor :>> Morphism (D ⇒ R) f
+; continuity_ufm      U `{U ⊂⊂ D} : UniformlyContinuous U R f
+; continuity_wc_range U `{U ⊂⊂ D} : f⁺¹(U) ⊂⊂ R
+}.
+
+
+Infix "==>" := UniformlyContinuous (at level 55, right associativity) : set_scope.
+Infix "-->" :=          Continuous (at level 55, right associativity) : set_scope.
 
 (** Richman's regular family of subsets *)
 
-Inductive Family `(X:Subset) `{Equiv X} := family : (Q∞₊ ⇀ (⊆ X)) → Family X.
+Inductive Family `(X:set) `{Equiv X} := family : (Q∞₊ ⇀ (⊆ X)) → Family X.
 Arguments family {_ X _} _.
-Definition family_to_fun `{X:@Subset A} `{Equiv X} (x : Family X)
-  := match x with family f => (f:AQ→@Subset A) end.
+Definition family_to_fun `{X:@set A} `{Equiv X} (x : Family X)
+  := match x with family f => (f:AQ→@set A) end.
 Coercion family_to_fun : Family >-> Funclass.
 
 Section Cauchy.
-  Context `{X:Subset} `{Equiv X} `{Ball X}.
+  Context `{X:set} `{Equiv X} `{Ball X}.
 
   Class Cauchy (S:Family X) : Prop :=
   { cauchy_family_msp : MetricSpace X
@@ -219,18 +223,18 @@ Section Cauchy.
 
 End Cauchy.
 
-Definition CauchyFamilies `(X:Subset) `{Equiv X} `{Ball X} := Cauchy : Subset.
+Definition CauchyFamilies `(X:set) `{Equiv X} `{Ball X} := Cauchy : set.
 
-Hint Extern 10 (@Subset (Family ?X)) => eexact (CauchyFamilies X) : typeclass_instances.
+Hint Extern 10 (@set (Family ?X)) => eexact (CauchyFamilies X) : typeclass_instances.
 
 Hint Extern 2 (Equiv (Family _)) => eapply @family_equiv : typeclass_instances.
 Hint Extern 2 (Equiv (elt_type (CauchyFamilies _))) => eapply @family_equiv : typeclass_instances.
 Hint Extern 0 (Proper (_ ==> _) (family_to_fun _)) =>
    eapply (cauchy_family_mor : Proper ((Q∞₊,=) ==> ((⊆ _),=)) (family_to_fun _)) : typeclass_instances.
 
-Class Limit `(X:Subset) `{Equiv X} `{Ball X} := limit : CauchyFamilies X ⇀ X.
+Class Limit `(X:set) `{Equiv X} `{Ball X} := limit : CauchyFamilies X ⇀ X.
 
-Class CompleteMetricSpace `(X:Subset) `{Equiv X} `{Ball X} `{!Limit X}:=
+Class CompleteMetricSpace `(X:set) `{Equiv X} `{Ball X} `{!Limit X}:=
 { complete_msp_msp :>> MetricSpace X
 ; complete_msp_limit_mor : Morphism (CauchyFamilies X ⇒ X) limit
 ; complete_msp S `{S ∊ CauchyFamilies X} : FamilyLimit S (limit S)
@@ -238,12 +242,12 @@ Class CompleteMetricSpace `(X:Subset) `{Equiv X} `{Ball X} `{!Limit X}:=
 
 Hint Extern 2 (Morphism _ limit) => eapply @complete_msp_limit_mor : typeclass_instances.
 
-Class ToCompletion `(X:Subset) `(X':Subset) := to_completion : X ⇀ X' .
+Class ToCompletion `(X:set) `(X':set) := to_completion : X ⇀ X' .
 Arguments to_completion {_} X {_} X' {_} _.
 
 Section completion.
-  Context `(X:Subset) `{MetricSpace _ (X:=X)}.
-  Context `(X':Subset) `{CompleteMetricSpace _ (X:=X')}.
+  Context `(X:set) `{MetricSpace _ (X:=X)}.
+  Context `(X':set) `{CompleteMetricSpace _ (X:=X')}.
   Context `{!ToCompletion X X'}.
 
   Class Completion : Prop :=
@@ -258,17 +262,17 @@ Hint Extern 2 (Isometry _ _ (to_completion _ _)) => eapply @completion_iso : typ
 Hint Extern 2 (Morphism _ (to_completion _ _)) => eapply @isometry_mor : typeclass_instances.
 Hint Extern 2 (Dense (to_completion ?X _)⁺¹(?X)) => eapply @completion_dense : typeclass_instances.
 
-Section archimedean_ordered_field.
+Section archimedean_field.
   Context `{Field A (F:=F)} {Alt: Lt A} {Ale: Le A} {Aball: Ball F}.
 
-  Class ArchimedeanOrderedField_Metric : Prop :=
-  { arch_ord_field_ball_proper : Proper ((Qfull,=)==>(F,=)==>(F,=)==>impl) ball
-  ; arch_ord_field_ball_nonneg ε `{ε ∊ Qfull} x `{x ∊ F} y `{y ∊ F} : ball ε x y → ε ∊ Q∞⁺
-  ; arch_ord_field_ball_inf x `{x ∊ F} y `{y ∊ F} : ball ∞ x y
-  ; arch_ord_field_ball ε `{ε ∊ Q} x `{x ∊ F} y `{y ∊ F}
+  Class ArchimedeanField_Metric : Prop :=
+  { arch_field_ball_proper : Proper ((Qfull,=)==>(F,=)==>(F,=)==>impl) ball
+  ; arch_field_ball_nonneg ε `{ε ∊ Qfull} x `{x ∊ F} y `{y ∊ F} : ball ε x y → ε ∊ Q∞⁺
+  ; arch_field_ball_inf x `{x ∊ F} y `{y ∊ F} : ball ∞ x y
+  ; arch_field_ball ε `{ε ∊ Q} x `{x ∊ F} y `{y ∊ F}
       : ball ε x y ↔ - rationals_to_field Q F ε ≤ x - y ≤ rationals_to_field Q F ε
   }.
-End archimedean_ordered_field.
+End archimedean_field.
 
-Arguments ArchimedeanOrderedField_Metric {A _ _ _ _ _ _ _} F {_ _}.
+Arguments ArchimedeanField_Metric {A _ _ _ _ _ _ _} F {_ _}.
 

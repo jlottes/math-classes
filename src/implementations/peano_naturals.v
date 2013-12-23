@@ -1,6 +1,7 @@
 Require Import
   Ring Arith_base abstract_algebra interfaces.additional_operations interfaces.naturals interfaces.orders
-  theory.setoids theory.common_props theory.rings orders.semirings.
+  theory.setoids theory.common_props theory.rings orders.semirings
+  orders.lattices orders.minmax lattice_ordered_rings.
 Require Import stdlib_ring misc.quote.
 
 Instance nat_equiv: Equiv nat := eq.
@@ -13,7 +14,7 @@ Instance nat_mult: Mult nat := Peano.mult.
 Instance nat_le: Le nat := Peano.le.
 Instance nat_lt: Lt nat := Peano.lt.
 
-Hint Extern 10 (@Subset nat) => eexact (every nat) : typeclass_instances.
+Hint Extern 10 (@set nat) => eexact (every nat) : typeclass_instances.
 
 Local Notation nat := (every nat).
 
@@ -79,13 +80,13 @@ Section for_another_semiring.
   Proof. unfold naturals_to_semiring. simpl. exact (plus_0_l _). Qed.
 
   Let f_preserves_plus a a': toR (a + a') = toR a + toR a'.
-  Proof with subring R.
+  Proof with setring R.
    induction a. change (toR a' = 0 + toR a')... 
    change (toR (a + a') + 1 = toR (a) + 1 + toR a'). rewrite_on R -> IHa...
   Qed.
 
   Let f_preserves_mult a a': toR (a * a') = toR a * toR a'.
-  Proof with subring R.
+  Proof with setring R.
    induction a. change (0 = 0 * toR a')...
    change (toR (a' + a * a') = (toR a + 1) * toR a').
    rewrite (R $ f_preserves_plus _ _), (R $ IHa)...
@@ -156,6 +157,9 @@ Proof. split; try apply _. Qed.
 
 Definition nat_le_dec : ∀ x y, Decision (x ≤ y) := le_dec.
 Hint Extern 2 (Decision (@le _ nat_le _ _)) => eapply @nat_le_dec : typeclass_instances.
+
+Instance: FullLatticeOrder nat := dec_full_lattice_order.
+Instance: SemiRingLatticeOrder nat := dec_semiring_lattice_order.
 
 Instance nat_cut_minus: CutMinus Datatypes.nat := minus.
 Instance: CutMinusSpec nat nat_cut_minus.

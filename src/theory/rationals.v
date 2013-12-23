@@ -11,27 +11,20 @@ Section hints.
 
   Notation toF := (rationals_to_field Q F).
 
-  Instance: Ring_Morphism Q F toF := _.
+  Instance: SemiRing_Morphism Q F toF := _.
   Instance rationals_to_field_strong    : Strong_Morphism Q F toF := dec_strong_morphism _.
-  Instance rationals_to_field_srng_mor  : SemiRng_Morphism Q F toF := _.
-  Instance rationals_to_field_sring_mor : SemiRing_Morphism Q F toF := _.
-  Instance rationals_to_field_rng_mor   : Rng_Morphism Q F toF := _.
 
   Lemma rationals_to_field_unique_alt (f:Q ⇀ F) (g:Q ⇀ F)
-    `{!Ring_Morphism Q F f} `{!Ring_Morphism Q F g} : f = g.
+    `{!SemiRing_Morphism Q F f} `{!SemiRing_Morphism Q F g} : f = g.
   Proof. transitivity toF; [|symmetry]; exact (rationals_to_field_unique Q _). Qed.
 
 End hints.
 
-Hint Extern 2 (Strong_Morphism   _ _ (rationals_to_field _ _)) => eapply @rationals_to_field_strong    : typeclass_instances.
-Hint Extern 2 (SemiRng_Morphism  _ _ (rationals_to_field _ _)) => eapply @rationals_to_field_srng_mor  : typeclass_instances.
-Hint Extern 2 (SemiRing_Morphism _ _ (rationals_to_field _ _)) => eapply @rationals_to_field_sring_mor : typeclass_instances.
-Hint Extern 2 (Rng_Morphism      _ _ (rationals_to_field _ _)) => eapply @rationals_to_field_rng_mor   : typeclass_instances.
-
+Hint Extern 2 (Strong_Morphism  _ _ (rationals_to_field _ _)) => eapply @rationals_to_field_strong    : typeclass_instances.
+Hint Extern 2 (SemiRng_Morphism _ _ (rationals_to_field _ _)) => class_apply @sringmor_srng_mor : typeclass_instances.
 Hint Extern 2 (AdditiveMonoid_Morphism _ _ (rationals_to_field _ _)) => class_apply @srngmor_plus_mor : typeclass_instances.
-Hint Extern 2 (AdditiveSemiGroup_Morphism _ _ (rationals_to_field _ _)) => class_apply @rngmor_plus_mor : typeclass_instances.
-Hint Extern 2 (MultiplicativeSemiGroup_Morphism _ _ (rationals_to_field _ _)) => class_apply @rngmor_mult_mor : typeclass_instances.
-
+Hint Extern 2 (AdditiveSemiGroup_Morphism _ _ (rationals_to_field _ _)) => eapply @monmor_sgmor : typeclass_instances.
+Hint Extern 2 (MultiplicativeSemiGroup_Morphism _ _ (rationals_to_field _ _)) => eapply @srngmor_mult_mor : typeclass_instances.
 
 Instance integers_to_field_of_fracs `{Integers (Z:=Z)} `{Rationals (Q:=Q)}
   : ToFieldOfFracs Z Q | 15 := integers_to_ring Z Q.
@@ -67,8 +60,8 @@ Proof dec_strong_injective _.
 Hint Extern 10 (StrongInjective _ _ (integers_to_ring _ _)) => eapply @rationals_embed_ints_strong : typeclass_instances.
 
 Section alt_Build_Rationals.
-  Context `(Z:Subset) `{Integers _ (Z:=Z)} `{UnEq _} `{!DenialInequality Z}.
-  Context `(Q:Subset) `{Field _ (F:=Q)} `{!DenialInequality Q} `{!RationalsToField Q}.
+  Context `(Z:set) `{Integers _ (Z:=Z)} `{UnEq _} `{!DenialInequality Z}.
+  Context `(Q:set) `{Field _ (F:=Q)} `{!DenialInequality Q} `{!RationalsToField Q}.
   Context `{!Injective Z Q (integers_to_ring Z Q)}.
 
   Instance alt_Build_Rationals :
@@ -112,7 +105,7 @@ End from_field_of_fracs.
 
 Section another_integers.
   Context `{Rationals (Q:=Q)} `{Integers B (Z:=Z)} `{UnEq B} `{!DenialInequality Z}.
-  Context (f : Z ⇀ Q) `{!Ring_Morphism Z Q f}.
+  Context (f : Z ⇀ Q) `{!SemiRing_Morphism Z Q f}.
 
   Instance int_to_rat_strong_inj: StrongInjective Z Q f.
   Proof. rewrite (integers_initial f). exact rationals_embed_ints_strong. Qed.
@@ -136,7 +129,7 @@ End another_integers.
 Hint Extern 10 (Inverse (rationals_to_field ?Q1 ?Q2)) => eexact (rationals_to_field Q2 Q1) : typeclass_instances.
 
 Lemma rationals_to_rationals_unique `{Rationals (Q:=Q1)} `{Rationals (Q:=Q2)}
-  (f:Q1 ⇀ Q2) (g:Q1 ⇀ Q2) `{!Ring_Morphism Q1 Q2 f} `{!Ring_Morphism Q1 Q2 g}
+  (f:Q1 ⇀ Q2) (g:Q1 ⇀ Q2) `{!SemiRing_Morphism Q1 Q2 f} `{!SemiRing_Morphism Q1 Q2 g}
 : f = g.
 Proof rationals_to_field_unique_alt (Z:=the_integers) _ _.
 
@@ -153,12 +146,12 @@ Section another_rationals.
   Instance rationals_to_rationals_bij: Bijective Q1 Q2 f := {}.
 
   Lemma to_rationals_unique_alt
-    (f : Q1 ⇀ Q2) `{!Ring_Morphism Q1 Q2 f}
-    (g : Q1 ⇀ Q2) `{!Ring_Morphism Q1 Q2 g}
+    (f : Q1 ⇀ Q2) `{!SemiRing_Morphism Q1 Q2 f}
+    (g : Q1 ⇀ Q2) `{!SemiRing_Morphism Q1 Q2 g}
     x `{x ∊ Q1} : f x = g x.
   Proof. now destruct (rationals_to_rationals_unique f g x x (_:Proper (Q1,=) x)). Qed.
 
-  Lemma to_rationals_unique (f : Q1 ⇀ Q2) `{!Ring_Morphism Q1 Q2 f} x `{x ∊ Q1} :
+  Lemma to_rationals_unique (f : Q1 ⇀ Q2) `{!SemiRing_Morphism Q1 Q2 f} x `{x ∊ Q1} :
     f x = rationals_to_field Q1 Q2 x.
   Proof to_rationals_unique_alt _ _ _.
 
@@ -167,8 +160,8 @@ Section another_rationals.
   Proof jections.bijective_applied _ x.
 
   Lemma morphisms_involutive
-    (f : Q1 ⇀ Q2) `{!Ring_Morphism Q1 Q2 f}
-    (g : Q2 ⇀ Q1) `{!Ring_Morphism Q2 Q1 g}
+    (f : Q1 ⇀ Q2) `{!SemiRing_Morphism Q1 Q2 f}
+    (g : Q2 ⇀ Q1) `{!SemiRing_Morphism Q2 Q1 g}
     x `{x ∊ Q2} : f (g x) = x.
   Proof. now destruct (rationals_to_rationals_unique (f∘g) (id:Q2 ⇀ Q2) x x (_:Proper (Q2,=) x)). Qed.
 
@@ -186,14 +179,14 @@ Qed.
 
 Section isomorphic_image_is_rationals.
   Context `{Rationals (Q:=Q)} `{Field (F:=Q2)} `{!DenialInequality Q2}.
-  Context (f : Q ⇀ Q2) `{!Inverse f} `{!Bijective Q Q2 f} `{!Ring_Morphism Q Q2 f}.
+  Context (f : Q ⇀ Q2) `{!Inverse f} `{!Bijective Q Q2 f} `{!SemiRing_Morphism Q Q2 f}.
   Open Scope mc_fun_scope.
 
   Instance iso_to_field: RationalsToField Q2 := λ _ F _ _ _ _ _ _, rationals_to_field Q F ∘ f⁻¹.
   Hint Unfold iso_to_field: typeclass_instances.
 
   Instance: Bijective Q2 Q f⁻¹ := _.
-  Instance: Ring_Morphism Q2 Q f⁻¹ := _.
+  Instance: SemiRing_Morphism Q2 Q f⁻¹ := _.
 
   Lemma iso_is_rationals: Rationals Q2.
   Proof. split; try apply _; intros ??????? Z ??.
@@ -209,8 +202,8 @@ End isomorphic_image_is_rationals.
 
 Section injective_preimage_is_rationals.
   Context `{Field (F:=Q2)} `{!DenialInequality Q2}.
-  Context `{Integers  (Z:=Z)} (h : Z ⇀ Q2) `{!Injective Z Q2 h} `{!Ring_Morphism Z Q2 h}.
-  Context `{Rationals (Q:=Q)} (f : Q2 ⇀ Q) `{!Injective Q2 Q f} `{!Ring_Morphism Q2 Q f}.
+  Context `{Integers  (Z:=Z)} (h : Z ⇀ Q2) `{!Injective Z Q2 h} `{!SemiRing_Morphism Z Q2 h}.
+  Context `{Rationals (Q:=Q)} (f : Q2 ⇀ Q) `{!Injective Q2 Q f} `{!SemiRing_Morphism Q2 Q f}.
   Open Scope mc_fun_scope.
 
   Instance: DenialInequality Z := _.

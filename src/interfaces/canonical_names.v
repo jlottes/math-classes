@@ -8,35 +8,40 @@ Require Export Morphisms Setoid Program Unicode.Utf8 Utf8_core stdlib_hints.
 Delimit Scope mc_scope with mc. 
 Global Open Scope mc_scope.
 
-Class Subset {A} := set_comp : A → Prop.
-Delimit Scope subset_scope with subset.
-Bind Scope subset_scope with Subset.
+(** remove printing * *)
+(** remove printing => *)
+(** remove printing exists *)
+(** remove printing forall *)
 
-(* Element is a typeclass so that instances can be inferred.
-   The notation is set up so that `{x ∊ S} works in a binder context.
+Class set {A} := set_comp : A → Prop.
+Delimit Scope set_scope with set.
+Bind Scope set_scope with set.
+
+(** Element is a typeclass so that instances can be inferred.
+    The notation is set up so that `{x ∊ S} works in a binder context.
  *)
-Class Element `{S:Subset} x := element : S x.
+Class Element `{S:set} x := element : S x.
 Notation "x ∊ S" := (Element (A:=_) (S:=S) x) (at level 70) : mc_scope.
 Notation "(∊ S )" := (Element (S:=S)) (only parsing) : mc_scope.
 
-Class Inhabited `(X:Subset) := inhabited : ∃ x, x ∊ X.
+Class Inhabited `(X:set) := inhabited : ∃ x, x ∊ X.
 Arguments inhabited {_} X {_}.
 
-Definition every A : @Subset A := λ _, True.
+Definition every A : set := λ (_:A), True.
 Hint Extern 0 (_ ∊ (every _)) => eexact I : typeclass_instances.
 
-Definition prod_subset {A B} (S:@Subset A) (T:@Subset B) : @Subset (A*B)
-  := λ p, let (a,b) := p in a ∊ S ∧ b ∊ T.
-Infix "*" := prod_subset : subset_scope.
-Notation "()" := (every ()) : subset_scope.
+Definition prod_set {A B} (S:set) (T:set) : set
+  := λ (x:A*B), fst x ∊ S ∧ snd x ∊ T.
+Infix "*" := prod_set : set_scope.
+Notation "()" := (every ()) : set_scope.
 
-Definition elt_type `(S:@Subset A) := A.
-Coercion elt_type: Subset >-> Sortclass.
+Definition elt_type `(S:@set A) := A.
+Coercion elt_type: set >-> Sortclass.
 Typeclasses Transparent elt_type.
 
-Definition restrict_rel `(S:Subset) (R:relation _): relation _ := λ x y, (x ∊ S ∧ y ∊ S) ∧ R x y .
+Definition restrict_rel `(S:set) (R:relation _): relation _ := λ x y, (x ∊ S ∧ y ∊ S) ∧ R x y .
 
-Class SubsetOf `(S:Subset) T := subset x `{x ∊ S} : x ∊ T.
+Class Subset `(S:set) T := subset x `{x ∊ S} : x ∊ T.
 
 (* Equality *)
 Class Equiv A := equiv: relation A.
@@ -72,7 +77,7 @@ Hint Extern 2 (?x = ?y) => auto_symm.
 Hint Extern 2 (?x = ?y) => auto_trans.
 *)
 
-Definition subset_singleton `(S:Subset) `{Equiv _} x : Subset := λ y, y ∊ S ∧ y = x.
+Definition singleton `(S:set) `{Equiv _} x : set := λ y, y ∊ S ∧ y = x.
 
 (* Coq sometimes uses an incorrect DefaultRelation, so we override it. *)
 Instance equiv_default_relation `{Equiv A} : DefaultRelation (=) | 3.
@@ -90,16 +95,16 @@ Notation "( x ≢)" := (λ y, x ≢ y) (only parsing) : mc_scope.
 Notation "(≢ x )" := (λ y, y ≢ x) (only parsing) : mc_scope.
 
 (* Some common notions of equality *)
-Definition subset_equiv {T} : Equiv (@Subset T) := λ A B, ∀ x, x ∊ A ↔ x ∊ B.
-Hint Extern 2 (Equiv Subset) => eapply @subset_equiv : typeclass_instances.
+Definition set_equiv {T} : Equiv (@set T) := λ A B, ∀ x, x ∊ A ↔ x ∊ B.
+Hint Extern 2 (Equiv set) => eapply @set_equiv : typeclass_instances.
 Hint Extern 2 (Equiv (relation _)) => eapply @relation_equivalence : typeclass_instances.
 Hint Extern 5 (Equiv (Equiv _)) => eapply @relation_equivalence : typeclass_instances.
 Hint Extern 5 (Equiv (UnEq _)) => eapply @relation_equivalence : typeclass_instances.
 
 Definition prod_equiv `{Equiv A} `{Equiv B} : Equiv (A * B) :=
-  λ p q, let (a,b) := p in let (c,d) := q in a = c ∧ b = d.
+  λ x y, fst x = fst y ∧ snd x = snd y.
 Definition prod_uneq `{UnEq A} `{UnEq B} : UnEq (A * B) :=
-  λ p q, let (a,b) := p in let (c,d) := q in a ≠ c ∨ b ≠ d.
+  λ x y, fst x ≠ fst y ∨ snd x ≠ snd y.
 
 Hint Extern 10 (Equiv (_ * _)) => class_apply @prod_equiv : typeclass_instances.
 Hint Extern 10 (UnEq  (_ * _)) => class_apply @prod_uneq  : typeclass_instances.
@@ -120,42 +125,44 @@ they can be used for implicit argument resolution, essentially acting as "hints"
 the domains and codomain of [f] are the specified [Subset]s.
 *)
 
-Definition closed_fun {A B} X Y : @Subset (A → B) := λ f, ∀ x, x ∊ X → (f x) ∊ Y.
+Definition closed_fun {A B} X Y : @set (A → B) := λ f, ∀ `{x ∊ X}, f x ∊ Y.
 Infix "⇀" := closed_fun (at level 65, right associativity) : mc_scope.
-Class Closed `(S:Subset) f := closed_prf : f ∊ S.
+Class Closed `(S:set) f := closed_prf : f ∊ S.
 Hint Extern 0 (_ ∊ _ ⇀ _) => eapply @closed_prf : typeclass_instances.
 
-Definition compose `{X:Subset} `{Y:Subset} `{Z:Subset} (g:Y ⇀ Z) (f:X ⇀ Y) : X ⇀ Z  := λ x, g (f x).
+Definition compose `{X:set} `{Y:set} `{Z:set} (g:Y ⇀ Z) (f:X ⇀ Y) : X ⇀ Z  := λ x, g (f x).
 Infix "∘" := compose : mc_scope.
 Notation "( f ∘)" := (λ g, f ∘ g) (only parsing) : mc_scope.
 Notation "(∘ f )" := (λ g, g ∘ f) (only parsing) : mc_scope.
 Typeclasses Transparent compose.
 
-Definition uncurry `{X:Subset} `{Y:Subset} `{Z:Subset} (f:X ⇀ Y ⇀ Z) : X * Y ⇀ Z := 
-  λ p, match p with (x,y) => f x y end.
+Definition uncurry `{X:set} `{Y:set} `{Z:set} (f:X ⇀ Y ⇀ Z) : X * Y ⇀ Z := 
+  λ x, f (fst x) (snd x).
 
-Definition curry `{X:Subset} `{Y:Subset} `{Z:Subset} (f:X * Y ⇀ Z) : X ⇀ Y ⇀ Z := λ x y, f (x,y).
+Definition curry `{X:set} `{Y:set} `{Z:set} (f:X * Y ⇀ Z) : X ⇀ Y ⇀ Z := λ x y, f (x,y).
 
-Definition ext_equiv `{X:Subset} `{Y:Subset} `{Equiv X} `{Equiv Y}
+Definition ext_equiv `{X:set} `{Y:set} `{Equiv X} `{Equiv Y}
   : Equiv (X ⇀ Y) := ((X,=)==>(Y,=))%signature.
 Hint Extern 2 (Equiv (elt_type (?X ⇀ ?Y))) => eapply (ext_equiv (X:=X) (Y:=Y)) : typeclass_instances.
 Hint Extern 5 (Equiv (_ → _)) => eapply @ext_equiv : typeclass_instances.
 
-Definition strong_ext_equiv `{X:Subset} `{Y:Subset} `{UnEq X} `{UnEq Y} : Equiv (X ⇀ Y)
+Definition strong_ext_equiv `{X:set} `{Y:set} `{UnEq X} `{UnEq Y} : Equiv (X ⇀ Y)
   := λ f g, ∀ x `{x ∊ X} y `{y ∊ X}, f x ≠ g y → x ≠ y.
 
+(*
 Definition TypedSubset := { A : Type & @Subset A }.
 Definition unpack_subset : ∀ S : TypedSubset, @Subset (projT1 S) := λ S, projT2 S.
 Definition pack_subset `(S:Subset A) : TypedSubset := existT (@Subset) A S.
 Coercion unpack_subset: TypedSubset >-> Subset.
+*)
 
-Definition image     `{X:Subset} `{Y:Subset} `{Equiv Y} (f:X ⇀ Y) S : Subset := λ y, y ∊ Y ∧ ∃ `{x ∊ S}, f x = y.
-Definition inv_image `{X:Subset} `{Y:Subset}            (f:X ⇀ Y) T : Subset := λ x, x ∊ X ∧ f x ∊ T.
+Definition image     `{X:set} `{Y:set} `{Equiv Y} (f:X ⇀ Y) S : set := λ y, y ∊ Y ∧ ∃ `{x ∊ S}, f x = y.
+Definition inv_image `{X:set} `{Y:set}            (f:X ⇀ Y) T : set := λ x, x ∊ X ∧ f x ∊ T.
 
-Notation "f ⁺¹( T )" :=     (image f T) (at level 1, format "f ⁺¹( T )" ) : mc_scope.
+Notation "f ⁺¹( T )" :=     (image f T) (at level 1, format "f ⁺¹( T )") : mc_scope.
 Notation "f ⁻¹( T )" := (inv_image f T) (at level 1, format "f ⁻¹( T )") : mc_scope.
 
-Class Cast `(S:Subset) `(T:Subset) := cast: S ⇀ T.
+Class Cast `(S:set) `(T:set) := cast: S ⇀ T.
 Arguments cast {_} S {_} T {Cast} _.
 Notation "' x" := (cast _ _ x) (at level 20) : mc_scope.
 Notation "(')" := (cast _ _) (only parsing) : mc_scope.
@@ -204,15 +211,15 @@ Instance: Params (@join)   2.
 Instance: Params (@tilde)  2.
 Instance: Params (@abs)    2.
 
-Instance plus_is_sg_op      `{f : Plus   A}: SgOp A := f.
-Instance mult_is_sg_op      `{f : Mult   A}: SgOp A := f.
-Instance one_is_mon_unit    `{c : One    A}: MonUnit A := c.
-Instance zero_is_mon_unit   `{c : Zero   A}: MonUnit A := c.
+Instance plus_is_sg_op      `{f : Plus   A}: SgOp A | 5 := f.
+Instance mult_is_sg_op      `{f : Mult   A}: SgOp A | 5 := f.
+Instance one_is_mon_unit    `{c : One    A}: MonUnit A | 5 := c.
+Instance zero_is_mon_unit   `{c : Zero   A}: MonUnit A | 5 := c.
 Instance negate_is_inv      `{f : Negate A}: Inv A | 10 := f.
-Instance meet_is_sg_op      `{f : Meet   A}: SgOp A := f.
-Instance join_is_sg_op      `{f : Join   A}: SgOp A := f.
-Instance top_is_mon_unit    `{s : Top    A}: MonUnit A := s.
-Instance bottom_is_mon_unit `{s : Bottom A}: MonUnit A := s.
+Instance meet_is_sg_op      `{f : Meet   A}: SgOp A | 5 := f.
+Instance join_is_sg_op      `{f : Join   A}: SgOp A | 5 := f.
+Instance top_is_mon_unit    `{s : Top    A}: MonUnit A | 5 := s.
+Instance bottom_is_mon_unit `{s : Bottom A}: MonUnit A | 5 := s.
 
 (* Notations: *)
 Infix "&" := sg_op (at level 50, left associativity) : mc_scope.
@@ -285,8 +292,8 @@ Notation "x < y ≤ z" := (x < y ∧ y ≤ z) (at level 70, y at next level) : m
 
 Notation "∞" := infty : mc_scope.
 
-Notation "{{ x }}" := (subset_singleton _ x) : mc_scope.
-Notation "{{ x | S }}" := (subset_singleton S x) (only parsing) : mc_scope.
+Notation "{{ x }}" := (singleton _ x) : mc_scope.
+Notation "{{ x | S }}" := (singleton S x) (only parsing) : mc_scope.
 
 Notation "| x |" := (abs x) (at level 50, format "| x |") : mc_abs_scope.
 Notation "|·|" := abs (only parsing) : mc_abs_scope.
@@ -302,13 +309,22 @@ Hint Extern 4 (?x ≤ ?z) => auto_trans.
 Hint Extern 4 (?x < ?z) => auto_trans.
 *)
 
-Class Inverse `{X:Subset} `{Y:Subset} (f:X ⇀ Y) : Type := inverse: Y ⇀ X.
+Class Inverse `{X:set} `{Y:set} (f:X ⇀ Y) : Type := inverse: Y ⇀ X.
 Arguments inverse {_ _ _ _} f {Inverse} _.
 Typeclasses Transparent Inverse.
 Notation "f ⁻¹" := (inverse f) (at level 1, format "f ⁻¹") : mc_fun_scope. (* to co-exist with group inverse *)
 
-Class AntiSymmetric {A} (eq le: relation A) : Prop := antisymmetry: ∀ x y, le x y → le y x → eq x y.
-Arguments antisymmetry {A eq} le {AntiSymmetric} _ _ _ _.
+Definition set_empty        {A} : Bottom (@set A) := λ x, False.
+Definition set_intersection {A} : Meet (@set A) := λ S T x, x ∊ S ∧ x ∊ T.
+Definition set_union        {A} : Join (@set A) := λ S T x, x ∊ S ∨ x ∊ T.
+Hint Extern 2 (Bottom set) => eapply @set_empty : typeclass_instances.
+Hint Extern 2 (Meet set) => eapply @set_intersection : typeclass_instances.
+Hint Extern 2 (Join set) => eapply @set_union : typeclass_instances.
+Hint Extern 10 (Top set) => eapply @every : typeclass_instances.
+Hint Extern 10 (Meet (_ → Prop)) => eapply @set_intersection : typeclass_instances.
+Hint Extern 10 (Join (_ → Prop)) => eapply @set_union : typeclass_instances.
 
-Class SubRelation `(S:Subset) (R1 R2 : relation _) : Prop :=
-  subrelation_relative x `{x ∊ S} y `{y ∊ S} : R1 x y → R2 x y.
+Class AntiSymmetricT {A} (eq le: relation A) : Prop := antisymmetry_t: ∀ x y, le x y → le y x → eq x y.
+Arguments antisymmetry_t {A eq} le {AntiSymmetricT} _ _ _ _.
+
+Class SubRelation `(S:set) (R₁ R₂ : relation _) : Prop := subrel x `{x ∊ S} y `{y ∊ S} : R₁ x y → R₂ x y.

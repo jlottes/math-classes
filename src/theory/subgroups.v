@@ -51,7 +51,7 @@ Section substructure_tests.
   Proof with try apply _. intro P.
     assert (e ∊ G') by (rewrite_on G <- (right_inverse (&) x); apply _).
     assert (Closed (G' ⇀ G') (⁻¹)). intros b ?. rewrite_on G <-(left_identity (&) b⁻¹)...
-    assert (Closed (G' ⇀ G' ⇀ G') (&)). intros a ? b ?. rewrite_on G <-(involutive b)...
+    assert (Closed (G' ⇀ G' ⇀ G') (&)). intros a ? b ?. rewrite <-(_ $ inverse_involutive b)...
     exact (subgroup x).
   Qed.
 
@@ -98,7 +98,7 @@ Qed.
 Section center.
   Context `{Group (G:=G)}.
 
-  Definition group_center : Subset := λ x, x ∊ G ∧ ∀ `{y ∊ G}, x & y = y & x.
+  Definition group_center : set := λ x, x ∊ G ∧ ∀ `{y ∊ G}, x & y = y & x.
   Notation Z := group_center.
 
   Instance: Z ⊆ G.
@@ -120,11 +120,11 @@ Section center.
 
   Instance: Closed (Z ⇀ Z) (⁻¹).
   Proof. intros a [? Ca]. split. apply _. intros y ?.
-      rewrite_on G <-(involutive y) at 1.
+      rewrite_on G <-(inverse_involutive y) at 1.
       rewrite_on G <-(inv_sg_op_distr y⁻¹ a).
       rewrite_on G <- (Ca y⁻¹ _).
       rewrite_on G -> (inv_sg_op_distr a y⁻¹).
-      now rewrite_on G -> (involutive y).
+      now rewrite_on G -> (inverse_involutive y).
   Qed.
 
   Instance group_center_subgroup : Group Z := subgroup e.
@@ -139,7 +139,7 @@ Section center.
   Qed.
 
   Lemma abgroup_is_center : AbGroup G → Z = G.
-  Proof. intro. apply (antisymmetry SubsetOf). apply _.
+  Proof. intro. apply (antisymmetry_t Subset). apply _.
     intros x ?. split. apply _.
     intros y ?. exact (commutativity (&) x y).
   Qed.
@@ -252,7 +252,7 @@ Qed.
 Hint Extern 5 (_⁻¹(_) ◁ _) => class_apply @inv_image_preserves_normality : typeclass_instances.
 
 
-Definition monoid_kern {A B} `{Equiv A} `{Equiv B} `{MonUnit B} {M:@Subset A} {N:@Subset B} (f:M ⇀ N) := f⁻¹( {{e}} ).
+Definition monoid_kern {A B} `{Equiv A} `{Equiv B} `{MonUnit B} {M:@set A} {N:@set B} (f:M ⇀ N) := f⁻¹( {{e}} ).
 Local Notation kern := monoid_kern.
 
 Section kernel.
@@ -286,10 +286,10 @@ End kernel.
 Hint Extern 5 (kern _ ◁ _) => eapply @kern_normal : typeclass_instances.
 Hint Extern 5 (Group (kern _)) => eapply @normal_subgroup_a : typeclass_instances.
 
-Lemma coset_equiv `{Group (G:=H)} `{H ⊆ G} `{!Group G} : SubEquivalence G (λ a b, a & b⁻¹ ∊ H).
+Lemma coset_equiv `{Group (G:=H)} `{H ⊆ G} `{!Group G} : Equivalence G (λ a b, a & b⁻¹ ∊ H).
 Proof. split.
 + intros a ?. rewrite_on G -> (right_inverse (&) a). apply _.
-+ intros a ? b ? ?. rewrite_on G <- (involutive b), <- (inv_sg_op_distr a b⁻¹). apply _.
++ intros a ? b ? ?. rewrite_on G <- (inverse_involutive b), <- (inv_sg_op_distr a b⁻¹). apply _.
 + intros a ? b ? c ? ??. rewrite_on G <- (right_identity (&) a), <- (left_inverse (&) b).
   rewrite_on G -> (associativity (&) a b⁻¹ b), <- (associativity (&) (a & b⁻¹) b c⁻¹). apply _.
 Qed.
@@ -298,7 +298,7 @@ Lemma coset_equiv_sub `{Group (G:=H)} `{H ⊆ G} `{!Group G} : SubRelation G (=)
 Proof. intros a ? b ? E. rewrite_on G -> E, (right_inverse (&) b). apply _. Qed.
 Hint Extern 5 (SubRelation _ (=) (λ a b, a & b⁻¹ ∊ _)) => eapply @coset_equiv_sub : typeclass_instances.
 
-Definition quotient_group_equiv {A} (G N: @Subset A) `{Equiv A} `{SgOp A} `{Inv A} : Equiv (G/N)
+Definition quotient_group_equiv {A} (G N: @set A) `{Equiv A} `{SgOp A} `{Inv A} : Equiv (G/N)
   := λ a b, (λ a b, a & b⁻¹ ∊ N) (rep a) (rep b).
 
 Local Existing Instance quotient_group_equiv.
@@ -326,9 +326,9 @@ Section quotient_group.
       apply _.
   + apply (quotient_morphism (⁻¹)).
     intros a b E1. unfold_sigs. red_sig.
-      rewrite_on G -> (involutive b), <- (left_identity (&) (a⁻¹ & b)), <- (left_inverse (&) b).
+      rewrite_on G -> (involutive (⁻¹) b), <- (left_identity (&) (a⁻¹ & b)), <- (left_inverse (&) b).
       rewrite (G $ associativity (&) _ _ _), <- (G $ associativity (&) b⁻¹ _ _).
-      rewrite_on G <- (involutive b) at 2 3.
+      rewrite_on G <- (involutive (⁻¹) b) at 2 3.
       rewrite_on G <- (inv_sg_op_distr a b⁻¹).
       apply _.
   Qed.

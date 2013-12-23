@@ -1,7 +1,7 @@
 Require Import abstract_algebra interfaces.orders.
 
-Class AffExtFull `(R:@Subset A) := aff_ext_full : @Subset A.
-Class AffExt     `(R:@Subset A) := aff_ext      : @Subset A.
+Class AffExtFull `(R:@set A) := aff_ext_full : @set A.
+Class AffExt     `(R:@set A) := aff_ext      : @set A.
 
 Arguments aff_ext_full {_} R {_} _.
 Arguments aff_ext {_} R {_} _.
@@ -9,16 +9,16 @@ Arguments aff_ext {_} R {_} _.
 Local Notation F  := (aff_ext_full _).
 Local Notation "R∞" := (aff_ext _).
 
-Definition ae_undef `(R:@Subset A) `{!AffExtFull R} `{!AffExt R} : @Subset A
+Definition ae_undef `(R:@set A) `{!AffExtFull R} `{!AffExt R} : @set A
   := λ x, x ∊ F ∧ ¬ x ∊ R∞.
 
 Local Notation U := (ae_undef _).
 
-Definition ae_inf_undef `(R:@Subset A) `{!AffExtFull R} : @Subset A
+Definition ae_inf_undef `(R:@set A) `{!AffExtFull R} : @set A
   := λ x, x ∊ F ∧ ¬ x ∊ R.
 
 Section ring.
-  Context {A} {R:@Subset A}
+  Context {A} {R:@set A}
     `{Equiv A} `{Plus A} `{Mult A} `{Zero A} `{One A} `{Negate A}
     `{UnEq A} `{Le A} `{Lt A} `{Infty A}.
 
@@ -93,7 +93,7 @@ Hint Extern 4 (_ * _ ∊ U) => eapply @ae_mult_undef_r : typeclass_instances.
 Local Open Scope grp_scope.
 
 Section field.
-  Context {A} {F:@Subset A}
+  Context {A} {F:@set A}
     `{Equiv A} `{Plus A} `{Mult A} `{Zero A} `{One A} `{Negate A} `{Inv A}
     `{UnEq A} `{Le A} `{Lt A} `{Infty A}.
 

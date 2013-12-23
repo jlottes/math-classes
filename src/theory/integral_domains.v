@@ -26,7 +26,7 @@ Section contents.
 
   Instance intdom_strong_left_cancel z `{z ∊ D ₀} : StrongLeftCancellation (.*.) z D.
   Proof. intros x ? y ? E.
-    assert (x-y ∊ D ₀). split. apply _.
+    assert (x-y ∊ D ₀). split. apply _. red.
       rewrite <- (D $ plus_negate_r y).
       exact (strong_right_cancellation (+) (-y) D _ _ E).
     apply (strong_extensionality (+ -(z*y))). rewrite (D $ plus_negate_r _).
@@ -55,6 +55,7 @@ Lemma dec_intdom `{CommutativeRing A (R:=R)} `{UnEq A} `{!DenialInequality R}
 Proof. pose proof dec_strong_setoid. split; try apply _. split; try apply _.
   exact (dec_strong_binary_morphism (+)).
   exact (dec_strong_binary_morphism (.*.)).
+  exact (dec_mult_nonzero).
 Qed.
 
 Lemma dec_intdom_zero_product `{IntegralDomain (D:=D)} `{!DenialInequality D} `{!SubDecision D D (=)}

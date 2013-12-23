@@ -3,7 +3,8 @@ Require
   theory.nat_distance.
 Require Import
   interfaces.naturals abstract_algebra natpair_integers
-  theory.setoids misc.quote theory.integral_domains.
+  theory.setoids misc.quote theory.integral_domains
+  the_naturals.
 Require Export
   interfaces.integers.
 
@@ -13,42 +14,40 @@ Section integers_to_ring_hints.
   Instance integers_to_ring_morphism : Morphism (Z ⇒ R) (integers_to_ring Z R) := _.
 End integers_to_ring_hints.
 Hint Extern 2 (Morphism _ (integers_to_ring _ _)) => class_apply @integers_to_ring_morphism : typeclass_instances.
-Hint Extern 2 (Rng_Morphism _ _ (integers_to_ring _ _)) => class_apply @ringmor_rngmor : typeclass_instances.
 Hint Extern 2 (SemiRng_Morphism _ _ (integers_to_ring _ _)) => class_apply @sringmor_srng_mor : typeclass_instances.
 Hint Extern 2 (AdditiveMonoid_Morphism _ _ (integers_to_ring _ _)) => class_apply @srngmor_plus_mor : typeclass_instances.
-Hint Extern 2 (AdditiveSemiGroup_Morphism _ _ (integers_to_ring _ _)) => class_apply @rngmor_plus_mor : typeclass_instances.
-Hint Extern 2 (MultiplicativeSemiGroup_Morphism _ _ (integers_to_ring _ _)) => class_apply @rngmor_mult_mor : typeclass_instances.
+Hint Extern 2 (AdditiveSemiGroup_Morphism _ _ (integers_to_ring _ _)) => eapply @monmor_sgmor : typeclass_instances.
+Hint Extern 2 (MultiplicativeSemiGroup_Morphism _ _ (integers_to_ring _ _)) => eapply @srngmor_mult_mor : typeclass_instances.
 
-Lemma to_ring_unique `{Integers (Z:=Z)} `{CommutativeRing (R:=R)} (f:Z ⇀ R) `{!Ring_Morphism Z R f} x `{x ∊ Z} :
+Lemma to_ring_unique `{Integers (Z:=Z)} `{CommutativeRing (R:=R)} (f:Z ⇀ R) `{!SemiRing_Morphism Z R f} x `{x ∊ Z} :
   f x = integers_to_ring Z R x.
 Proof. apply (integers_initial f). now red_sig. Qed.
 
 Lemma to_ring_unique_alt `{Integers (Z:=Z)} `{CommutativeRing (R:=R)}
-  (f:Z ⇀ R) (g:Z ⇀ R) `{!Ring_Morphism Z R f} `{!Ring_Morphism Z R g} x `{x ∊ Z} :
+  (f:Z ⇀ R) (g:Z ⇀ R) `{!SemiRing_Morphism Z R f} `{!SemiRing_Morphism Z R g} x `{x ∊ Z} :
   f x = g x.
 Proof. now rewrite (R $ to_ring_unique f _), (R $ to_ring_unique g _). Qed.
 
 Lemma morphisms_involutive `{Integers (Z:=Z)} `{CommutativeRing (R:=R)}
-  (f:R ⇀ Z) (g:Z ⇀ R) `{!Ring_Morphism R Z f} `{!Ring_Morphism Z R g} x `{x ∊ Z} :
+  (f:R ⇀ Z) (g:Z ⇀ R) `{!SemiRing_Morphism R Z f} `{!SemiRing_Morphism Z R g} x `{x ∊ Z} :
   f (g x) = x.
 Proof to_ring_unique_alt (f ∘ g) id x.
 
-Lemma to_ring_involutive `{Integers (Z:=Z)} `{Integers (Z:=Z2)} x `{x ∊ Z} :
+Lemma to_ring_involutive `(Z:set) `{Integers _ (Z:=Z)} `(Z2:set) `{Integers _ (Z:=Z2)} x `{x ∊ Z} :
   integers_to_ring Z2 Z (integers_to_ring Z Z2 x) = x.
 Proof morphisms_involutive (integers_to_ring Z2 Z) (integers_to_ring Z Z2) x.
-Arguments to_ring_involutive {_ _ _ _ _ _ _} Z {_ _ _ _ _ _ _ _ _} Z2 {_ _} x {_}.
 
 Lemma to_ring_twice `{Integers (Z:=Z)} `{CommutativeRing (R:=R1)} `{CommutativeRing (R:=R2)}
-  (f:R1 ⇀ R2) (g:Z ⇀ R1) (h:Z ⇀ R2) `{!Ring_Morphism R1 R2 f} `{!Ring_Morphism Z R1 g} `{!Ring_Morphism Z R2 h} x `{x ∊ Z} :
+  (f:R1 ⇀ R2) (g:Z ⇀ R1) (h:Z ⇀ R2) `{!SemiRing_Morphism R1 R2 f} `{!SemiRing_Morphism Z R1 g} `{!SemiRing_Morphism Z R2 h} x `{x ∊ Z} :
   f (g x) = h x.
 Proof to_ring_unique_alt (f ∘ g) h x.
 
-Lemma to_ring_self `{Integers (Z:=Z)} (f:Z ⇀ Z) `{!Ring_Morphism Z Z f} x `{x ∊ Z} : f x = x.
+Lemma to_ring_self `{Integers (Z:=Z)} (f:Z ⇀ Z) `{!SemiRing_Morphism Z Z f} x `{x ∊ Z} : f x = x.
 Proof to_ring_unique_alt f id x.
 
 (** A ring morphism from integers to another ring is injective if there's an injection in the other direction: *)
 Lemma to_ring_injective `{Integers (Z:=Z)} `{CommutativeRing (R:=R)}
-   (f:R ⇀ Z) (g:Z ⇀ R) `{!Ring_Morphism R Z f} `{!Ring_Morphism Z R g}: Injective Z R g.
+   (f:R ⇀ Z) (g:Z ⇀ R) `{!SemiRing_Morphism R Z f} `{!SemiRing_Morphism Z R g}: Injective Z R g.
 Proof.
   repeat (split; try apply _).
   intros x ? y ? E.
@@ -56,7 +55,7 @@ Proof.
   now rewrite_on R -> E.
 Qed.
 
-Instance integers_to_integers_injective `{Integers (Z:=Z)} `{Integers (Z:=Z2)} (f:Z ⇀ Z2) `{!Ring_Morphism Z Z2 f}:
+Instance integers_to_integers_injective `{Integers (Z:=Z)} `{Integers (Z:=Z2)} (f:Z ⇀ Z2) `{!SemiRing_Morphism Z Z2 f}:
   Injective Z Z2 f | 15.
 Proof to_ring_injective (integers_to_ring Z2 Z) f.
 
@@ -72,7 +71,7 @@ Qed.
 Section retract_is_int.
   Local Open Scope mc_fun_scope.
   Context `{Integers (Z:=Z)} `{CommutativeRing (R:=Z2)}.
-  Context (f:Z ⇀ Z2) `{!Inverse f} `{!Surjective Z Z2 f} `{!Ring_Morphism Z Z2 f} `{!Ring_Morphism Z2 Z (f⁻¹)}.
+  Context (f:Z ⇀ Z2) `{!Inverse f} `{!Surjective Z Z2 f} `{!SemiRing_Morphism Z Z2 f} `{!SemiRing_Morphism Z2 Z (f⁻¹)}.
 
   (* If we make this an instance, then instance resolution will often loop *)
   Definition retract_is_int_to_ring : IntegersToRing Z2 := λ _ R _ _ _ _ _, integers_to_ring Z R ∘ f⁻¹.
@@ -118,10 +117,12 @@ Qed.
 
 Context `{UnEq _} `{!DenialInequality Z}.
 
+Notation N := the_naturals.
+
 Lemma int_nontrivial: 1 ∊ Z ₀.
-Proof. split. apply _. destruct naturals.nat_nontrivial as [_ P]. generalize P. rewrite 2!(denial_inequality _ _).
-  intro E. mc_contradict E.
-  apply (injective (naturals_to_semiring nat Z) _ _). now preserves_simplify (naturals_to_semiring nat Z).
+Proof. split. apply _. red. destruct (naturals.nat_nontrivial (N:=N)) as [_ P].
+  red in P. revert P. rewrite !(denial_inequality _ _).
+  intro E. mc_contradict E. now quote_inj (naturals_to_semiring N Z).
 Qed.
 Hint Extern 6 (1 ∊ _ ₀) => eapply @int_nontrivial : typeclass_instances.
 

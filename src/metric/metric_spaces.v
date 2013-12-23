@@ -1,8 +1,8 @@
 Require Import
   abstract_algebra interfaces.orders interfaces.rationals interfaces.metric_spaces
-  theory.setoids theory.jections theory.rings theory.rationals theory.powerset
+  theory.setoids theory.jections theory.rings theory.rationals theory.lattices theory.powerset
   orders.rings orders.lattices orders.minmax
-  orders.affinely_extended_field stdlib_field.
+  orders.affinely_extended_field stdlib_field_dec.
 
 Local Notation AQ := TheAERationals.A.
 Local Notation Q := the_ae_rationals.
@@ -13,12 +13,12 @@ Local Notation Qfull := (aff_ext_full Q).
 Section another_rationals.
   Context `{Setoid (S:=X)}.
   Context `{Rationals (Q:=Q1)} `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder Q1}.
-  Context (b : Q1 → A → @Subset A).
+  Context (b : Q1 → A → @set A).
 
   Context
     (ball_proper : Proper ((Q1⁺,=)==>(X,=)==>(X,=)==>impl) b )
-    (refl: ∀ ε `{ε ∊ Q1⁺} , SubReflexive X (b ε) )
-    (sym: ∀  ε `{ε ∊ Q1⁺} , SubSymmetric X (b ε) )
+    (refl: ∀ ε `{ε ∊ Q1⁺} , Reflexive X (b ε) )
+    (sym: ∀  ε `{ε ∊ Q1⁺} , Symmetric X (b ε) )
     (beq: ∀ x `{x ∊ X} y `{y ∊ X} , b 0 x y → x = y)
     (tri: ∀ ε₁ `{ε₁ ∊ Q1⁺} ε₂ `{ε₂ ∊ Q1⁺} x `{x ∊ X} y `{y ∊ X} z `{z ∊ X},
        b ε₁ x y → b ε₂ y z → b (ε₁ + ε₂) x z)
@@ -64,15 +64,15 @@ Section ball.
   Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
 
   Hint Extern 0 (Find_Proper_Signature (@ball) 0 _) => eexact ball_proper0 : typeclass_instances.
-  Hint Extern 5 (SubReflexive _ (ball _)) => class_apply @msp_refl : typeclass_instances.
-  Hint Extern 5 (SubSymmetric _ (ball _)) => class_apply @msp_sym : typeclass_instances.
+  Hint Extern 5 (Reflexive _ (ball _)) => class_apply @msp_refl : typeclass_instances.
+  Hint Extern 5 (Symmetric _ (ball _)) => class_apply @msp_sym : typeclass_instances.
 
-  Instance ball_refl ε `{ε ∊ Q∞⁺} : SubReflexive X (ball ε).
+  Instance ball_refl ε `{ε ∊ Q∞⁺} : Reflexive X (ball ε).
   Proof. destruct (ae_decompose_nonneg ε) as [E|?]; [| apply _].
     intros ??. rewrite (_ $ E). exact (msp_ball_inf _ _).
   Qed.
 
-  Instance ball_sym ε `{ε ∊ Qfull} : SubSymmetric X (ball ε).
+  Instance ball_sym ε `{ε ∊ Qfull} : Symmetric X (ball ε).
   Proof. destruct (ae_decompose_full ε) as [? | [? U]].
     destruct (nonneg_or_neg (R:=Q∞) ε); intros x ? y ? E.
     destruct (ae_decompose_nonneg ε) as [E2|?]. rewrite (_ $ E2). exact (msp_ball_inf _ _).
@@ -117,8 +117,8 @@ Section ball.
     destruct (ae_decompose_nonneg ε) as [E1|?].
       rewrite (_ $ E1) in E2.
       rewrite (_ $ ae_inf_le δ E2). exact (msp_ball_inf _ _).
-    assert (δ ∊ Q∞⁺). split. apply _.
-      apply (subtransitivity (S:=Q∞) _ ε _); trivial. now destruct (_ : ε ∊ Q⁺).
+    assert (δ ∊ Q∞⁺). split. apply _. red.
+      apply (transitivity (S:=Q∞) _ ε _); trivial. apply (_ : ε ∊ Q⁺).
     destruct (ae_decompose_nonneg δ) as [E1|?].
       rewrite (_ $ E1). exact (msp_ball_inf _ _).
     rewrite <- (flip_nonneg_minus _ _) in E2.
@@ -131,7 +131,7 @@ Section ball.
     destruct (nonneg_or_neg ε); trivial.
     cut (ε/2 ∊ Q⁺). now apply (reflects_nonneg (.* inv 2)).
     apply (ball_nonneg _ x y).
-    mc_replace (ε/2) with (ε + -ε/2) on Q by subfield Q.
+    mc_replace (ε/2) with (ε + -ε/2) on Q by decfield Q.
     apply P. apply _.
   Qed.
 
@@ -166,22 +166,37 @@ Section ball.
   Instance B_order_preserving x `{x ∊ X} : OrderPreserving (Ble:=(⊆)) Qfull (⊆ X) (λ ε, B ε x).
   Proof. split. split; try apply _.
     (*rewrite <-(_ : SubsetOf (Qfull ⇒ (⊆ X)) (Q∞ ⇒ (⊆ X))). apply _.*)
-    intros p ? q ? E. apply (subsetoid_from_subsetof X _ _). intros y [??].
+    intros p ? q ? E. apply (subsetoid_from_subset X _ _). intros y [??].
     split; trivial. now apply (ball_weaken_le p).
   Qed.
 
   Lemma B_weaken_le ε `{ε ∊ Qfull} x `{x ∊ X} δ `{δ ∊ Qfull} : ε ≤ δ → B ε x ⊆ B δ x.
   Proof. intro E. destruct (ae_decompose_full ε) as [?|U].
      now apply (order_preserving (Ble:=(⊆)) (T:=(⊆ X)) (λ p, B p x)).
-     apply (subsetoid_from_subsetof X _ _).
+     apply (subsetoid_from_subset X _ _).
      intros ? [B' ?]. pose proof msp_nonneg _ _ _ B'. contradict U. firstorder.
   Qed.
 
   Lemma singleton_is_ball x `{x ∊ X} : {{x}} = B 0 x.
-  Proof. intro y. unfold subset_singleton.
+  Proof. intro y. unfold singleton.
     change (y ∊ X ∧ y = x ↔ ball 0 x y ∧ y ∊ X). intuition.
     rewrite (ball_separated _ _); subsymmetry.
     rewrite <-(ball_separated _ _); subsymmetry.
+  Qed.
+
+  Lemma B_infty x `{x ∊ X} : B ∞ x = X.
+  Proof. apply subset_antisym. apply _. intros y ?. split; trivial. exact (msp_ball_inf _ _). Qed.
+
+  Lemma B_neg_empty ε `{ε ∊ Q∞₋} x `{x ∊ X} : B ε x = ⊥ .
+  Proof. apply (subset_antisym). 2: apply _.
+    intros y [Bxy ?]. pose proof (msp_nonneg ε x y Bxy).
+    now destruct (neg_not_nonneg (R:=Q∞) ε).
+  Qed.
+
+  Lemma B_subspace U `{U ⊆ X} ε `{ε ∊ Qfull} x `{x ∊ U} : B (X:=U) ε x = B ε x ⊓ U.
+  Proof. unfold B at 1.
+    rewrite <-(Sets $ meet_r (Ale:=(⊆)) (L:=(⊆ X)) X U (_ : U ⊆ X)) at 1.
+    now rewrite (associativity (⊓) (S:=Sets) _ _ _).
   Qed.
 
 End ball.
@@ -214,20 +229,20 @@ Proof. red; intros. intros p q [[??]Eq] ?? Ex.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@B) 1 _) => eexact B_proper2 : typeclass_instances.
 
-Hint Extern 2 (SubReflexive _ (ball _)) => eapply @ball_refl : typeclass_instances.
-Hint Extern 2 (SubSymmetric _ (ball _)) => eapply @ball_sym : typeclass_instances.
+Hint Extern 2 (Reflexive _ (ball _)) => eapply @ball_refl : typeclass_instances.
+Hint Extern 2 (Symmetric _ (ball _)) => eapply @ball_sym : typeclass_instances.
 Hint Extern 2 (?x ∊ ball _ ?x) => now red : typeclass_instances.
 Hint Extern 2 (_ ∊ ball ∞ _) => eapply @msp_ball_inf : typeclass_instances.
 Hint Extern 3 (_ ∊ ball _ _) => red; solve [ trivial | subsymmetry ] : typeclass_instances.
 Hint Extern 2 (@B _ ?X _ _ _ ⊆ ?X) => eapply @ball_subsetoid : typeclass_instances.
 Hint Extern 3 (_ ∊ B _ _) => split : typeclass_instances.
-Hint Extern 2 (?x ∊ B (X:=?X) _ ?x) => split; [red; apply (subreflexivity (S:=X) _)|] : typeclass_instances.
+Hint Extern 2 (?x ∊ B (X:=?X) _ ?x) => split; [red; apply (reflexivity (S:=X) _)|] : typeclass_instances.
 Hint Extern 2 (Inhabited (B _ _)) => eapply @B_inhabited : typeclass_instances.
 Hint Extern 2 (Morphism _ B) => eapply @B_morphism : typeclass_instances.
 Hint Extern 2 (OrderPreserving _ _ (λ ε, B ε ?x)) => eapply @B_order_preserving : typeclass_instances.
 
 Section projected.
-  Context `{X:Subset} `{Y:Subset} (f:X ⇀ Y) `{Setoid _ (S:=X)} `{MetricSpace _ (X:=Y)} `{!Injective X Y f}.
+  Context `{X:set} `{Y:set} (f:X ⇀ Y) `{Setoid _ (S:=X)} `{MetricSpace _ (X:=Y)} `{!Injective X Y f}.
 
   Existing Instance injective_mor.
 
@@ -260,12 +275,37 @@ Proof.
     destruct (ae_decompose_nonneg p) as [Ep|?].
       rewrite (_ $ Ep) in E. contradict E.
       destruct (ae_decompose_pos q) as [Eq|?].
-        intro E. rewrite (_ $ Eq) in E. now destruct (subirreflexivity (S:=Q∞) (<) infty).
+        intro E. rewrite (_ $ Eq) in E. now destruct (irreflexivity (S:=Q∞) (<) infty).
         apply (lt_flip _ _). exact (ae_inf_sub _).
     destruct (ae_decompose_pos q) as [Eq|?].
     * left. rewrite (_ $ Eq). exact (msp_ball_inf _ _).
     * exact (located_points_def (X:=X) x y p q E).
   + right. intro Bp. now destruct (msp_nonneg _ _ _ Bp).
+Qed.
+
+Lemma prelength `{MetricSpace (X:=X)} `{!PrelengthSpace X}
+  x `{x ∊ X} y `{y ∊ X} ε `{ε ∊ Qfull} δ₁ `{δ₁ ∊ Q∞⁺} δ₂ `{δ₂ ∊ Q∞⁺}
+: ε < δ₁ + δ₂ → ball ε x y → ∃ `{z ∊ X}, ball δ₁ x z ∧ ball δ₂ z y.
+Proof. intros E Bxy.
+  pose proof msp_nonneg ε _ _ Bxy.
+  destruct (ae_decompose_nonneg ε) as [E'|?]. rewrite (_ $ E') in E.
+    pose proof (_ : δ₁ + δ₂ ∊ Q∞⁺). destruct (lt_not_le_flip (P:=Q∞) _ _ E). exact (ae_inf_ub _).
+  match goal with |- ?P => assert (ε = 0 ∨ δ₁ = 0 ∨ δ₂ = 0 → P) end.
+  + intros [E'|[E'|E']]. 
+    * rewrite (_ $ E') in Bxy. apply (msp_eq _ _) in Bxy.
+      exists_sub x. split. easy. now rewrite (_ $ Bxy).
+    * exists_sub x. split. easy. rewrite (_ $ E'), (_ $ ae_plus_0_l _) in E.
+      apply ball_weaken_le with ε; trivial; try apply _. now apply (lt_le _ _).
+    * exists_sub y. split. 2:easy. rewrite (_ $ E'), (_ $ ae_plus_0_r _) in E.
+      apply ball_weaken_le with ε; trivial; try apply _. now apply (lt_le _ _).
+  + destruct (pos_or_zero ε); [| tauto].
+    destruct (ae_decompose_nonneg δ₁) as [E'|?].
+      exists_sub y. split; [| easy]. rewrite (_ $ E'). exact (msp_ball_inf _ _).
+    destruct (ae_decompose_nonneg δ₂) as [E'|?].
+      exists_sub x. split; [easy |]. rewrite (_ $ E'). exact (msp_ball_inf _ _).
+    destruct (pos_or_zero δ₁); [| tauto].
+    destruct (pos_or_zero δ₂); [| tauto].
+    now apply (prelength_msp _ _ ε).
 Qed.
 
 Definition default_metric_uneq `{Ball A} : UnEq A := λ x y, ∃ `{q ∊ Q₊}, ¬ ball q x y  .
@@ -293,7 +333,7 @@ Section metric_inequality.
   + rewrite (metric_inequality _ _).
     intros P. apply (equal_by_ball_closed _ _). intros q ?.
     destruct (located_points (X:=X) x y (q/2) q); trivial.
-    rewrite <-(flip_pos_minus _ _). mc_replace (q-q/2) with (q/2) on Q by subfield Q. apply _.
+    rewrite <-(flip_pos_minus _ _). mc_replace (q-q/2) with (q/2) on Q by decfield Q. apply _.
     destruct P. now exists_sub (q/2).
   + exact (equiv_nue _ _).
   Qed.
@@ -306,9 +346,9 @@ Section metric_inequality.
   + intros x ? y ?. rewrite (metric_inequality _ _).
     intros [q[? P]] z ?.
     destruct (located_points (X:=X) x z (q/3) (q/3+q/3)).
-    rewrite <-(flip_pos_minus _ _). mc_replace (q/3+q/3-q/3) with (q/3) on Q by subring Q. apply _.
+    rewrite <-(flip_pos_minus _ _). mc_replace (q/3+q/3-q/3) with (q/3) on Q by setring Q. apply _.
     right. rewrite (metric_inequality _ _). exists_sub (q/3). contradict P.
-      mc_replace q with (q/3+q/3+q/3) on Q by subfield Q.
+      mc_replace q with (q/3+q/3+q/3) on Q by decfield Q.
       now apply (ball_triangle _ _ _ z _).
     left. rewrite (metric_inequality _ _). now exists_sub (q/3).
   Qed.
@@ -337,7 +377,7 @@ Qed.
 Hint Extern 2 (@closure _ ?X _ _ ⊆ ?X) => eapply @closure_subsetoid1 : typeclass_instances.
 
 Lemma closure_subsetoid2 `{MetricSpace (X:=X)} S `{S ⊆ X} : S ⊆ closure (X:=X) S.
-Proof. apply (subsetoid_from_subsetof X _ _). intros s ?.
+Proof. apply (subsetoid_from_subset X _ _). intros s ?.
   split. apply _. intros ε ?. now exists_sub s.
 Qed.
 Hint Extern 2 (?S ⊆ closure ?S) => eapply @closure_subsetoid2 : typeclass_instances.
@@ -355,12 +395,12 @@ Hint Extern 0 (Find_Proper_Signature (@closure) 0 _) => eexact closure_proper : 
 Lemma closure_proper2: Find_Proper_Signature (@closure) 1
   (∀ A (Ae:Equiv A) (b:Ball A) X `{!@MetricSpace A X Ae b}, Proper (((⊆ X),⊆)++>(⊆)) (closure (X:=X))).
 Proof. red; intros. intros S T [[el1 el2]E]. red in el1,el2.
-  apply (subsetoid_from_subsetof X _ _). intros x [? P].
+  apply (subsetoid_from_subset X _ _). intros x [? P].
   split. apply _. intros ε ?. destruct (P ε _) as [s[??]]. now exists_sub s.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@closure) 1 _) => eexact closure_proper2 : typeclass_instances.
 
-Lemma closure_ambient_proper `(X:Subset) `{Equiv X} `{Ball X} {Y U}
+Lemma closure_ambient_proper `(X:set) `{Equiv X} `{Ball X} {Y U}
   : X=Y → closure (X:=X) U = closure (X:=Y) U .
 Proof. intros E x. split.
 + intros [? P]. split;trivial. now rewrite <-E.
@@ -388,7 +428,7 @@ Section closure.
   Proof. destruct (inhabited S) as [x ?]. exists x. now apply (_ : S ⊆ closure S). Qed.
 
   Lemma closure_idempotent S `{S ⊆ X} : closure (closure S) = closure S.
-  Proof. apply (antisymmetry SubsetOf); [| apply _].
+  Proof. apply (antisymmetry_t Subset); [| apply _].
     intros x [? P1]. split. apply _. intros ε ?.
     destruct (P1 (ε/2) _) as [s[[? P2] ?]].
     destruct (P2 (ε/2) _) as [t[??]].
@@ -402,17 +442,32 @@ Section closure.
   Lemma closure_dense S `{S ⊆ X} : Dense (X:=closure S) S.
   Proof. split; try apply _. exact sub_metric_space. firstorder. Qed.
 
-  Lemma closure_union S `{S ⊆ X} T `{T ⊆ X}: closure S ⊔ closure T ⊆ closure (S ⊔ T).
-  Proof. apply (subsetoid_from_subsetof X _ _).
-    intros x [[? P]|[? P]]; (split; [apply _ |]); intros ε ?;
+  Lemma closure_union_l S `{S ⊆ X} T `{T ⊆ X}: closure S ⊆ closure (S ⊔ T).
+  Proof. apply (subsetoid_from_subset X _ _).
+    intros x [? P]; (split; [apply _ |]); intros ε ?;
     destruct (P ε _) as [s [??]]; now exists_sub s.
   Qed.
 
-  Lemma closure_singleton x `{x ∊ X} : closure {{x}} = {{x}}.
-  Proof. apply (antisymmetry SubsetOf); [| apply _]. intros y [? P].
-    split. apply _. apply (equal_by_ball_closed _ _). intros ε ?.
-    destruct (P ε _) as [s [[? E] ?]]. now rewrite <-(_ $ E).
+  Lemma closure_union_r S `{S ⊆ X} T `{T ⊆ X}: closure T ⊆ closure (S ⊔ T).
+  Proof. rewrite (commutativity (⊔) (S:=Sets) S T). exact (closure_union_l _ _). Qed.
+
+  Lemma closure_union S `{S ⊆ X} T `{T ⊆ X}: closure S ⊔ closure T ⊆ closure (S ⊔ T).
+  Proof. apply (join_lub (L:=(⊆ X)) _ _ _).
+    exact (closure_union_l _ _).
+    exact (closure_union_r _ _).
   Qed.
+
+  Lemma closure_ball ε `{ε ∊ Q∞⁺} x `{x ∊ X} : closure (B ε x) = B ε x.
+  Proof. apply (antisymmetry_t Subset); [| apply _]. intros y [? P].
+    split; [| apply _ ]. red.
+    destruct (ae_decompose_nonneg ε) as [Eε |?]. rewrite (_ $ Eε). exact (msp_ball_inf _ _).
+    apply (ball_closed _ _ _). intros δ ?.
+    destruct (P δ _) as [s [[? E] ?]]. now apply (ball_triangle _ _ _ s _).
+  Qed.
+
+  Lemma closure_singleton x `{x ∊ X} : closure {{x}} = {{x}}.
+  Proof. rewrite (singleton_is_ball x). exact (closure_ball _ _). Qed.
+
 End closure.
 
 Hint Extern 5 (closure _ ⊆ closure _) => eapply @closure_order_preserving : typeclass_instances.
@@ -428,7 +483,7 @@ Qed.
 Hint Extern 2 (@interior _ ?X _ _ ⊆ ?X) => eapply @interior_subsetoid1 : typeclass_instances.
 
 Lemma interior_subsetoid2 `{MetricSpace (X:=X)} S `{S ⊆ X} : interior (X:=X) S ⊆ S.
-Proof. apply (subsetoid_from_subsetof X _ _). firstorder. Qed.
+Proof. apply (subsetoid_from_subset X _ _). firstorder. Qed.
 Hint Extern 2 (?S° ⊆ ?S) => eapply @interior_subsetoid2 : typeclass_instances.
 
 Lemma interior_proper: Find_Proper_Signature (@interior) 0
@@ -439,15 +494,77 @@ Proof. red; intros. intros S T E ?. unfold interior.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@interior) 0 _) => eexact interior_proper : typeclass_instances.
 
+Section interior.
+  Context `{MetricSpace (X:=X)}.
+  Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
+
+  Lemma interior_empty : ⊥° = ⊥.
+  Proof. firstorder. Qed.
+
+  Lemma interior_ambient : X° = X.
+  Proof. split. now intros [??]. intros ?. split. apply _. exists_sub ∞. apply _. Qed.
+
+  Lemma interior_idempotent S `{S ⊆ X} : S°° = S°.
+  Proof. apply subset_antisym. apply _.
+    intros x el. split. apply _. destruct el as [? [q[? BS]]].
+    exists_sub (q/2). intros y [Bxy ?]; red in Bxy.
+    split. apply BS. rewrite <-(_ $ ae_in_halves q). split; trivial.
+    red. apply ball_weaken_plus; trivial; try apply _.
+      apply (_ : Subset Q∞₊ Q∞⁺). apply _.
+    exists_sub (q/2). rewrite <-BS.
+    intros s [Bys ?]. red in Bys.
+    rewrite <-(_ $ ae_in_halves q). split; trivial. red.
+    now apply (ball_triangle _ _ _ y _).
+  Qed.
+
+  Instance interior_open S `{S ⊆ X} : Open S° .
+  Proof. split; try apply _. exact (interior_idempotent _). Qed.
+
+  Lemma interior_union_l S `{S ⊆ X} T `{T ⊆ X} : S° ⊆ (S ⊔ T)° .
+  Proof. apply (subsetoid_from_subset X _ _).
+    intros x [? [q [??]]]. split. apply _. exists_sub q. transitivity S; apply _.
+  Qed.
+
+  Lemma interior_union_r S `{S ⊆ X} T `{T ⊆ X} : T° ⊆ (S ⊔ T)° .
+  Proof. rewrite (commutativity (⊔) (S:=Sets) S T). exact (interior_union_l _ _). Qed.
+
+  Lemma interior_union S `{S ⊆ X} T `{T ⊆ X} : S° ⊔ T° ⊆ (S ⊔ T)° .
+  Proof. apply (join_lub (L:=(⊆ X)) _ _ _).
+    exact (interior_union_l _ _).
+    exact (interior_union_r _ _).
+  Qed.
+
+  Lemma interior_intersection_l S `{S ⊆ X} T `{T ⊆ X} : (S ⊓ T)° ⊆ S°.
+  Proof. apply (subsetoid_from_subset X _ _).
+    intros x [[??] [q [??]]]. split. apply _. exists_sub q. transitivity (S ⊓ T); apply _.
+  Qed.
+
+  Lemma interior_intersection_r S `{S ⊆ X} T `{T ⊆ X} : (S ⊓ T)° ⊆ T°.
+  Proof. rewrite (commutativity (⊔) (S:=Sets) S T). exact (interior_intersection_l _ _). Qed.
+
+  Lemma interior_intersection S `{S ⊆ X} T `{T ⊆ X} : (S ⊓ T)° = S° ⊓ T°.
+  Proof. apply subset_antisym.
+  + apply (meet_glb (L:=Sets) _ _ _).
+    apply (interior_intersection_l _ _).
+    apply (interior_intersection_r _ _).
+  + intros x [[?[q[? BS]]][?[r[? BT]]]].
+    ae_rat_set_min p q r Ea Eb. split. apply _. exists_sub p.
+    apply (meet_glb (Ale:=Subset) (L:=Sets) S T _); unfold le; intros y ?.
+    apply BS. now apply (B_weaken_le _ _ _ Ea).
+    apply BT. now apply (B_weaken_le _ _ _ Eb).
+  Qed.
+
+End interior.
+Hint Extern 2 (Open _°) => eapply @interior_open : typeclass_instances.
 
 
-Lemma dense `(S:Subset) `{Dense _ (X:=X) (S:=S)} x `{x ∊ X} ε `{ε ∊ Q∞₊} : ∃ `{s ∊ S}, ball ε x s.
+Lemma dense `(S:set) `{Dense _ (X:=X) (S:=S)} x `{x ∊ X} ε `{ε ∊ Q∞₊} : ∃ `{s ∊ S}, ball ε x s.
 Proof. pose proof (_ : x ∊ X) as el. rewrite <-dense_def in el.
   destruct el as [_ P]. now apply P.
 Qed.
 
-Lemma dense_image `{X:Subset} `{Equiv X} `{Y:Subset} `{Equiv Y} `{Ball Y}
-  (f:X ⇀ Y) `{!Morphism (X ⇒ Y) f} (S:Subset) `{S ⊆ X} `{!Dense (X:=Y) f⁺¹(S)}
+Lemma dense_image `{X:set} `{Equiv X} `{Y:set} `{Equiv Y} `{Ball Y}
+  (f:X ⇀ Y) `{!Morphism (X ⇒ Y) f} (S:set) `{S ⊆ X} `{!Dense (X:=Y) f⁺¹(S)}
   y `{y ∊ Y} ε `{ε ∊ Q∞₊} : ∃ `{s ∊ S}, ball ε y (f s).
 Proof. destruct (_ : Dense (X:=Y) f⁺¹(S)) as [?? _]. pose proof subsetoid_b : Setoid X.
   destruct (dense (X:=Y) f⁺¹(S) y ε) as [y'[[?[x[? Ex]]] B1]].
@@ -459,7 +576,7 @@ Proof. split; try apply _. exact closure_ambient. Qed.
 Hint Extern 5 (@Dense _ ?X _ _ ?X) => eapply @dense_refl : typeclass_instances.
 
 Lemma dense_proper: Find_Proper_Signature (@Dense) 0
-  (∀ A (Ae:Equiv A) (b:Ball A) (X:Subset), Proper ((=)==>impl) (Dense (X:=X))).
+  (∀ A (Ae:Equiv A) (b:Ball A) (X:set), Proper ((=)==>impl) (Dense (X:=X))).
 Proof. red; intros. intros S1 S2 E ?. pose proof dense_msp (X:=X).
   split. apply _. rewrite <-E. apply _.
   intros y. split. now intros [??]. intro. split. apply _.
@@ -469,8 +586,8 @@ Qed.
 Hint Extern 0 (Find_Proper_Signature (@Dense) 0 _) => eexact dense_proper : typeclass_instances.
 
 Lemma dense_proper2: Find_Proper_Signature (@Dense) 1
-  (∀ A (Ae:Equiv A) (b:Ball A) (X:Subset),
-     Proper ((restrict_rel (⊆ X) SubsetOf)++>impl) (Dense (X:=X))).
+  (∀ A (Ae:Equiv A) (b:Ball A) (X:set),
+     Proper ((restrict_rel (⊆ X) Subset)++>impl) (Dense (X:=X))).
 Proof. red; intros. intros S1 S2 [[e1 e2] E] ?. red in e1,e2.
   pose proof dense_msp (X:=X). split; try apply _.
   intros y. split. now intros [??]. intro. split. apply _.
@@ -479,7 +596,7 @@ Proof. red; intros. intros S1 S2 [[e1 e2] E] ?. red in e1,e2.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@Dense) 1 _) => eexact dense_proper2 : typeclass_instances.
 
-Lemma dense_ambient_proper `(X:Subset) `{Equiv X} `{Ball X} {Y U}
+Lemma dense_ambient_proper `(X:set) `{Equiv X} `{Ball X} {Y U}
   : X=Y → Dense (X:=X) U ↔ Dense (X:=Y) U .
 Proof. intro E. split.
 + intros [???]. split. assert (Y ⊆ X). rewrite <-E. apply _. exact sub_metric_space.
@@ -488,13 +605,21 @@ Proof. intro E. split.
   now rewrite E. rewrite E at 2. rewrite <-dense_def. apply closure_ambient_proper. apply _. trivial.
 Qed.
 
-Lemma dense_id_image `{Y:Subset} `{Dense _ (X:=Y) (S:=X)} : Dense (X:=Y) (image (X:=Y) (Y:=Y) id X).
+Lemma dense_id_image `{Y:set} `{Dense _ (X:=Y) (S:=X)} : Dense (X:=Y) (image (X:=Y) (Y:=Y) id X).
 Proof. destruct (_ : Dense (X:=Y) X) as [?? _]. now rewrite (image_id X). Qed.
 Hint Extern 4 (Dense id⁺¹(_)) => eapply @dense_id_image : typeclass_instances.
 
 
-Lemma closed `(S:Subset) `{Closed _ (X:=X) (S:=S)} : closure (X:=X) S = S.
+Lemma closed `(S:set) `{Closed _ (X:=X) (S:=S)} : closure (X:=X) S = S.
 Proof closed_def.
+
+Lemma closed_proper: Find_Proper_Signature (@Closed) 0
+  (∀ A (Ae:Equiv A) (b:Ball A) (X:set), Proper ((=)==>impl) (Closed (X:=X))).
+Proof. red; intros. intros U V E ?. pose proof closed_msp (X:=X).
+  assert (V ⊆ X) by (rewrite <-E; apply _).
+  split; try apply _. rewrite <-E. now destruct (_ : Closed (X:=X) U).
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@Closed) 0 _) => eexact closed_proper : typeclass_instances.
 
 Section closed.
   Context `{MetricSpace (X:=X)}.
@@ -506,22 +631,39 @@ Section closed.
   Lemma closed_ambient : Closed X.
   Proof. split; try apply _. exact closure_ambient. Qed.
 
+  Lemma closed_ball ε `{ε ∊ Q∞⁺} x `{x ∊ X} : Closed (B ε x).
+  Proof. split; try apply _. exact (closure_ball _ _). Qed.
+
 End closed.
 
 Hint Extern 2 (Closed ⊥) => eapply @closed_empty : typeclass_instances.
 Hint Extern 2 (@Closed _ ?X _ _ ?X) => eapply @closed_ambient : typeclass_instances.
+Hint Extern 2 (Closed (B _ _)) => eapply @closed_ball : typeclass_instances.
 
-Lemma open `(S:Subset) `{Open _ (X:=X) (S:=S)} x `{x ∊ S} : ∃ `{q ∊ Q∞₊}, B q x ⊆ S.
+Lemma open `(S:set) `{Open _ (X:=X) (S:=S)} x `{x ∊ S} : ∃ `{q ∊ Q∞₊}, B q x ⊆ S.
 Proof. destruct (_ : Open S) as [?? _].
   pose proof (_ : x ∊ S) as el. rewrite <-open_def in el.
-  destruct el as [_ [q [??]]]. exists_sub q. now apply (subsetoid_from_subsetof X _ _).
+  destruct el as [_ [q [??]]]. exists_sub q. now apply (subsetoid_from_subset X _ _).
+Qed.
+
+Lemma ae_pos_make_finite q `{q ∊ Q∞₊} : ∃ `{p ∊ Q₊}, p ≤ q .
+Proof.
+  destruct (ae_decompose_pos q) as [Eq|?]; [| now exists_sub q].
+  exists_sub 1. rewrite (_ $ Eq). exact (ae_inf_ub _).
+Qed.
+
+Lemma open_finite `(S:set) `{Open _ (X:=X) (S:=S)} x `{x ∊ S} : ∃ `{q ∊ Q₊}, B q x ⊆ S.
+Proof. destruct (_ : Open S) as [?? _].
+  destruct (open S x) as [q [??]].
+  destruct (ae_pos_make_finite q) as [p [? E]].
+  exists_sub p. now rewrite (Qfull $ E).
 Qed.
 
 Lemma open_proper: Find_Proper_Signature (@Open) 0
-  (∀ A (Ae:Equiv A) (b:Ball A) (X:Subset), Proper ((=)==>impl) (Open (X:=X))).
+  (∀ A (Ae:Equiv A) (b:Ball A) (X:set), Proper ((=)==>impl) (Open (X:=X))).
 Proof. red; intros. intros U V E ?. pose proof open_msp (X:=X).
   assert (V ⊆ X) by (rewrite <-E; apply _).
-  split; try apply _. apply (subsetof_antisym). apply _.
+  split; try apply _. apply (subset_antisym). apply _.
   intros x el. split. apply _. rewrite <-E in el.
   destruct (open (X:=X) U x) as [q[??]].
   exists_sub q. rewrite <-E; apply _.
@@ -536,13 +678,11 @@ Section open.
   Proof. firstorder. Qed.
 
   Lemma open_ambient : Open X.
-  Proof. split; try apply _. split. now intros [??]. intros ?. split. apply _.
-    exists_sub ∞. apply _.
-  Qed.
+  Proof. split; try apply _. exact interior_ambient. Qed.
 
   Lemma open_union U V : Open U → Open V → Open (U ⊔ V).
   Proof. intros ??. split; try apply _.
-    apply (subsetof_antisym). apply _.
+    apply (subset_antisym). apply _.
     intros x [?|?].
     destruct (open U x) as [q[??]]. split. apply _. exists_sub q.
       transitivity U; apply _.
@@ -552,13 +692,8 @@ Section open.
 
   Lemma open_intersection U V : Open U → Open V → Open (U ⊓ V).
   Proof. intros ??. split; try apply _.
-    apply (subsetof_antisym). apply _.
-    intros x [??]. pose proof _ : U ⊆ X.
-    destruct (open U x) as [a[? Ba]]. destruct (open V x) as [b[? Bb]].
-    ae_rat_set_min c a b Ea Eb. split. apply _. exists_sub c.
-    apply (meet_glb (Ale:=SubsetOf) (L:=every Subset) U V _); unfold le; intros y [By ?];
-    [ rewrite <-Ba | rewrite <-Bb ]; split; trivial; red.
-    now rewrite <-(Q∞ $ Ea). now rewrite <-(Q∞ $ Eb).
+    transitivity (U° ⊓ V°). exact (interior_intersection _ _).
+    apply (_ : Proper ((Sets,=)==>(Sets,=)==>(Sets,=) ) meet); red_sig; exact open_def.
   Qed.
 End open.
 
@@ -568,7 +703,7 @@ Hint Extern 5 (Open (_ ⊔ _)) => eapply @open_union : typeclass_instances.
 Hint Extern 5 (Open (_ ⊓ _)) => eapply @open_intersection : typeclass_instances.
 
 Lemma bounded_proper: Find_Proper_Signature (@Bounded) 0
-  (∀ A (Ae:Equiv A) (b:Ball A) (X:Subset), Proper ((⊆)-->impl) (Bounded (X:=X))).
+  (∀ A (Ae:Equiv A) (b:Ball A) (X:set), Proper ((⊆)-->impl) (Bounded (X:=X))).
 Proof. red; intros. intros U V E ?. unfold flip in E. pose proof bounded_msp (X:=X).
   assert (V ⊆ X) by (rewrite E; apply _).
   split; try apply _.
@@ -577,7 +712,7 @@ Qed.
 Hint Extern 0 (Find_Proper_Signature (@Bounded) 0 _) => eexact bounded_proper : typeclass_instances.
 
 Lemma bounded_proper2: Find_Proper_Signature (@Bounded) 1
-  (∀ A (Ae:Equiv A) (b:Ball A) (X:Subset), Proper ((=)==>impl) (Bounded (X:=X))).
+  (∀ A (Ae:Equiv A) (b:Ball A) (X:set), Proper ((=)==>impl) (Bounded (X:=X))).
 Proof. red; intros. intros U V E ?.
   assert (V ⊆ U) as E2. rewrite <-E. pose proof subsetoid_a : Setoid U. apply _.
   now rewrite E2.
@@ -596,16 +731,16 @@ Section bounded.
     intros y [??] z [??]. apply (ball_triangle _ _ _ x _). subsymmetry. assumption.
   Qed.
 
-  Lemma interior_bounded (U:Subset) `{!Bounded U} : Bounded U°.
+  Lemma interior_bounded (U:set) `{!Bounded U} : Bounded U°.
   Proof. now rewrite (_ : U° ⊆ U). Qed. 
 
-  Lemma closure_bounded (U:Subset) `{!Bounded U} : Bounded (closure U).
+  Lemma closure_bounded (U:set) `{!Bounded U} : Bounded (closure U).
   Proof. split; try apply _.
     destruct (bounded U) as [d[el P]].
     exists_sub d.
     intros x [? P1] y [? P2].
     apply (ball_closed _ _ _). intros ε ?.
-    mc_replace (d+ε) with (ε/2+d+ε/2) on Q by subfield Q.
+    mc_replace (d+ε) with (ε/2+d+ε/2) on Q by decfield Q.
     destruct (P1 (ε/2) _) as [x'[??]].
     destruct (P2 (ε/2) _) as [y'[??]].
     pose proof (_ : U ⊆ X).
@@ -614,17 +749,21 @@ Section bounded.
     now apply P.
   Qed.
 
-  Lemma bounded_intersection (U V:Subset) `{!Bounded U} `{!Bounded V} : Bounded (U ⊓ V).
+  Lemma bounded_intersection_l (U V:set) `{!Bounded U} `{V ⊆ X} : Bounded (U ⊓ V).
   Proof.
-    destruct (bounded U) as [d1 [eld1 P1]].
-    destruct (bounded V) as [d2 [eld2 P2]].
+    destruct (bounded U) as [d [eld P]].
     split; try apply _.
-    destruct (decide_sub (≤) d1 d2).
-    * exists_sub d1. intros x [??] y [??]. now apply P1.
-    * exists_sub d2. intros x [??] y [??]. now apply P2.
+    exists_sub d. intros x [??] y [??]. now apply P.
   Qed.
 
-  Lemma bounded_union `{!FinitePoints X} (U V:Subset)
+  Lemma bounded_intersection_r (U V:set) `{U ⊆ X} `{!Bounded V} : Bounded (U ⊓ V).
+  Proof.
+    destruct (bounded V) as [d [eld P]].
+    split; try apply _.
+    exists_sub d. intros x [??] y [??]. now apply P.
+  Qed.
+
+  Lemma bounded_union `{!FinitePoints X} (U V:set)
     `{!Bounded U} `{!Bounded V} `{!Inhabited U} `{!Inhabited V} : Bounded (U ⊔ V).
   Proof.
     destruct (bounded U) as [d1 [eld1 P1]].
@@ -636,12 +775,12 @@ Section bounded.
     destruct (finite_points u v) as [q[elq Buv]].
     split; try apply _. exists_sub (d1+q+d2). intros x [?|?] y [?|?].
     apply ball_weaken_le with d1; try apply _. now apply P1.
-      apply (flip_nonneg_minus _ _). mc_replace (d1+q+d2-d1) with (q+d2) on Q by subring Q. apply _.
+      apply (flip_nonneg_minus _ _). mc_replace (d1+q+d2-d1) with (q+d2) on Q by setring Q. apply _.
     apply (ball_triangle _ _ _ v _). apply (ball_triangle _ _ _ u _); trivial. now apply P1. now apply P2.
     subsymmetry.
     apply (ball_triangle _ _ _ v _). apply (ball_triangle _ _ _ u _); trivial. now apply P1. now apply P2.
     apply ball_weaken_le with d2; try apply _. now apply P2.
-      apply (flip_nonneg_minus _ _). mc_replace (d1+q+d2-d2) with (q+d1) on Q by subring Q. apply _.
+      apply (flip_nonneg_minus _ _). mc_replace (d1+q+d2-d2) with (q+d1) on Q by setring Q. apply _.
   Qed.
 
 End bounded.
@@ -649,7 +788,8 @@ Hint Extern 2 (Bounded ⊥) => eapply @empty_bounded : typeclass_instances.
 Hint Extern 2 (Bounded (B _ _)) => eapply @ball_bounded : typeclass_instances.
 Hint Extern 2 (Bounded _°) => eapply @interior_bounded : typeclass_instances.
 Hint Extern 2 (Bounded (closure _)) => eapply @closure_bounded : typeclass_instances.
-Hint Extern 2 (Bounded (_ ⊓ _)) => eapply @bounded_intersection : typeclass_instances.
+Hint Extern 4 (Bounded (_ ⊓ _)) => eapply @bounded_intersection_l : typeclass_instances.
+Hint Extern 4 (Bounded (_ ⊓ _)) => eapply @bounded_intersection_r : typeclass_instances.
 Hint Extern 5 (Bounded (_ ⊔ _)) => eapply @bounded_union : typeclass_instances.
 
 Instance complement_proper `{MetricSpace (X:=X)} : Proper ((=)==>(=)) (@tilde  _ (@complement _ X _)).
@@ -671,7 +811,7 @@ Hint Extern 0 (Find_Proper_Signature (@MetricComplementStable) 0 _) => eexact me
 
 Lemma set_separated_proper: Find_Proper_Signature (@set_separated) 0
   (∀ A (Ae:Equiv A) (b:Ball A) X `{!@MetricSpace A X Ae b} q,
-     Proper ((SubsetOf)-->(SubsetOf)-->impl) (set_separated (X:=X) q)).
+     Proper ((Subset)-->(Subset)-->impl) (set_separated (X:=X) q)).
 Proof. red; intros. intros U1 U2 EU V1 V2 EV P.
   intros u elu v elv. rewrite <-EU in elu. rewrite <-EV in elv. now apply P.
 Qed.
@@ -692,12 +832,12 @@ Hint Extern 0 (Find_Proper_Signature (@set_separated) 1 _) => eexact set_separat
 
 Lemma set_apart_proper: Find_Proper_Signature (@SetApart) 0
   (∀ A (Ae:Equiv A) (b:Ball A) X `{!@MetricSpace A X Ae b},
-     Proper ((SubsetOf)-->(SubsetOf)-->impl) (SetApart (X:=X))).
+     Proper ((Subset)-->(Subset)-->impl) (SetApart (X:=X))).
 Proof. red; intros. intros ?? E1 ?? E2 [d[? P]] . exists_sub d. now rewrite <-E1, <-E2. Qed.
 Hint Extern 0 (Find_Proper_Signature (@SetApart) 0 _) => eexact set_apart_proper : typeclass_instances.
 
 Definition ambient_space_powerset `{X:AmbientSpace} `{Equiv X} := (⊆ X).
-Hint Extern 20 (@Subset (@Subset ?A)) =>
+Hint Extern 20 (@set (@set ?A)) =>
   let S := constr:(@ambient_space_powerset A _ _) in 
   let S' := eval unfold ambient_space_powerset in S in
   eexact S'
@@ -707,21 +847,21 @@ Section set_apart.
   Context `{MetricSpace (X:=X)}.
   Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
 
-  Instance set_separated_sym q `{q ∊ Qfull} : SubSymmetric _ (set_separated (X:=X) q).
+  Instance set_separated_sym q `{q ∊ Qfull} : Symmetric _ (set_separated (X:=X) q).
   Proof. intros U el1 V el2 P. red in el1,el2. intros u ? v ? E.
     assert (v ∊ X) by now apply (_ : U ⊆ X). subsymmetry in E. revert E. now apply P.
   Qed.
 
-  Instance set_apart_sym : SubSymmetric _ (SetApart (X:=X)).
+  Instance set_apart_sym : Symmetric _ (SetApart (X:=X)).
   Proof. intros U el1 V el2 [q[? P]]. exists_sub q. subsymmetry. Qed.
 
-  Instance set_apart_empty_l (U : Subset) `{U ⊆ X} : SetApart ⊥ U.
+  Instance set_apart_empty_l (U : set) `{U ⊆ X} : SetApart ⊥ U.
   Proof. exists_sub ∞. intros ? []. Qed.
 
-  Instance set_apart_empty_r (U : Subset) `{U ⊆ X} : SetApart U ⊥.
+  Instance set_apart_empty_r (U : set) `{U ⊆ X} : SetApart U ⊥.
   Proof. exists_sub ∞. intros ? ? ? []. Qed.
 
-  Lemma set_separated_closure_l (U V : Subset) `{U ⊆ X} `{V ⊆ X}
+  Lemma set_separated_closure_l (U V : set) `{U ⊆ X} `{V ⊆ X}
     q `{q ∊ Qfull} p `{p ∊ Qfull} :
     set_separated q U V → p < q → set_separated p (closure U) V.
   Proof. intros P E. destruct (ae_lt_defined _ _ E).
@@ -738,106 +878,246 @@ Section set_apart.
     assert (q-p ∊ Q₊) by now apply (flip_pos_minus _ _).
     destruct (Cu (q-p) _) as [u'[??]]. assert (u' ∊ X) by now apply (_ : U ⊆ X).
     apply (P u' _ v _).
-    mc_replace q with ((q-p)+p) on Q by subring Q.
+    mc_replace q with ((q-p)+p) on Q by setring Q.
     apply (ball_triangle _ _ _ u _); trivial. subsymmetry.
   Qed.
 
-  Lemma set_separated_closure_r (U V : Subset) `{U ⊆ X} `{V ⊆ X}
+  Lemma set_separated_closure_r (U V : set) `{U ⊆ X} `{V ⊆ X}
     q `{q ∊ Qfull} p `{p ∊ Qfull} :
     set_separated q U V → p < q → set_separated p U (closure V).
   Proof. intros P E. subsymmetry in P. subsymmetry. now apply (set_separated_closure_l _ _ q p). Qed.
 
-  Instance set_apart_closure_l (U V : Subset) `{U ⊆ X} `{V ⊆ X} `{!SetApart U V} : SetApart (closure U) V.
+  Instance set_apart_closure_l (U V : set) `{U ⊆ X} `{V ⊆ X} `{!SetApart U V} : SetApart (closure U) V.
   Proof. destruct (set_apart U V) as [q[? P]].
     destruct (ae_decompose_pos q) as [Eq|?];
       [ exists_sub 1 | exists_sub (q/2) ];
     apply (set_separated_closure_l _ _ q _); trivial.
     rewrite (_ $ Eq). exact (ae_inf_sub _).
     rewrite <-(flip_pos_minus _ _).
-    mc_replace (q-q/2) with (q/2) on Q by subfield Q. apply _.
+    mc_replace (q-q/2) with (q/2) on Q by decfield Q. apply _.
   Qed.
   
-  Context (U V : Subset) `{U ⊆ X} `{V ⊆ X} `{!SetApart U V}.
+  Context (U V : set) `{U ⊆ X} `{V ⊆ X} `{!SetApart U V}.
 
   Lemma set_apart_closure_r  : SetApart U (closure V).
   Proof. subsymmetry. assert (SetApart V U) by subsymmetry. apply _. Qed.
 
   Lemma set_apart_finite : ∃ q `{q ∊ Q₊}, set_separated q U V.
   Proof. destruct (set_apart U V) as [q [??]].
-    destruct (ae_decompose_pos q) as [Eq|?]; [| now exists_sub q].
-    exists_sub 1.
-    assert (1 ≤ q) as E by (rewrite (_ $ Eq); exact (ae_inf_ub _)).
-    now rewrite (Qfull $ E).
+    destruct (ae_pos_make_finite q) as [p [? E]].
+    exists_sub p. now rewrite (Qfull $ E).
   Qed.
 
 End set_apart.
-Hint Extern 2 (SubSymmetric _ (set_separated _)) => eapply @set_separated_sym : typeclass_instances.
-Hint Extern 2 (SubSymmetric _ SetApart) => eapply @set_separated_sym : typeclass_instances.
+Hint Extern 2 (Symmetric _ (set_separated _)) => eapply @set_separated_sym : typeclass_instances.
+Hint Extern 2 (Symmetric _ SetApart) => eapply @set_separated_sym : typeclass_instances.
 Hint Extern 2 (SetApart ⊥ _) => eapply @set_apart_empty_l : typeclass_instances.
 Hint Extern 2 (SetApart _ ⊥) => eapply @set_apart_empty_r : typeclass_instances.
 Hint Extern 2 (SetApart (closure _) _) => eapply @set_apart_closure_l : typeclass_instances.
 Hint Extern 2 (SetApart _ (closure _)) => eapply @set_apart_closure_r : typeclass_instances.
 
+
+Lemma located `{X:set} `{Equiv X} `{Ball X} S `{!Located (X:=X) S}
+  x `{x ∊ X} p `{p ∊ Q∞} q `{q ∊ Q∞}
+  : p < q → (∃ `{y ∊ S}, ball q x y) ∨ (∀ `{y ∊ S}, ¬ ball p x y).
+Proof.
+  destruct (_ : Located (X:=X) S) as [?? _].
+  destruct (decide_sub (le) 0 p) as [Ep|Ep].
+  + intro E. assert (p ∊ Q∞⁺) by now split.
+    assert (q ∊ Q∞₊). split. apply _. now apply (le_lt_trans _ p _).
+    destruct (ae_decompose_nonneg p) as [Ep'|?].
+      rewrite (_ $ Ep') in E. contradict E.
+      destruct (ae_decompose_pos q) as [Eq|?].
+        intro E. rewrite (_ $ Eq) in E. now destruct (irreflexivity (S:=Q∞) (<) infty).
+        apply (lt_flip _ _). exact (ae_inf_sub _).
+    destruct (ae_decompose_pos q) as [Eq|?].
+    * destruct (located_def (X:=X) x p (p+1)) as [[y [? P]]|?].
+      - rewrite <-(flip_pos_minus _ _). mc_replace (p+1-p) with 1 on Q by setring Q. apply _.
+      - left. exists_sub y. rewrite (_ $ Eq). exact (msp_ball_inf _ _).
+      - now right.
+    * exact (located_def (X:=X) x p q E).
+  + intro. right. intros. intro Bp. now destruct (msp_nonneg _ _ _ Bp).
+Qed.
+
+Lemma located_proper: Find_Proper_Signature (@Located) 0
+  (∀ A (Ae:Equiv A) (b:Ball A) (X:set), Proper ((=)==>impl) (Located (X:=X))).
+Proof. red; intros. intros U V E ?. pose proof located_msp (X:=X).
+  assert (V ⊆ X) by (rewrite <-E; apply _).
+  split; try apply _.
+  intros x ? p ? q ? Ep.
+  destruct (located_def (X:=X) x p q Ep) as [[y[el P]]|P]; [left|right].
+    rewrite E in el. now exists_sub y.
+    intros y el. rewrite <-E in el. now apply P.
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@Located) 0 _) => eexact located_proper : typeclass_instances.
+
+Hint Extern 2 (Equiv (elt_type (Located))) => eapply set_equiv : typeclass_instances.
+
+Lemma located_sets_subsetoid `{X:set} `{Equiv X} `{Ball X} : Located (X:=X) ⊆ Sets.
+Proof. apply subsetoid_alt; try apply _. intros S T [[_ _] E] ?. red. now rewrite <-E. Qed.
+Hint Extern 2 (Located ⊆ Sets) => eapply @located_sets_subsetoid : typeclass_instances.
+
+Lemma located_sets_setoid `{X:set} `{Equiv X} `{Ball X} : Setoid (Located (X:=X)).
+Proof subsetoid_a (T:=Sets).
+Hint Extern 2 (Setoid Located) => eapply @located_sets_setoid : typeclass_instances.
+Hint Extern 2 (_ ∊ Located) => red : typeclass_instances.
+
+Section located.
+  Context `{MetricSpace (X:=X)}.
+  Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
+
+  Lemma empty_located : Located ⊥.
+  Proof. split; try apply _. intros. right. intros ? []. Qed.
+
+  Lemma ambient_located : Located X.
+  Proof. split; try apply _. intros x; intros. left. now exists_sub x. Qed.
+
+  Lemma located_union U V `{!Located U} `{!Located V} : Located (U ⊔ V) .
+  Proof. split; try apply _. intros x ? p ? q ? E.
+    destruct (located U x p q E) as [[y [??]]| P1]. left. now exists_sub y.
+    destruct (located V x p q E) as [[y [??]]| P2]. left. now exists_sub y.
+    right. intros y [?|?]. now apply P1. now apply P2.
+  Qed.
+
+  Lemma closure_located U `{!Located U} : Located (closure U).
+  Proof. split; try apply _. intros x ? p ? q ? E.
+    apply (flip_pos_minus _ _) in E.
+    destruct (located U x ((p+q)/2) q) as [ [y[??]] | P ].
+    * apply (flip_pos_minus _ _).
+      mc_replace (q-(p+q)/2) with ((q-p)/2) on Q by decfield Q. apply _.
+    * left. assert (y ∊ closure U) by now apply (_ : U ⊆ closure U). now exists_sub y.
+    * right. cut (set_separated p (B 0 x) (closure U)). intro P'. exact (P' x _).
+      apply (set_separated_closure_r _ _ ((p+q)/2) _).
+        intros s el y ?. rewrite <-(singleton_is_ball _) in el. destruct el as [? Es].
+        pose proof (_ : U ⊆ X). rewrite (_ $ Es). now apply P. 
+      apply (flip_pos_minus _ _).
+      mc_replace ((p+q)/2 - p) with ((q-p)/2) on Q by decfield Q. apply _.
+  Qed.
+
+  Lemma closure_located_back U `{U ⊆ X} : Located (closure U) → Located U.
+  Proof. split; try apply _. intros x ? p ? q ? E.
+    apply (flip_pos_minus _ _) in E.
+    destruct (located (closure U) x p ((p+q)/2)) as [ [y[[? P] ?]] | P ].
+    * apply (flip_pos_minus _ _).
+      mc_replace ((p+q)/2 - p) with ((q-p)/2) on Q by decfield Q. apply _.
+    * left. destruct (P ((q-p)/2) _) as [u[??]]. exists_sub u.
+      mc_replace q with ((p+q)/2 + (q-p)/2) on Q by decfield Q.
+      now apply (ball_triangle _ _ _ y _).
+    * right. intros y ?. apply P. now apply (_ : U ⊆ closure U).
+  Qed.
+
+  Lemma ball_located `{!LocatedPoints X} `{!PrelengthSpace X}
+    r `{r ∊ Q⁺} x `{x ∊ X} : Located (B r x).
+  Proof. split; try apply _. intros y ? p ? q ? E.
+    destruct (decompose_lt E) as [δ[? Eδ]].
+    destruct (located_points x y (r+p) (r+p+δ/2) (pos_plus_lt_compat_r _ _)) as [?|P].
+    + destruct (prelength x y (r+p+δ/2) r q) as [z[?[??]]]; trivial.
+        apply (flip_pos_minus _ _). rewrite (_ $ Eδ).
+        match goal with |- ?a ∊ _ => mc_replace a with (δ/2) on Q by decfield Q end. apply _.
+      left. now exists_sub z.
+    + right. intros z [??]. contradict P.
+      now apply (ball_triangle _ _ _ z _).
+  Qed.
+
+  Lemma singleton_located `{!LocatedPoints X} x `{x ∊ X} : Located {{x|X}}.
+  Proof. split; try apply _. intros y ? p ? q ? E.
+    destruct (located_points x y _ _ E) as [?|P]; [left|right].
+      exists_sub x. subsymmetry.
+    intros x' [? Ex']. rewrite (_ $ Ex'). contradict P. subsymmetry.
+  Qed.
+End located.
+
+Hint Extern 2 (Located {{_}}) => eapply @singleton_located : typeclass_instances.
+Hint Extern 2 (Located ⊥) => eapply @empty_located : typeclass_instances.
+Hint Extern 2 (Located (X:=?X) ?X) => eapply @ambient_located : typeclass_instances.
+Hint Extern 2 (Located (_ ⊔ _)) => eapply @located_union : typeclass_instances.
+Hint Extern 2 (Located (X:=?X) (B (X:=?X) _ _)) => eapply @ball_located : typeclass_instances.
+Hint Extern 5 (Located (X:=?X) (closure (X:=?X) _)) => eapply @closure_located : typeclass_instances.
+
+
 Section complements.
   Context `{MetricSpace (X:=X)}.
   Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
 
-  Instance complement_subsetoid (S:Subset) `{S ⊆ X} : ∼S ⊆ X.
+  Instance complement_subsetoid (S:set) `{S ⊆ X} : ∼S ⊆ X.
   Proof. apply subsetoid_alt; [ apply _ | | firstorder].
     intros ?? E [? P]. unfold_sigs. split. apply _. intros s ?.
     destruct (P s _) as [q [??]]. exists_sub q.
     now rewrite <-(X $ E).
   Qed.
 
-  Instance metric_complement_subsetoid (S:Subset) `{S ⊆ X} : -S ⊆ X.
+  Instance metric_complement_subsetoid (S:set) `{S ⊆ X} : -S ⊆ X.
   Proof. apply subsetoid_alt; [ apply _ | | firstorder].
     intros ?? E [? [q [? P]]]. unfold_sigs. split. apply _.
     exists_sub q. intros s ?. rewrite <-(X $ E). now apply P.
   Qed.
 
-  Instance metric_complement_complement (S:Subset) `{S ⊆ X} : -S ⊆ ∼S.
-  Proof. apply (subsetoid_from_subsetof X _ _).
-    intros x [?[q[? P]]]. split. apply _. intros s ?. exists_sub q. exact (P _ _).
-  Qed.
-
-  Lemma complement_contradiction (S:Subset) `{S ⊆ X} x `{x ∊ S} `{x ∊ ∼S} : False.
+  Lemma complement_contradiction (S:set) `{S ⊆ X} x `{x ∊ S} `{x ∊ ∼S} : False.
   Proof. destruct (_ : x ∊ ∼S) as [? P].
     now destruct (P x _) as [q [? []]].
   Qed.
 
-  Lemma metric_complement_contradiction (S:Subset) `{S ⊆ X} x `{x ∊ S} `{x ∊ -S} : False.
+  Lemma metric_complement_interior_complement (S:set) `{S ⊆ X} : -S = (∼S)° .
+  Proof. apply subset_antisym.
+  + intros x [?[q[? P]]].
+    assert (Inhabited S → q ∊ Q₊) as Pfin.
+      intros [s ?]. destruct (ae_decompose_pos q) as [Eq|?]; trivial.
+      destruct (P s _). rewrite (_ $ Eq). exact (msp_ball_inf _ _).
+    split. split. apply _. intros s ?. assert (Inhabited S) by now exists s.
+    * exists_sub q. now apply P.
+    * exists_sub (q/2). intros y [Bxy ?]. red in Bxy. split. apply _.
+      intros s ?. assert (Inhabited S) by now exists s.
+      exists_sub (q/2). intro Bys. destruct (P s _).
+      apply ball_weaken_le with (q/2+q/2); try apply _;
+        [| apply (eq_le _ _); exact (ae_in_halves q)].
+      apply (ball_triangle _ _ _ y _); trivial.
+  + intros x [[??] [q[? Q]]]. split. apply _.
+    exists_sub q. intros s ? Bxs.
+    cut (s ∊ ∼S). intro. exact (complement_contradiction S s).
+    apply Q. split; trivial. apply _.
+  Qed.
+
+  Instance metric_complement_open (S:set) `{S ⊆ X} : Open (-S).
+  Proof. rewrite (metric_complement_interior_complement S). apply _. Qed.
+
+  Instance metric_complement_complement (S:set) `{S ⊆ X} : -S ⊆ ∼S.
+  Proof. rewrite (metric_complement_interior_complement S). apply _. Qed.
+
+  Lemma metric_complement_contradiction (S:set) `{S ⊆ X} x `{x ∊ S} `{x ∊ -S} : False.
   Proof. pose proof _ : -S ⊆ ∼S. exact (complement_contradiction S x). Qed.
 
-  Lemma complement_flip (S T:Subset) `{T ⊆ X} `{S ⊆ T} : ∼T ⊆ ∼S.
+  Lemma complement_flip (S T:set) `{T ⊆ X} `{S ⊆ T} : ∼T ⊆ ∼S.
   Proof. assert (S ⊆ X) by now transitivity T.
-    apply (subsetoid_from_subsetof X _ _).
+    apply (subsetoid_from_subset X _ _).
     intros x [? P]. split. apply _. intros s ?. apply (P s _).
   Qed.
 
-  Lemma metric_complement_flip (S T:Subset) `{T ⊆ X} `{S ⊆ T} : -T ⊆ -S.
+  Lemma metric_complement_flip (S T:set) `{T ⊆ X} `{S ⊆ T} : -T ⊆ -S.
   Proof. assert (S ⊆ X) by now transitivity T.
-    apply (subsetoid_from_subsetof X _ _).
+    apply (subsetoid_from_subset X _ _).
     intros x [? [q [? P]]]. split. apply _. exists_sub q. intros s ?. apply (P s _).
   Qed.
 
-  Instance complement_complement (S:Subset) `{S ⊆ X} : S ⊆ ∼∼S.
+  Instance complement_complement (S:set) `{S ⊆ X} : S ⊆ ∼∼S.
   Proof.
-    apply (subsetoid_from_subsetof X _ _).
+    apply (subsetoid_from_subset X _ _).
     intros s ?. split. apply _.
     intros x [? P]. destruct (P s _) as [q[? Bxs]].
     exists_sub q. contradict Bxs. subsymmetry.
   Qed.
 
-  Instance complement_metric_complement (S:Subset) `{S ⊆ X} : S ⊆ ∼-S.
+  Instance complement_metric_complement (S:set) `{S ⊆ X} : S ⊆ ∼-S.
   Proof.
-    apply (subsetoid_from_subsetof X _ _).
+    apply (subsetoid_from_subset X _ _).
     intros s ?. split. apply _. intros s' [?[q [? P]]].
+    destruct (ae_decompose_pos q) as [Eq|?].
+      destruct (P s _). rewrite (_ $ Eq). exact (msp_ball_inf _ _).
     exists_sub q. intros Bs. subsymmetry in Bs. revert Bs. now apply P.
   Qed.
 
-  Lemma metric_apartness_A4 (S T:Subset) `{S ⊆ X} `{T ⊆ X} : -S ⊆ ∼T → -S ⊆ -T.
+  Lemma metric_apartness_A4 (S T:set) `{S ⊆ X} `{T ⊆ X} : -S ⊆ ∼T → -S ⊆ -T.
   Proof. intro E.
-    apply (subsetoid_from_subsetof X _ _).
+    apply (subsetoid_from_subset X _ _).
     intros s [? [q [? P]]]. split. apply _.
     exists_sub (q/2). intros t ? Bst.
     assert (t ∊ X). now rewrite <-(_ : T ⊆ X).
@@ -854,7 +1134,7 @@ Section complements.
 
   Lemma complement_empty : ∼⊥ = X. Proof. firstorder. Qed.
   Lemma metric_complement_empty : -⊥ = X.
-  Proof. apply (antisymmetry SubsetOf). apply _.
+  Proof. apply (antisymmetry_t Subset). apply _.
     intros ??. split. apply _. exists_sub ∞. intros ? [].
   Qed.
 
@@ -866,14 +1146,14 @@ Section complements.
   Lemma metric_complement_ambient : -X = ⊥.
   Proof. intro x. split; [| intros []]. intros [?[?[? P]]]. now destruct (P x _). Qed.
 
-  Lemma complement_union (S T:Subset) `{S ⊆ X} `{T ⊆ X} : ∼(S ⊔ T) = ∼S ⊓ ∼T.
+  Lemma complement_union (S T:set) `{S ⊆ X} `{T ⊆ X} : ∼(S ⊔ T) = ∼S ⊓ ∼T.
   Proof. intro x. split.
   + intros [? P]. split; (split; [apply _|]); intros s ?; exact (P s _).
   + intros [[? P1][_ P2]]. split. apply _.
     intros s [?|?]. now apply P1. now apply P2.
   Qed.
 
-  Lemma metric_complement_union (S T:Subset) `{S ⊆ X} `{T ⊆ X} : -(S ⊔ T) = -S ⊓ -T.
+  Lemma metric_complement_union (S T:set) `{S ⊆ X} `{T ⊆ X} : -(S ⊔ T) = -S ⊓ -T.
   Proof. intro x. split.
   + intros [? [q [? P]]]. split; (split; [apply _|]); exists_sub q; intros s ?; apply (P _ _).
   + intros [[? [p [? P1]]][_ [q [? P2]]]].
@@ -884,19 +1164,19 @@ Section complements.
     rewrite (Qfull $ E2); now apply P2.
   Qed.
 
-  Lemma complement_intersection (S T:Subset) `{S ⊆ X} `{T ⊆ X} : ∼S ⊔ ∼T ⊆ ∼(S ⊓ T).
-  Proof. apply (subsetoid_from_subsetof X _ _).
+  Lemma complement_intersection (S T:set) `{S ⊆ X} `{T ⊆ X} : ∼S ⊔ ∼T ⊆ ∼(S ⊓ T).
+  Proof. apply (subsetoid_from_subset X _ _).
     intros x [[? P]|[? P]]; (split; [apply _|]); intros s [??]; now apply P.
   Qed.
 
-  Instance metric_complement_is_stable (S:Subset) `{S ⊆ X} : MetricComplementStable (-S).
+  Instance metric_complement_is_stable (S:set) `{S ⊆ X} : MetricComplementStable (-S).
   Proof. split.
   + intros [? [q [? P]]]. split. apply _. exists_sub q. intros s ?.
     assert (s ∊ ∼-S) by now apply (_ : S ⊆ ∼-S). now apply P.
   + intros ?. now apply (metric_apartness_A4 _ _ (_ : -S ⊆ ∼∼-S)).
   Qed.
 
-  Lemma metric_complement_open_apart (S:Subset) `{S ⊆ X} x `{x ∊ -S} : ∃ `{q ∊ Q∞₊},
+  Lemma metric_complement_open_apart (S:set) `{S ⊆ X} x `{x ∊ -S} : ∃ `{q ∊ Q∞₊},
     SetApart (B q x) S.
   Proof.
     destruct (_ : x ∊ - S) as [?[q [? P]]].
@@ -907,7 +1187,7 @@ Section complements.
     apply (ball_triangle _ _ _ y _); trivial.
   Qed.
 
-  Lemma metric_complement_open_apart_finite (S:Subset) `{S ⊆ X} x `{x ∊ -S} : ∃ `{q ∊ Q₊},
+  Lemma metric_complement_open_apart_finite (S:set) `{S ⊆ X} x `{x ∊ -S} : ∃ `{q ∊ Q₊},
     SetApart (B q x) S.
   Proof. destruct (metric_complement_open_apart S x) as [q[??]].
     destruct (ae_decompose_pos q) as [E|?]; [| exists_sub q; intuition ].
@@ -916,22 +1196,45 @@ Section complements.
     now rewrite E2.
   Qed.
 
-  Instance set_apart_in_metric_complement (U V : Subset) `{U ⊆ X} `{V ⊆ X}
+  Instance set_apart_in_metric_complement (U V : set) `{U ⊆ X} `{V ⊆ X}
     `{!SetApart U V} : U ⊆ -V.
   Proof. destruct (set_apart U V) as [q [el P]].
-    apply (subsetoid_from_subsetof X _ _). intros x ?.
+    apply (subsetoid_from_subset X _ _). intros x ?.
     assert (x ∊ X) by now apply (_ : U ⊆ X).
     split. apply _. exists_sub q. now apply P.
   Qed.
 
-  Instance metric_complement_open (S:Subset) `{S ⊆ X} : Open (-S).
-  Proof. split; try apply _. intro x. split. now intros [??].
-    intro. split. apply _.
-    destruct (metric_complement_open_apart S x) as [q[??]].
-    exists_sub q. assert (x ∊ X) by now apply (_:-S ⊆ X). apply _.
+  Instance open_complement_closed (S:set) `{!Open S} : Closed (∼S).
+  Proof. split; try apply _.
+    apply antisymmetry_t with Subset; try apply _.
+    intros x [? P]. split;trivial. intros s ?.
+    assert (s ∊ X) by now apply (_ : S ⊆ X).
+    destruct (open S s) as [q[? O]].
+    destruct (ae_decompose_pos q) as [Eq|?].
+      destruct (P ∞ _) as [t[? _]].
+      cut (t ∊ S). intro. destruct (complement_contradiction S t).
+      apply O. assert (t ∊ X) by now apply (_ : ∼S ⊆ X).
+      split; trivial. red. rewrite (_ $ Eq). exact (msp_ball_inf _ _).
+    exists_sub (q/2). intro Bxs.
+    destruct (P (q/2) _) as [s' [? Bxs']].
+    assert (s' ∊ X) by now apply (_ : ∼S ⊆ X).
+    cut (s' ∊ S). intro. exact (complement_contradiction S s').
+    apply O. split;trivial. red.
+    apply ball_weaken_le with (q/2+q/2); try apply _;
+      [| apply (eq_le _ _); exact (ae_in_halves q)].
+    apply (ball_triangle _ _ _ x _); trivial; subsymmetry.
   Qed.
 
-  Lemma metric_complement_stable_open (S:Subset) `{S ⊆ X} `{!MetricComplementStable S} : Open S.
+  Lemma open_in_metric_complement (S:set) `{!Open S} : S ⊆ -∼S .
+  Proof. pose proof _ : S ⊆ X .
+    apply (subsetoid_from_subset _ _ _). intros x ?. split. apply _.
+    destruct (open S x) as [q [??]]. exists_sub q. intros s ??.
+    cut (s ∊ S). intro. exact (complement_contradiction S s).
+    apply (_ : B q x ⊆ S). split. trivial.
+    now apply (_ : ∼S ⊆ X).
+  Qed.
+
+  Lemma metric_complement_stable_open (S:set) `{S ⊆ X} `{!MetricComplementStable S} : Open S.
   Proof. rewrite <-(metric_complement_stable S). apply _. Qed.
 
   Lemma ambient_space_stable : MetricComplementStable X.
@@ -940,29 +1243,28 @@ Section complements.
   Lemma empty_metric_complement_stable : MetricComplementStable ⊥.
   Proof. rewrite <-(metric_complement_ambient). apply _. Qed.
 
-  Instance set_apart_complement_ambient_l (U : Subset) `{U ⊆ X} : SetApart (∼X) U.
+  Instance set_apart_complement_ambient_l (U : set) `{U ⊆ X} : SetApart (∼X) U.
   Proof. rewrite complement_ambient. apply _. Qed.
 
-  Instance set_apart_complement_ambient_r (U : Subset) `{U ⊆ X} : SetApart U (∼X).
+  Instance set_apart_complement_ambient_r (U : set) `{U ⊆ X} : SetApart U (∼X).
   Proof. rewrite complement_ambient. apply _. Qed.
 
   Context `{!MetricInequality (Aue:=Aue) X}.
 
   Lemma singleton_is_complement `{!LocatedPoints X}
-    x `{x ∊ X} : {{ x }} = ∼((λ y, y ∊ X ∧ PropHolds (y ≠ x)) : Subset).
+    x `{x ∊ X} : {{ x }} = ∼(X ⊓ ((≠ x) : set)).
   Proof. pose proof metric_inequality_strong_setoid.
     intros y. split.
   + intros [? E]. split. apply _. intros z [? E2]. change (z ≠ x) in E2.
-    rewrite (metric_inequality _ _) in E2. destruct E2 as [q[? P]].
-    exists_sub q. contradict P. rewrite <-(_ $ E). subsymmetry.
+    rewrite <-(metric_inequality _ _). now rewrite (_ $ E).
   + intros [? P]. split. apply _. rewrite <-(tight_apart _ _). intro.
     destruct (P y) as [q[?[]]]; [now split|easy].
   Qed.
    
   Lemma singleton_metric_complement 
-    x `{x ∊ X} : ((λ y, y ∊ X ∧ PropHolds (y ≠ x)) : Subset) = -{{ x }}.
+    x `{x ∊ X} : (X ⊓ ((≠ x) : set)) = -{{ x }}.
   Proof. intros y. split.
-  + intros [? E]. rewrite (metric_inequality _ _) in E. destruct E as [q[? P]].
+  + intros [? E]. red in E. rewrite (metric_inequality _ _) in E. destruct E as [q[? P]].
     split. apply _. exists_sub q. intros s [? E2]. now rewrite (_ $ E2).
   + intros [?[q[? P]]]. split. apply _. red. rewrite (metric_inequality _ _).
     destruct (ae_decompose_pos q) as [Eq|].
@@ -979,15 +1281,31 @@ Section complements.
   Instance nonzero_metric_complement_stable `{Zero _} `{0 ∊ X}
     : MetricComplementStable (X ₀).
   Proof. rewrite nonzero_is_metric_complement. apply _. Qed.
-    
+
+  Lemma closed_located_stable U `{!Closed U} `{!Located U} : U = ∼∼U .
+  Proof. apply subset_antisym. apply _.
+    intros x [? P]. rewrite <-closed_def. split. apply _. intros q ?.
+    assert (∃ `{p ∊ Q₊}, p < q) as P'.
+      destruct (ae_decompose_pos q) as [Eq|].
+        exists_sub 1. rewrite (_ $ Eq). exact (ae_inf_sub _).
+      exists_sub (q/2). apply (flip_pos_minus _ _).
+      mc_replace (q-q/2) with (q/2) on Q by decfield Q. apply _.
+    destruct P' as [p[? E]].
+    destruct (located U x _ _ E) as [?|P']. trivial.
+    assert (x ∊ ∼U). split. apply _. intros s ?. exists_sub p. now apply P'.
+    now destruct (P x _) as [?[?[]]].
+  Qed.
+
 End complements.
 Hint Extern 2 (@tilde _ (@complement _ ?X _) _ ⊆ ?X) => eapply @complement_subsetoid : typeclass_instances.
 Hint Extern 2 (@negate _ (@metric_complement _ ?X _) _ ⊆ ?X) => eapply @metric_complement_subsetoid : typeclass_instances.
 Hint Extern 2 (- ?S ⊆ ∼ ?S) => eapply @metric_complement_complement : typeclass_instances.
 Hint Extern 2 (?S ⊆ ∼∼ ?S) => eapply @complement_complement : typeclass_instances.
 Hint Extern 2 (?S ⊆ ∼- ?S) => eapply @complement_metric_complement : typeclass_instances.
+Hint Extern 2 (?S ⊆ -∼ ?S) => eapply @open_in_metric_complement : typeclass_instances.
 Hint Extern 2 (MetricComplementStable (-_)) => eapply @metric_complement_is_stable : typeclass_instances.
 Hint Extern 2 (Open (-_)) => eapply @metric_complement_open : typeclass_instances.
+Hint Extern 2 (Closed (∼_)) => eapply @open_complement_closed : typeclass_instances.
 Hint Extern 2 (@MetricComplementStable _ ?X _ ?X) => eapply @ambient_space_stable : typeclass_instances.
 Hint Extern 2 (MetricComplementStable ⊥) => eapply @empty_metric_complement_stable : typeclass_instances.
 Hint Extern 5 (∼ _ ⊆ ∼ _) => eapply @complement_flip : typeclass_instances.
@@ -995,22 +1313,145 @@ Hint Extern 5 (- _ ⊆ - _) => eapply @metric_complement_flip : typeclass_instan
 Hint Extern 2 (SetApart (X:=?X) (∼ ?X) _) => eapply @set_apart_complement_ambient_l : typeclass_instances.
 Hint Extern 2 (SetApart (X:=?X) _ (∼ ?X)) => eapply @set_apart_complement_ambient_r : typeclass_instances.
 Hint Extern 2 (MetricComplementStable (_ ₀)) => eapply @nonzero_metric_complement_stable : typeclass_instances.
+Hint Extern 10 (Open _) => eapply @metric_complement_stable_open : typeclass_instances.
+
+
+Lemma set_within_proper: Find_Proper_Signature (@set_within) 0
+  (∀ A (Ae:Equiv A) (b:Ball A) X `{!@MetricSpace A X Ae b} q,
+     Proper ((Subset)-->(Subset)++>impl) (set_within (X:=X) q)).
+Proof. red; intros. intros U1 U2 EU V1 V2 EV P. unfold flip in *.
+  intros x elx u elu ?. rewrite EU in elu. apply EV. now apply (P x _ u _).
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@set_within) 0 _) => eexact set_within_proper : typeclass_instances.
+
+Lemma set_within_proper2: Find_Proper_Signature (@set_within) 1
+  (∀ A (Ae:Equiv A) (b:Ball A) X `{!@MetricSpace A X Ae b},
+     Proper ((Qfull,≤)-->((⊆ X),=)==>((⊆ X),=)==>impl) (set_within (X:=X))).
+Proof. red; intros. intros p q Eq U1 U2 [[e1 e2]EU] V1 V2 [[e3 e4] EV] P. red in e1,e2,e3,e4.
+  unfold flip in *. unfold_sigs.
+  intros x elx u elu ?. rewrite <-EV. rewrite <-EU in elu. apply (P x _ u _).
+  assert (u ∊ X) by now apply (_ : U1 ⊆ X).
+  now rewrite <-(Qfull $ Eq).
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@set_within) 1 _) => eexact set_within_proper2 : typeclass_instances.
+
+Lemma set_contained_proper: Find_Proper_Signature (@SetContained) 0
+  (∀ A (Ae:Equiv A) (b:Ball A) X `{!@MetricSpace A X Ae b},
+     Proper ((Subset)-->(Subset)++>impl) (SetContained (X:=X))).
+Proof. red; intros. intros ?? E1 ?? E2 [d[? P]] . exists_sub d. now rewrite <-E1, <-E2. Qed.
+Hint Extern 0 (Find_Proper_Signature (@SetContained) 0 _) => eexact set_contained_proper : typeclass_instances.
+
+Section set_contained.
+  Context `{MetricSpace (X:=X)}.
+  Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
+
+  Instance set_contained_empty (U : set) : SetContained ⊥ U.
+  Proof. exists_sub ∞. firstorder. Qed.
+
+  Instance set_contained_ambient (U : set) : SetContained U X.
+  Proof. exists_sub ∞. firstorder. Qed.
+
+  Context (U V : set) `{U ⊆ X} `{V ⊆ X} .
+
+  Lemma set_within_alt q `{q ∊ Q∞₊}
+    : set_within q U V ↔ (X ⊓ λ x, ∃ `{u ∊ U}, ball q x u) ⊆ V .
+  Proof. split.
+  + intros P. apply (subsetoid_alt). apply _.
+      intros x y E. unfold_sigs. intros [_ [u [??]]].
+      assert (y ∊ X) by now apply (_ : V ⊆ X).
+      assert (x ∊ X) by now apply (_ : V ⊆ X).
+      split. apply _. exists_sub u. now rewrite <-(X $ E).
+    intros x [?[u [??]]]. now apply (P x _ u _).
+  + intro P. intros x ? u ??. apply P. split. trivial. now exists_sub u.
+  Qed.
+
+  Lemma set_within_separated_complement q `{q ∊ Q∞₊}
+    : set_within q U V → set_separated q U (∼V) .
+  Proof.  intros P x ? y ??.
+    assert (x ∊ X) by now apply (_ : U ⊆ X).
+    assert (y ∊ X) by now apply (_ : ∼V ⊆ X).
+    cut (y ∊ V). intro. exact (complement_contradiction V y).
+    apply (P y _ x _). subsymmetry.
+  Qed. 
+
+  Lemma set_within_closure
+    q `{q ∊ Q∞} p `{p ∊ Q∞} ε `{ε ∊ Q∞₊} :
+    set_within q U V → p + ε = q → set_within p (closure U) V.
+  Proof. intros P E.
+    intros x ? u [? Cu] Bxu.
+    destruct (Cu ε _) as [u' [??]].
+    apply (P x _ u' _). rewrite <-(_ $ E).
+    now apply (ball_triangle _ _ _ u _).
+  Qed.
+
+  Lemma set_contained_from_apart `{!MetricComplementStable V} `{!SetApart U (∼V)} : SetContained U V.
+  Proof.
+    destruct (set_apart U (∼V)) as [q [elt P]]. exists_sub (q/2).
+    intros x ? u ??. rewrite <-(metric_complement_stable V).
+    split. apply _. exists_sub (q/2). intros s ??. destruct (P u _ s _).
+    assert (s ∊ X) by now apply (_ : ∼V ⊆ X).
+    apply (ball_weaken_le) with (q/2+q/2); try apply _.
+    apply (ball_triangle _ _ _ x _); trivial. subsymmetry.
+    now rewrite (_ $ ae_in_halves q).
+  Qed.
+
+  Lemma set_contained_union W `{W ⊆ X} `{!SetContained U W} `{!SetContained V W} : SetContained (U ⊔ V) W.
+  Proof.
+    destruct (set_contained U W) as [a[ela P1]].
+    destruct (set_contained V W) as [b[elb P2]].
+    ae_rat_set_min c a b Ea Eb.
+    exists_sub c. intros x ? u [?|?] ?.
+    apply (P1 x _ u _). now rewrite <-(Qfull $ Ea).
+    apply (P2 x _ u _). now rewrite <-(Qfull $ Eb).
+  Qed.
+
+  Context `{!SetContained U V}.
+
+  Instance set_contained_closure : SetContained (closure U) V.
+  Proof. destruct (set_contained U V) as [q[qel P]].
+    exists_sub (q/2). pose proof _ : q/2 ∊ Q∞₊ .
+    apply (set_within_closure q (q/2) (q/2)); trivial.
+    exact (ae_in_halves q).
+  Qed.
+
+  Instance set_contained_subsetoid : U ⊆ V.
+  Proof. destruct (set_contained U V) as [q[qel P]].
+    apply (subsetoid_from_subset X _ _).
+    intros u ?. now apply (P u _ u _).
+  Qed.
+
+  Lemma set_contained_finite : ∃ q `{q ∊ Q₊}, set_within q U V.
+  Proof. destruct (set_contained U V) as [q [??]].
+    destruct (ae_pos_make_finite q) as [p [? E]].
+    exists_sub p. now rewrite (Qfull $ E).
+  Qed.
+
+  Lemma set_contained_apart_complement : SetApart U (∼V) .
+  Proof.  destruct (set_contained U V) as [q [elq P]].
+    exists_sub q. now apply set_within_separated_complement.
+  Qed.
+
+End set_contained.
+Hint Extern 2 (SetContained ⊥ _) => eapply @set_contained_empty : typeclass_instances.
+Hint Extern 2 (SetContained (X:=?X) _ ?X) => eapply @set_contained_ambient : typeclass_instances.
+Hint Extern 2 (SetContained (_ ⊔ _) _) => eapply @set_contained_union : typeclass_instances.
+Hint Extern 2 (SetContained (closure _) _) => eapply @set_contained_closure : typeclass_instances.
 
 Section well_contained_alt.
   Context `{MetricSpace (X:=X)}.
   Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
 
-  Lemma well_contained_alt (U V : Subset) `{V ⊆ X}
-    : U ⊆ V → Bounded U → Inhabited U → SetApart U (∼V) → U ⊂⊂ V.
-  Proof. intros. split; apply _. Qed.
+  Lemma well_contained_alt U V `{V ⊆ X}
+    : Bounded U → Inhabited U → SetContained U V → U ⊂⊂ V.
+  Proof. intros. split; try apply _. exact (set_contained_subsetoid _ _). Qed.
 End well_contained_alt.
 
 Lemma well_contained_proper: Find_Proper_Signature (@WellContained) 0
-  (∀ A (Ae:Equiv A) (b:Ball A) (X:Subset), Proper ((=)==>(=)==>impl) (WellContained (X:=X))).
+  (∀ A (Ae:Equiv A) (b:Ball A) (X:set), Proper ((=)==>(=)==>impl) (WellContained (X:=X))).
 Proof. red; intros. intros U1 U2 EU V1 V2 EV ?. destruct (_ : WellContained (X:=X) U1 V1).
+  pose proof bounded_msp (X:=X).
   apply well_contained_alt.
   rewrite <- EV; apply _.
-  rewrite <- EU, <- EV; apply _.
   rewrite <- EU; apply _.
   rewrite <- EU; apply _.
   rewrite <- EU, <- EV; apply _.
@@ -1018,13 +1459,13 @@ Qed.
 Hint Extern 0 (Find_Proper_Signature (@WellContained) 0 _) => eexact well_contained_proper : typeclass_instances.
 
 Lemma well_contained_proper2: Find_Proper_Signature (@WellContained) 1
-  (∀ A (Ae:Equiv A) (b:Ball A) (X:Subset), Proper ((Inhabited,⊆)-->((⊆ X),⊆)++>impl) (WellContained (X:=X))).
+  (∀ A (Ae:Equiv A) (b:Ball A) (X:set), Proper ((Inhabited,⊆)-->((⊆ X),⊆)++>impl) (WellContained (X:=X))).
 Proof. red; intros. intros U1 U2 [[eu1 eu2]EU] V1 V2 [[ev1 ev2]EV] ?. red in eu1,eu2, ev1,ev2.
   destruct (_ : WellContained (X:=X) U1 V1).
+  pose proof bounded_msp (X:=X).
   apply (well_contained_alt _ _); trivial.
-  transitivity U1; trivial. transitivity V1; trivial.
   rewrite EU; apply _.
-  rewrite EU, (complement_flip V1 V2); apply _.
+  now rewrite EU, <-EV.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@WellContained) 1 _) => eexact well_contained_proper2 : typeclass_instances.
 
@@ -1032,57 +1473,52 @@ Section well_contained.
   Context `{MetricSpace (X:=X)}.
   Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
 
-  Lemma well_contained_stable (U V : Subset) `{V ⊆ X} `{!MetricComplementStable V}
+  Lemma well_contained_stable (U V : set) `{V ⊆ X} `{!MetricComplementStable V}
     : Bounded (X:=X) U → Inhabited U → SetApart U (∼V) → U ⊂⊂ V.
   Proof. intros. apply (well_contained_alt U V); try apply _.
-    rewrite <-(metric_complement_stable V).
-    apply (set_apart_in_metric_complement _ _).
+    apply (set_contained_from_apart _ _).
   Qed.
 
-  Instance well_contained_trans: Transitive (⊂⊂).
+  Instance well_contained_trans: TransitiveT (⊂⊂).
   Proof. intros U V W ??. split; try apply _. transitivity V; apply _.
-    rewrite (_ : ∼W ⊆ ∼V). apply _.
+    rewrite (_ : U ⊆ V). apply _.
   Qed.
 
-  Lemma ball_well_contained_stable (V:Subset) `{V ⊆ X} `{!MetricComplementStable V} x `{x ∊ V}
-    : ∃ `{q ∊ Q₊}, B q x ⊂⊂ V.
-  Proof. assert (x ∊ -∼V) by now rewrite (metric_complement_stable V).
-    destruct (metric_complement_open_apart_finite (∼V) x) as [q[??]].
-    exists_sub q. apply (well_contained_stable _ _); apply _.
+  Instance point_well_contained_open (V:set) `{!Open V} x `{x ∊ V} : B 0 x ⊂⊂ V.
+  Proof. pose proof (_ : V ⊆ X).
+    destruct (open_finite V x) as [q[? P]].
+    apply (well_contained_alt _ _); try apply _.
+    exists_sub q. intros y ? u [E ?] ?. apply (msp_eq _ _) in E.
+    apply P. split; [| apply _]. red. rewrite (_ $ E). subsymmetry.
   Qed.
 
-  Instance point_well_contained_stable (V:Subset) `{V ⊆ X} `{!MetricComplementStable V}
-    x `{x ∊ V} : B 0 x ⊂⊂ V.
-  Proof. destruct (ball_well_contained_stable V x) as [q[??]].
-    assert (x ∊ X) by now apply (_ : V ⊆ X).
-    assert (B 0 x ⊆ B q x) as E.
-      apply (B_weaken_le _ _ _). apply (lt_le _ _). firstorder.
-    now rewrite (Inhabited $ E).
-  Qed.
-
-  Lemma singleton_well_contained_stable (V:Subset) `{V ⊆ X} `{!MetricComplementStable V}
-    x `{x ∊ V} : subset_singleton X x ⊂⊂ V.
+  Lemma singleton_well_contained_open (V:set) `{!Open V} x `{x ∊ V} : {{ x | X }} ⊂⊂ V.
   Proof. assert (x ∊ X) by now apply (_ : V ⊆ X). rewrite (singleton_is_ball x). apply _. Qed.
 
-  Lemma well_contained_closure (U V : Subset) `{!MetricComplementStable V} `{U ⊂⊂ V} : closure U ⊂⊂ V.
-  Proof. apply (well_contained_stable _ _); apply _. Qed.
+  Lemma open_wc (V:set) `{!Open V} x `{x ∊ V} : ∃ `{q ∊ Q₊}, B q x ⊂⊂ V.
+  Proof. pose proof (_ : V ⊆ X).
+    destruct (open_finite V x) as [q[? P]].
+    exists_sub (q/2). apply (well_contained_alt _ _); try apply _.
+    exists_sub (q/2). intros y ? u [Bxu ?] ?. red in Bxu.
+    apply P. split; [| apply _]. red.
+    apply (ball_weaken_le) with (q/2+q/2); try apply _.
+    apply (ball_triangle _ _ _ u _); trivial. subsymmetry.
+    now rewrite (_ $ ae_in_halves q).
+  Qed.
 
-  Lemma well_contained_union (U V W : Subset) `{U ⊂⊂ W} `{V ⊂⊂ W} `{!Bounded (U ⊔ V)} : U ⊔ V ⊂⊂ W.
-  Proof. pose proof _ : ∼W ⊆ X.
-    apply (well_contained_alt _ _ _ _).
+  Lemma well_contained_closure (U V : set) `{U ⊂⊂ V} : closure U ⊂⊂ V.
+  Proof. apply (well_contained_alt _ _); apply _. Qed.
+
+  Lemma well_contained_union (U V W : set) `{U ⊂⊂ W} `{V ⊂⊂ W} `{!Bounded (U ⊔ V)} : U ⊔ V ⊂⊂ W.
+  Proof.
+    apply (well_contained_alt _ _ _); try apply _.
     destruct (inhabited U). exists x. apply _.
-    destruct (set_apart U (∼W)) as [a [ela P1]].
-    destruct (set_apart V (∼W)) as [b [elb P2]].
-    ae_rat_set_min c a b Ea Eb.
-    exists_sub c. intros x [?|?] v ?.
-    assert (x ∊ X) by now apply (_ : U ⊆ X). rewrite (Qfull $ Ea). now apply P1.
-    assert (x ∊ X) by now apply (_ : V ⊆ X). rewrite (Qfull $ Eb). now apply P2.
   Qed.
 
 End well_contained.
 
-Hint Extern 2 (Transitive (⊂⊂)) => eapply @well_contained_trans : typeclass_instances.
-Hint Extern 4 (B 0 _ ⊂⊂ _) => eapply @point_well_contained_stable : typeclass_instances.
-Hint Extern 4 ({{ _ }} ⊂⊂ _) => eapply @singleton_well_contained_stable : typeclass_instances.
+Hint Extern 2 (TransitiveT (⊂⊂)) => eapply @well_contained_trans : typeclass_instances.
+Hint Extern 4 (B 0 _ ⊂⊂ _) => eapply @point_well_contained_open : typeclass_instances.
+Hint Extern 4 ({{ _ }} ⊂⊂ _) => eapply @singleton_well_contained_open : typeclass_instances.
 Hint Extern 2 (closure _ ⊂⊂ _) => eapply @well_contained_closure : typeclass_instances.
 Hint Extern 2 (_ ⊔ _ ⊂⊂ _) => eapply @well_contained_union : typeclass_instances.

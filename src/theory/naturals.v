@@ -16,7 +16,7 @@ Hint Extern 2 (MultiplicativeSemiGroup_Morphism _ _ (naturals_to_semiring _ _)) 
 
 Lemma to_semiring_unique `{Naturals (N:=N)} `{CommutativeSemiRing (R:=R)} (f:N ⇀ R) `{!SemiRing_Morphism N R f} x `{x ∊ N} :
   f x = naturals_to_semiring N R x.
-Proof. apply (naturals_initial f). now red_sig. Qed.
+Proof. apply (naturals_initial N f). now red_sig. Qed.
 
 Lemma to_semiring_unique_alt `{Naturals (N:=N)} `{CommutativeSemiRing (R:=R)}
   (f:N ⇀ R) (g:N ⇀ R) `{!SemiRing_Morphism N R f} `{!SemiRing_Morphism N R g} x `{x ∊ N} :
@@ -28,10 +28,9 @@ Lemma morphisms_involutive `{Naturals (N:=N)} `{CommutativeSemiRing (R:=R)}
   f (g x) = x.
 Proof to_semiring_unique_alt (f ∘ g) id x.
 
-Lemma to_semiring_involutive `{Naturals (N:=N)} `{Naturals (N:=N2)} x `{x ∊ N} :
+Lemma to_semiring_involutive `(N:set) `{Naturals _ (N:=N)} `(N2:set) `{Naturals _ (N:=N2)} x `{x ∊ N} :
   naturals_to_semiring N2 N (naturals_to_semiring N N2 x) = x.
 Proof morphisms_involutive (naturals_to_semiring N2 N) (naturals_to_semiring N N2) x.
-Arguments to_semiring_involutive {_ _ _ _ _ _} N {_ _ _ _ _ _ _ _} N2 {_ _} x {_}.
 
 Lemma to_semiring_twice `{Naturals (N:=N)} `{CommutativeSemiRing (R:=R1)} `{CommutativeSemiRing (R:=R2)}
   (f:R1 ⇀ R2) (g:N ⇀ R1) (h:N ⇀ R2) `{!SemiRing_Morphism R1 R2 f} `{!SemiRing_Morphism N R1 g} `{!SemiRing_Morphism N R2 h} x `{x ∊ N} :
@@ -50,8 +49,8 @@ Proof.
   now rewrite_on R -> E.
 Qed.
 
-Instance naturals_to_naturals_injective `{Naturals (N:=N)} `{Naturals (N:=N2)} (f:N ⇀ N2) `{!SemiRing_Morphism N N2 f}:
-  Injective N N2 f | 15.
+Lemma naturals_to_naturals_injective `{Naturals (N:=N)} `{Naturals (N:=N2)} (f:N ⇀ N2) `{!SemiRing_Morphism N N2 f}:
+  Injective N N2 f.
 Proof to_semiring_injective (naturals_to_semiring N2 N) f.
 
 Section retract_is_nat.
@@ -77,6 +76,8 @@ Section borrowed_from_nat.
 
   Notation nat := (every nat).
 
+  Existing Instance naturals_to_naturals_injective.
+
   Local Ltac quote_to_nat := quote_inj (naturals_to_semiring N nat).
   Local Ltac simplify_N := preserves_simplify (naturals_to_semiring nat N).
   Local Ltac var n := generalize (naturals_to_semiring N nat n); clear dependent n.
@@ -100,8 +101,8 @@ Section borrowed_from_nat.
   Proof. intros. apply right_cancel_from_left. Qed.
 
   Global Instance: ∀ `{z ∊ N ₀}, LeftCancellation (.*.) z N.
-  Proof. intros z [? E] x ? y ?.
-    rewrite (denial_inequality _ _) in E. red in E. generalize E.
+  Proof. intros z [? E] x ? y ?. red in E.
+    rewrite (denial_inequality _ _) in E. generalize E.
     quote_to_nat. var y. var x. var z.
     intros z y x E. assert (z ∊ nat ₀). split. apply _. trivial.
     exact (left_cancellation (.*.) z nat _ _).
@@ -126,7 +127,7 @@ End borrowed_from_nat.
 
 Lemma nat_1_plus_ne_0 x `{x ∊ N} : ¬ 1 + x = 0.
 Proof. intro E. destruct (zero_sum 1 x E).
-  destruct nat_nontrivial as [_ T]. rewrite (denial_inequality _ _) in T. contradiction.
+  destruct nat_nontrivial as [_ T]. red in T. rewrite (denial_inequality _ _) in T. contradiction.
 Qed.
 
 Global Program Instance: StrongSubDecision N N (=) | 10 := λ x y,

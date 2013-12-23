@@ -10,7 +10,7 @@ Local Notation notR := (ae_inf_undef _).
 
 Section closed.
   Context `{AffinelyExtendedField A (F:=F)}.
-  Hint Extern 10 (@Subset A) => eexact T : typeclass_instances.
+  Hint Extern 10 (@set A) => eexact T : typeclass_instances.
 
   Lemma ae_inv_closed : Closed (T ⇀ T) (inv). Proof morphism_closed (inv).
 
@@ -24,7 +24,7 @@ Hint Extern 2 (Proper ((T,=) ==> _) (-)) => eapply @ae_inv_proper : typeclass_in
 
 Section misc.
   Context `{AffinelyExtendedField A (F:=F)}.
-  Hint Extern 10 (@Subset A) => eexact T : typeclass_instances.
+  Hint Extern 10 (@set A) => eexact T : typeclass_instances.
 
   Lemma ae_in_halves x `{x ∊ F∞} : x/2 + x/2 = x.
   Proof.

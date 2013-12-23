@@ -72,7 +72,7 @@ Class Find_Proper_Subrelation {A} (R1 R2:relation A) := find_proper_sub : subrel
 Class Find_Proper_PrePartialOrder {A} (eq le: relation A) :=
   { find_proper_pporder_sym     :> Find_Proper_Symmetric eq
   ; find_proper_pporder_sub     :> Find_Proper_Subrelation eq le
-  ; find_proper_antisym         : AntiSymmetric eq le
+  ; find_proper_antisym         : AntiSymmetricT eq le
   }.
 
 (** A starting set of instances of the above properties. *)

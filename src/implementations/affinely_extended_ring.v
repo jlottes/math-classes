@@ -15,15 +15,15 @@ Arguments Undefined {A}.
 
 Instance AE_infty {A} : Infty (AffineExtendT A) := PosInfty.
 
-Definition AffineExtendImage `(R:Subset) : Subset := λ x,
+Definition AffineExtendImage `(R:set) : set := λ x,
   match x with | Inject y => y ∊ R | _ => False end.
 
-Definition AffineExtendFull `(R:Subset) : Subset :=  λ x,
+Definition AffineExtendFull `(R:set) : set :=  λ x,
   match x with | Inject y => y ∊ R | _ => True end.
 
-Hint Extern 10 (@Subset (AffineExtendT _)) => eapply @AffineExtendFull : typeclass_instances.
+Hint Extern 10 (@set (AffineExtendT _)) => eapply @AffineExtendFull : typeclass_instances.
 
-Definition AffineExtend `(R:Subset) : Subset :=  λ x,
+Definition AffineExtend `(R:set) : set :=  λ x,
   match x with
   | Inject y => y ∊ R
   | PosInfty => True
@@ -42,21 +42,21 @@ Hint Extern 2 (NegInfty ∊ AffineExtend ?R) => exact I : typeclass_instances.
 Hint Extern 2 (PosInfty ∊ AffineExtend ?R) => exact I : typeclass_instances.
 Hint Extern 2 (infty ∊ AffineExtend ?R) => exact I : typeclass_instances.
 
-Instance AE_cast `{R:Subset} : Cast R (AffineExtendImage R) := Inject.
+Instance AE_cast `{R:set} : Cast R (AffineExtendImage R) := Inject.
 
-Lemma AE_full_subset `(R:Subset) : SubsetOf (AffineExtend R) (AffineExtendFull R).
+Lemma AE_full_subset `(R:set) : Subset (AffineExtend R) (AffineExtendFull R).
 Proof. unfold AffineExtend, AffineExtendFull. intros [y| | |] H; red in H; red; tauto. Qed.
-Hint Extern 2 (SubsetOf (AffineExtend ?R) (AffineExtendFull ?R)) => eapply @AE_full_subset : typeclass_instances.
+Hint Extern 2 (Subset (AffineExtend ?R) (AffineExtendFull ?R)) => eapply @AE_full_subset : typeclass_instances.
 
-Lemma AE_image_subset `(R:Subset) : SubsetOf (AffineExtendImage R) (AffineExtend R).
+Lemma AE_image_subset `(R:set) : Subset (AffineExtendImage R) (AffineExtend R).
 Proof. unfold AffineExtend, AffineExtendImage. intros [y| | |] H; red in H; red; tauto. Qed.
-Hint Extern 2 (SubsetOf (AffineExtendImage ?R) (AffineExtend ?R)) => eapply @AE_image_subset : typeclass_instances.
+Hint Extern 2 (Subset (AffineExtendImage ?R) (AffineExtend ?R)) => eapply @AE_image_subset : typeclass_instances.
 
-Lemma AE_image_subset2 `(R:Subset) : SubsetOf (AffineExtendImage R) (AffineExtendFull R).
+Lemma AE_image_subset2 `(R:set) : Subset (AffineExtendImage R) (AffineExtendFull R).
 Proof. transitivity (AffineExtend R); apply _. Qed.
-Hint Extern 2 (SubsetOf (AffineExtendImage ?R) (AffineExtendFull ?R)) => eapply @AE_image_subset2 : typeclass_instances.
+Hint Extern 2 (Subset (AffineExtendImage ?R) (AffineExtendFull ?R)) => eapply @AE_image_subset2 : typeclass_instances.
 
-Lemma AE_image_back `{R:Subset} x `{el:x ∊ AffineExtendImage R} : ∃ `{a ∊ R}, x ≡ Inject a.
+Lemma AE_image_back `{R:set} x `{el:x ∊ AffineExtendImage R} : ∃ `{a ∊ R}, x ≡ Inject a.
 Proof. destruct x as [a| | |]; [ exists a; now exists el | ..]; now do 2 red in el. Qed.
 
 Section ops.
@@ -172,7 +172,7 @@ Hint Extern 2 (AffExtFull (AffineExtendImage ?R)) => exact (AffineExtendFull R) 
 Hint Extern 2 (AffExt     (AffineExtendImage ?R)) => exact (AffineExtend     R) : typeclass_instances.
 
 Section contents.
-  Context `{R:@Subset A}.
+  Context `{R:@set A}.
 
   Local Notation A' := (AffineExtendT A).
   Local Notation R' := (AffineExtendImage R).
@@ -230,20 +230,20 @@ Section contents.
 
     Instance AEF_strongsetoid : StrongSetoid T.
     Proof. split. split; unfold uneq, AE_uneq.
-    + intros x el; do 2 red in el. destruct x; try tauto. exact (subirreflexivity _ _).
+    + intros x el; do 2 red in el. destruct x; try tauto. exact (irreflexivity _ _).
     + intros x e1 y e2. do 2 red in e1,e2. destruct x, y; try tauto. intro. subsymmetry.
     + intros x e1 y e2. do 2 red in e1,e2. destruct x, y;
       intros E z el; do 2 red in el; destruct z; try tauto.
-      apply (subcotransitivity E _).
+      apply (cotransitivity E _).
     + intros x e1 y e2. do 2 red in e1,e2. unfold uneq, AE_uneq, equiv, AE_equiv.
       destruct x,y; try tauto. exact (tight_apart _ _).
     Qed.
 
     Instance AE_strongsetoid : StrongSetoid R∞.
-    Proof. rewrite (_:SubsetOf R∞ T). apply _. Qed.
+    Proof. rewrite (_:Subset R∞ T). apply _. Qed.
 
     Instance AEI_strongsetoid : StrongSetoid R'.
-    Proof. rewrite (_:SubsetOf R' R∞). apply _. Qed.
+    Proof. rewrite (_:Subset R' R∞). apply _. Qed.
 
     Instance AE_inj_smor : Strong_Morphism R R' (cast R R').
     Proof. split. apply _. intros ???? E. exact E. Qed.
@@ -374,10 +374,10 @@ Section contents.
     + intro_R' x. now unfold negate at 1, AE_negate.
     Qed.
 
-    Hint Extern 5 (@Subset A') => eexact R' : typeclass_instances.
+    Hint Extern 5 (@set A') => eexact R' : typeclass_instances.
 
-    Instance AE_cast_ring_mor: Ring_Morphism R R' (cast R R').
-    Proof. apply ring_morphism_alt; try apply _;
+    Instance AE_cast_ring_mor: SemiRing_Morphism R R' (cast R R').
+    Proof. apply (ring_morphism_alt (cast R R')); try apply _;
       unfold cast, AE_cast; intros.
       now unfold plus at 2, AE_plus.
       now unfold mult at 2, AE_mult.
@@ -413,7 +413,7 @@ Section contents.
         unfold lt, AE_lt; try tauto.
     + do_intros. exact (pseudo_order_antisym _ _).
     + do_intros; intros E [c| | |] el3; do 2 red in el3;
-      try tauto. exact (subcotransitivity E _).
+      try tauto. exact (cotransitivity E _).
     + do_intros. unfold uneq, AE_uneq. exact (apart_iff_total_lt _ _).
     + do_intros. unfold le, AE_le. exact (le_iff_not_lt_flip _ _).
     Qed.
@@ -427,11 +427,11 @@ Section contents.
     + intros [a| | |] el1 [b| | |] el2 [c| | |] el3; do 2 red in el1,el2,el3; try tauto;
       intros E1 E2; do 2 red in E1,E2; try tauto. do 2 red. subtransitivity b.
     + intros [a| | |] el1 [b| | |] el2; do 2 red in el1,el2; try tauto.
-      intros E1 E2; do 2 red in E1,E2. do 2 red. now apply (subantisymmetry le).
+      intros E1 E2; do 2 red in E1,E2. do 2 red. now apply (antisymmetry le).
     + intros [a| | |] el1 [b| | |] el2 [c| | |] el3; do 2 red in el1,el2,el3; try tauto;
       intros E1 E2; do 2 red in E1,E2; try tauto. do 2 red. subtransitivity b.
     + intros [a| | |] el1 [b| | |] el2; do 2 red in el1,el2; try tauto.
-      exact (lt_iff_le_apart _ _).
+      exact (lt_iff_le_apart a b).
     Qed.
 
     Instance: Undefined ∊ ae_undef R'.  Proof. lazy. tauto. Qed.
@@ -504,7 +504,7 @@ Section contents.
     | intros [x| | |]; try (lazy; tauto); intros [el E]; do 2 red in el;
         unfold "0",AE_zero in E; do 3 red in E;
         mult_tac; solve [ tauto | destruct (lt_antisym x 0); now split ]
-    | mult_tac; solve [ apply _ | now destruct (subirreflexivity (<) 0) ]
+    | mult_tac; solve [ apply _ | now destruct (irreflexivity (<) 0) ]
     ].
     + apply SubSetoid_trans with R∞; apply _.
     + intros [?| | |]; lazy; try tauto. intros _ [?| | |]; tauto.
@@ -560,7 +560,7 @@ Section contents.
       exact (decide_sub (=) x y).
     Qed.
 
-    Instance: SubsetOf (R' ₀) T. Proof. transitivity R'; apply _. Qed.
+    Instance: Subset (R' ₀) T. Proof. transitivity R'; apply _. Qed.
 
     Instance: Field R'.
     Proof. apply dec_field. apply _.
@@ -595,4 +595,4 @@ Hint Extern 2 (StrongSubDecision (AffineExtendFull _) (AffineExtendFull _) (≤)
 Hint Extern 2 (StrongSubDecision (AffineExtendImage _) (AffineExtendImage _) _) => eapply @AE_im_str_sub_dec : typeclass_instances.
 Hint Extern 2 (Inverse (cast ?R (AffineExtendImage ?R))) => eapply @AE_cast_inv : typeclass_instances.
 Hint Extern 2 (Bijective _ _ (cast ?R (AffineExtendImage ?R))) => eapply @AE_cast_bij : typeclass_instances.
-Hint Extern 2 (Ring_Morphism _ _ (cast ?R (AffineExtendImage ?R))) => eapply @AE_cast_ring_mor : typeclass_instances.
+Hint Extern 2 (SemiRing_Morphism _ _ (cast ?R (AffineExtendImage ?R))) => eapply @AE_cast_ring_mor : typeclass_instances.

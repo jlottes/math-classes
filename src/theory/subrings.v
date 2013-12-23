@@ -52,7 +52,7 @@ Proof. pose proof subring : Ring S. apply comring_from_ring. rewrite (_ : S ⊆ 
 
 End substructure_tests.
 
-Lemma rngideal_a `{I:Subset} `{RngIdeal _ (I:=I) (R:=R)} : Rng I.
+Lemma rngideal_a `{I:set} `{RngIdeal _ (I:=I) (R:=R)} : Rng I.
 Proof. destruct (_:RngIdeal I R).
   assert (Closed (I ⇀ I ⇀ I) (.*.)). intros x ? y ?. apply (rngideal_l _ _).
   apply (subrng 0).
@@ -71,72 +71,73 @@ Lemma trivial_subrng `{Rng (R:=R)} : Rng {{0}}. Proof rngideal_a.
 Hint Extern 10 (Rng {{0}}) => eapply @trivial_subrng : typeclass_instances.
 
 
-Lemma image_preserves_semirng `{S:Subset} `{SemiRng _ (R:=S)} `{S ⊆ R} `{!SemiRng R} `{SemiRng (R:=R')}
+Lemma image_preserves_semirng `{S:set} `{SemiRng _ (R:=S)} `{S ⊆ R} `{!SemiRng R} `{SemiRng (R:=R')}
   (f:R ⇀ R') `{!SemiRng_Morphism R R' f} : SemiRng f⁺¹(S).
 Proof. split; try apply _; rewrite (_ : f⁺¹(S) ⊆ R'); apply _. Qed.
 Hint Extern 5 (SemiRng _⁺¹(_)) => class_apply @image_preserves_semirng : typeclass_instances.
 
-Lemma image_preserves_semiring `{S:Subset} `{SemiRing _ (R:=S)} `{S ⊆ R} `{!SemiRing R} `{SemiRing (R:=R')}
+Lemma image_preserves_semiring `{S:set} `{SemiRing _ (R:=S)} `{S ⊆ R} `{!SemiRing R} `{SemiRing (R:=R')}
   (f:R ⇀ R') `{!SemiRing_Morphism R R' f} : SemiRing f⁺¹(S).
 Proof. split; try apply _; [ | rewrite (_ : f⁺¹(S) ⊆ R'); apply _..].
   split. apply _. exists_sub (1:S). exact preserves_1.
 Qed.
 Hint Extern 5 (SemiRing _⁺¹(_)) => class_apply @image_preserves_semiring : typeclass_instances.
 
-Lemma image_preserves_comsemiring `{S:Subset} `{CommutativeSemiRing _ (R:=S)} `{S ⊆ R} `{!SemiRing R} `{SemiRing (R:=R')}
+Lemma image_preserves_comsemiring `{S:set} `{CommutativeSemiRing _ (R:=S)} `{S ⊆ R} `{!SemiRing R} `{SemiRing (R:=R')}
   (f:R ⇀ R') `{!SemiRing_Morphism R R' f} : CommutativeSemiRing f⁺¹(S).
 Proof. apply comsemiring_from_semiring. apply _. Qed.
 Hint Extern 5 (CommutativeSemiRing _⁺¹(_)) => class_apply @image_preserves_comsemiring : typeclass_instances.
 
-Lemma image_preserves_rng `{S:Subset} `{Rng _ (R:=S)} `{S ⊆ R} `{!Rng R} `{Rng (R:=R')}
-  (f:R ⇀ R') `{!Rng_Morphism R R' f} : Rng f⁺¹(S).
+Lemma image_preserves_rng `{S:set} `{Rng _ (R:=S)} `{S ⊆ R} `{!Rng R} `{Rng (R:=R')}
+  (f:R ⇀ R') `{!SemiRng_Morphism R R' f} : Rng f⁺¹(S).
 Proof. split; apply _. Qed.
 Hint Extern 5 (Rng _⁺¹(_)) => class_apply @image_preserves_rng : typeclass_instances.
 
-Lemma image_preserves_ring `{S:Subset} `{Ring _ (R:=S)} `{S ⊆ R} `{!Ring R} `{Ring (R:=R')}
-  (f:R ⇀ R') `{!Ring_Morphism R R' f} : Ring f⁺¹(S).
+Lemma image_preserves_ring `{S:set} `{Ring _ (R:=S)} `{S ⊆ R} `{!Ring R} `{Ring (R:=R')}
+  (f:R ⇀ R') `{!SemiRing_Morphism R R' f} : Ring f⁺¹(S).
 Proof. split; apply _. Qed.
 Hint Extern 5 (Ring _⁺¹(_)) => class_apply @image_preserves_ring : typeclass_instances.
 
-Lemma image_preserves_comring `{S:Subset} `{CommutativeRing _ (R:=S)} `{S ⊆ R} `{!Ring R} `{Ring (R:=R')}
-  (f:R ⇀ R') `{!Ring_Morphism R R' f} : CommutativeRing f⁺¹(S).
+Lemma image_preserves_comring `{S:set} `{CommutativeRing _ (R:=S)} `{S ⊆ R} `{!Ring R} `{Ring (R:=R')}
+  (f:R ⇀ R') `{!SemiRing_Morphism R R' f} : CommutativeRing f⁺¹(S).
 Proof. split; try apply _. now destruct (_ : CommutativeSemiRing f⁺¹(S)). Qed.
 Hint Extern 5 (CommutativeRing _⁺¹(_)) => class_apply @image_preserves_ring : typeclass_instances.
 
 
-Lemma inv_image_preserves_semirng `{S:Subset} `{SemiRng _ (R:=S)} `{S ⊆ R'} `{!SemiRng R'} `{SemiRng (R:=R)}
+Lemma inv_image_preserves_semirng `{S:set} `{SemiRng _ (R:=S)} `{S ⊆ R'} `{!SemiRng R'} `{SemiRng (R:=R)}
   (f:R ⇀ R') `{!SemiRng_Morphism R R' f} : SemiRng f⁻¹(S).
 Proof. split; try apply _; rewrite (_ : f⁻¹(S) ⊆ R); apply _. Qed.
 Hint Extern 5 (SemiRng _⁻¹(_)) => class_apply @inv_image_preserves_semirng : typeclass_instances.
 
-Lemma inv_image_preserves_semiring `{S:Subset} `{SemiRing _ (R:=S)} `{S ⊆ R'} `{!SemiRing R'} `{SemiRing (R:=R)}
+Lemma inv_image_preserves_semiring `{S:set} `{SemiRing _ (R:=S)} `{S ⊆ R'} `{!SemiRing R'} `{SemiRing (R:=R)}
   (f:R ⇀ R') `{!SemiRing_Morphism R R' f} : SemiRing f⁻¹(S).
 Proof. split; try apply _; [| rewrite (_ : f⁻¹(S) ⊆ R); apply _..].
   split. apply _. rewrite (R' $ preserves_1). apply _.
 Qed.
 Hint Extern 5 (SemiRing _⁻¹(_)) => class_apply @inv_image_preserves_semiring : typeclass_instances.
 
-Lemma inv_image_preserves_comsemiring `{S:Subset} `{SemiRing _ (R:=S)} `{S ⊆ R'} `{!SemiRing R'} `{CommutativeSemiRing (R:=R)}
+Lemma inv_image_preserves_comsemiring `{S:set} `{SemiRing _ (R:=S)} `{S ⊆ R'} `{!SemiRing R'} `{CommutativeSemiRing (R:=R)}
   (f:R ⇀ R') `{!SemiRing_Morphism R R' f} : CommutativeSemiRing f⁻¹(S).
 Proof. apply comsemiring_from_semiring. rewrite (_ : f⁻¹(S) ⊆ R); apply _. Qed.
 Hint Extern 5 (CommutativeSemiRing _⁻¹(_)) => class_apply @inv_image_preserves_comsemiring : typeclass_instances.
 
-Lemma inv_image_preserves_rng `{S:Subset} `{Rng _ (R:=S)} `{S ⊆ R'} `{!Rng R'} `{Rng (R:=R)}
-  (f:R ⇀ R') `{!Rng_Morphism R R' f} : Rng f⁻¹(S).
+Lemma inv_image_preserves_rng `{S:set} `{Rng _ (R:=S)} `{S ⊆ R'} `{!Rng R'} `{Rng (R:=R)}
+  (f:R ⇀ R') `{!SemiRng_Morphism R R' f} : Rng f⁻¹(S).
 Proof. split; apply _. Qed.
 Hint Extern 5 (Rng _⁻¹(_)) => class_apply @inv_image_preserves_rng : typeclass_instances.
 
-Lemma inv_image_preserves_ring `{S:Subset} `{Ring _ (R:=S)} `{S ⊆ R'} `{!Ring R'} `{Ring (R:=R)}
-  (f:R ⇀ R') `{!Ring_Morphism R R' f} : Ring f⁻¹(S).
+Lemma inv_image_preserves_ring `{S:set} `{Ring _ (R:=S)} `{S ⊆ R'} `{!Ring R'} `{Ring (R:=R)}
+  (f:R ⇀ R') `{!SemiRing_Morphism R R' f} : Ring f⁻¹(S).
 Proof. split; apply _. Qed.
 Hint Extern 5 (Ring _⁻¹(_)) => class_apply @inv_image_preserves_ring : typeclass_instances.
 
-Lemma inv_image_preserves_comring `{S:Subset} `{Ring _ (R:=S)} `{S ⊆ R'} `{!Ring R'} `{CommutativeRing (R:=R)}
-  (f:R ⇀ R') `{!Ring_Morphism R R' f} : CommutativeRing f⁻¹(S).
+Lemma inv_image_preserves_comring `{S:set} `{Ring _ (R:=S)} `{S ⊆ R'} `{!Ring R'} `{CommutativeRing (R:=R)}
+  (f:R ⇀ R') `{!SemiRing_Morphism R R' f} : CommutativeRing f⁻¹(S).
 Proof. apply comring_from_ring. rewrite (_ : f⁻¹(S) ⊆ R); apply _. Qed.
 Hint Extern 5 (CommutativeRing _⁻¹(_)) => class_apply @inv_image_preserves_comring : typeclass_instances.
 
-Lemma inv_image_preserves_ideal `{Rng (R:=R)} `{I:Subset} `{RngIdeal _ (I:=I) (R:=R')} (f:R ⇀ R') `{!Rng_Morphism R R' f}
+Lemma inv_image_preserves_ideal `{Rng (R:=R)} `{I:set} `{RngIdeal _ (I:=I) (R:=R')}
+  (f:R ⇀ R') `{!SemiRng_Morphism R R' f}
   : RngIdeal f⁻¹(I) R.
 Proof. destruct (_:RngIdeal I R').
   split; [ apply _ | apply _ | apply _ |..];
@@ -145,11 +146,11 @@ Proof. destruct (_:RngIdeal I R').
 Qed.
 Hint Extern 10 (RngIdeal _⁻¹(_) _) => class_apply @inv_image_preserves_ideal : typeclass_instances.
 
-Definition rng_kern {A B} `{Equiv A} `{Equiv B} `{Zero B} {R:@Subset A} {S:@Subset B} (f:R ⇀ S) := f⁻¹( {{0}} ).
+Definition rng_kern {A B} `{Equiv A} `{Equiv B} `{Zero B} {R:@set A} {S:@set B} (f:R ⇀ S) := f⁻¹( {{0}} ).
 Local Notation kern := rng_kern.
 
 Section morphisms.
-  Context `{Rng (R:=R)} `{Rng (R:=R')} (f:R ⇀ R') `{!Rng_Morphism R R' f}.
+  Context `{Rng (R:=R)} `{Rng (R:=R')} (f:R ⇀ R') `{!SemiRng_Morphism R R' f}.
 
   Hint Unfold kern : typeclass_instances.
 
@@ -164,12 +165,12 @@ End morphisms.
 Hint Extern 5 (RngIdeal (kern _) _) => class_apply @kern_ideal : typeclass_instances.
 
 
-Definition quotient_rng_equiv `(R: @Subset A) (I:@Subset A) `{Equiv A} `{Plus A} `{Negate A} : Equiv (R/I)
+Definition quotient_rng_equiv `(R: @set A) (I:@set A) `{Equiv A} `{Plus A} `{Negate A} : Equiv (R/I)
   := (λ a b, (λ a b, a - b ∊ I) (rep a) (rep b)).
 
 Local Existing Instance quotient_rng_equiv.
 
-Hint Extern 5 (SubEquivalence _ (λ a b, a - b ∊ _)) => eapply @coset_equiv : typeclass_instances.
+Hint Extern 5 (Equivalence _ (λ a b, a - b ∊ _)) => eapply @coset_equiv : typeclass_instances.
 Hint Extern 5 (SubRelation _ (=) (λ a b, a - b ∊ _)) => eapply @coset_equiv_sub : typeclass_instances.
 
 Section quotient_rng.

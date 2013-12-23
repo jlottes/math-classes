@@ -10,34 +10,34 @@ Hint Extern 0 (Find_Proper_Signature (@lt) 0 _) => eexact lt_proper : typeclass_
 (** Any subset of an order is still an order. *) 
 
 Local Ltac proper_tac := red; intros; intros S1 S2 ES; destruct 1; unfold flip in ES; split; try rewrite ES; trivial.
-Local Ltac proper_tac2 := let S1 := match goal with _ : SubsetOf _ ?S1 |- _ => S1 end in
+Local Ltac proper_tac2 := let S1 := match goal with _ : Subset _ ?S1 |- _ => S1 end in
   intros ?? E1 ?? E2 ?; unfold_sigs; rewrite_on S1 <- E1; now rewrite_on S1 <- E2.
 
 Local Hint Extern 20 (?x ∊ ?T) => match goal with
-  | sub : SubsetOf _ ?T |- _ => eapply (subset (SubsetOf:=sub) x)
+  | sub : Subset _ ?T |- _ => eapply (subset (Subset:=sub) x)
 end : typeclass_instances.
 
-Lemma PartialOrder_proper     : Find_Proper_Signature (@PartialOrder     ) 0 (∀ A Ae     Ale    , Proper (SubsetOf-->impl) (@PartialOrder     A Ae     Ale    )).
+Lemma PartialOrder_proper     : Find_Proper_Signature (@PartialOrder     ) 0 (∀ A Ae     Ale    , Proper (Subset-->impl) (@PartialOrder     A Ae     Ale    )).
 Proof. proper_tac. proper_tac2. Qed.
 Hint Extern 0 (Find_Proper_Signature (@PartialOrder    ) 0 _) => eexact PartialOrder_proper     : typeclass_instances.
 
-Lemma TotalOrder_proper       : Find_Proper_Signature (@TotalOrder       ) 0 (∀ A Ae     Ale    , Proper (SubsetOf-->impl) (@TotalOrder       A Ae     Ale    )).
+Lemma TotalOrder_proper       : Find_Proper_Signature (@TotalOrder       ) 0 (∀ A Ae     Ale    , Proper (Subset-->impl) (@TotalOrder       A Ae     Ale    )).
 Proof. proper_tac. Qed.
 Hint Extern 0 (Find_Proper_Signature (@TotalOrder      ) 0 _) => eexact TotalOrder_proper       : typeclass_instances.
 
-Lemma StrictSetoidOrder_proper: Find_Proper_Signature (@StrictSetoidOrder) 0 (∀ A Ae         Alt, Proper (SubsetOf-->impl) (@StrictSetoidOrder   A Ae         Alt)).
+Lemma StrictSetoidOrder_proper: Find_Proper_Signature (@StrictSetoidOrder) 0 (∀ A Ae         Alt, Proper (Subset-->impl) (@StrictSetoidOrder   A Ae         Alt)).
 Proof. proper_tac. proper_tac2. Qed.
 Hint Extern 0 (Find_Proper_Signature (@StrictSetoidOrder  ) 0 _) => eexact StrictSetoidOrder_proper   : typeclass_instances.
 
-Lemma PseudoOrder_proper      : Find_Proper_Signature (@PseudoOrder      ) 0 (∀ A Ae Aue     Alt, Proper (SubsetOf-->impl) (@PseudoOrder      A Ae Aue     Alt)).
+Lemma PseudoOrder_proper      : Find_Proper_Signature (@PseudoOrder      ) 0 (∀ A Ae Aue     Alt, Proper (Subset-->impl) (@PseudoOrder      A Ae Aue     Alt)).
 Proof. proper_tac; intros. apply (pseudo_order_antisym _ _ _ _). apply (apart_iff_total_lt _ _ _ _). Qed.
 Hint Extern 0 (Find_Proper_Signature (@PseudoOrder     ) 0 _) => eexact PseudoOrder_proper      : typeclass_instances.
 
-Lemma FullPartialOrder_proper : Find_Proper_Signature (@FullPartialOrder ) 0 (∀ A Ae Aue Ale Alt, Proper (SubsetOf-->impl) (@FullPartialOrder A Ae Aue Ale Alt)).
+Lemma FullPartialOrder_proper : Find_Proper_Signature (@FullPartialOrder ) 0 (∀ A Ae Aue Ale Alt, Proper (Subset-->impl) (@FullPartialOrder A Ae Aue Ale Alt)).
 Proof. proper_tac; intros. apply (lt_iff_le_apart _ _ _ _). Qed.
 Hint Extern 0 (Find_Proper_Signature (@FullPartialOrder) 0 _) => eexact FullPartialOrder_proper : typeclass_instances.
 
-Lemma FullPseudoOrder_proper  : Find_Proper_Signature (@FullPseudoOrder  ) 0 (∀ A Ae Aue Ale Alt, Proper (SubsetOf-->impl) (@FullPseudoOrder  A Ae Aue Ale Alt)).
+Lemma FullPseudoOrder_proper  : Find_Proper_Signature (@FullPseudoOrder  ) 0 (∀ A Ae Aue Ale Alt, Proper (Subset-->impl) (@FullPseudoOrder  A Ae Aue Ale Alt)).
 Proof. proper_tac; intros. apply (le_iff_not_lt_flip _ _ _ _). Qed.
 Hint Extern 0 (Find_Proper_Signature (@FullPseudoOrder ) 0 _) => eexact FullPseudoOrder_proper  : typeclass_instances.
 
@@ -63,7 +63,7 @@ Section partial_order.
 
   Lemma eq_iff_le x `{x ∊ P} y `{y ∊ P} : x = y ↔ x ≤ y ∧ y ≤ x.
   Proof. split; intros E. split; now rewrite_on P -> E.
-         now apply (subantisymmetry (≤) x y). Qed.
+         now apply (antisymmetry (≤) x y). Qed.
 
   Lemma po_prepartial : Find_Proper_PrePartialOrder (P,=)%signature (P,≤)%signature.
   Proof. split. apply _.
@@ -72,17 +72,17 @@ Section partial_order.
   Qed.
 End partial_order.
 
-Hint Extern 2 (Find_Proper_PrePartialOrder (restrict_rel ?P eq) (restrict_rel ?P le)) => eapply @po_prepartial : typeclass_instances.
+Hint Extern 2 (Find_Proper_PrePartialOrder (restrict_rel ?P equiv) (restrict_rel ?P le)) => eapply @po_prepartial : typeclass_instances.
 
 Section strict_order.
-  Context `{S:Subset} `{StrictSetoidOrder _ (S:=S)}.
+  Context `{S:set} `{StrictSetoidOrder _ (S:=S)}.
 
   Existing Instance so_setoid.
 
   Lemma lt_flip x `{x ∊ S} y `{y ∊ S} : x < y → ¬y < x.
   Proof.
     intros E1 E2.
-    apply (subirreflexivity (<) x).
+    apply (irreflexivity (<) x).
     subtransitivity y.
   Qed.
 
@@ -93,18 +93,18 @@ Section strict_order.
   Qed.
 
   Lemma lt_ne x `{x ∊ S} y `{y ∊ S} : x < y → ¬ x = y.
-  Proof. intros E1 E2. rewrite_on S -> E2 in E1. now destruct (subirreflexivity (<) y). Qed.
+  Proof. intros E1 E2. rewrite_on S -> E2 in E1. now destruct (irreflexivity (<) y). Qed.
 
   Lemma lt_ne_flip x `{x ∊ S} y `{y ∊ S} : x < y → ¬ y = x.
   Proof. intro P. pose proof lt_ne x y P as E. contradict E. subsymmetry. Qed.
 
   Lemma eq_not_lt x `{x ∊ S} y `{y ∊ S} : x = y → ¬x < y.
-  Proof. intros E. rewrite_on S -> E. now apply (subirreflexivity (<)). Qed.
+  Proof. intros E. rewrite_on S -> E. now apply (irreflexivity (<)). Qed.
 
 End strict_order.
 
 Section pseudo_order.
-  Context `{S:Subset} `{PseudoOrder _ (S:=S)}.
+  Context `{S:set} `{PseudoOrder _ (S:=S)}.
 
   Existing Instance pseudo_order_setoid.
 
@@ -124,8 +124,8 @@ Section pseudo_order.
     : x₁ < y₁ → x₂ < y₂ ∨ x₁ < x₂ ∨ y₂ < y₁.
   Proof.
     intros E1.
-    destruct (subcotransitivity E1 x₂) as [E2|E2]; try tauto.
-    destruct (subcotransitivity E2 y₂); try tauto.
+    destruct (cotransitivity E1 x₂) as [E2|E2]; try tauto.
+    destruct (cotransitivity E2 y₂); try tauto.
   Qed.
 
   Lemma pseudo_order_lt_ext x₁ `{x₁ ∊ S} y₁ `{y₁ ∊ S} x₂ `{x₂ ∊ S} y₂ `{y₂ ∊ S}
@@ -149,17 +149,17 @@ Section pseudo_order.
      intros x ? E.
      destruct (pseudo_order_antisym x x); tauto.
     intros x ? y ? z ? E1 E2.
-    destruct (subcotransitivity E1 z); trivial.
+    destruct (cotransitivity E1 z); trivial.
     destruct (pseudo_order_antisym y z); tauto.
   Qed.
 
-  Global Instance: SubTransitive S (complement (<)).
+  Global Instance: Transitive S (complement (<)).
   Proof.
     intros x ? y ? z ? E1 E2 E3.
-    destruct (subcotransitivity E3 y); contradiction.
+    destruct (cotransitivity E3 y); contradiction.
   Qed.
 
-  Global Instance: SubAntiSymmetric S (complement (<)).
+  Global Instance: AntiSymmetric S (complement (<)).
   Proof. intros x ? y ?. rewrite <-(tight_apart _ _), (apart_iff_total_lt x y). intuition. Qed.
 
   Lemma ne_total_lt `{!DenialInequality S} x `{x ∊ S} y `{y ∊ S} : ¬ x = y → x < y ∨ y < x.
@@ -186,10 +186,10 @@ Section full_partial_order.
      rewrite ?lt_iff_le_apart; trivial. intro.
      rewrite_on P <- E1. now rewrite_on P <- E2.
     intros x ?. rewrite (lt_iff_le_apart x x). intros [_ ?].
-    now destruct (subirreflexivity (≠) x).
+    now destruct (irreflexivity (≠) x).
   Qed.
 
-  Lemma lt_le x `{x ∊ P} y `{y ∊ P} : PropHolds (x < y) → PropHolds (x ≤ y).
+  Lemma lt_le x `{x ∊ P} y `{y ∊ P} : x < y → x ≤ y.
   Proof. intro. now apply lt_iff_le_apart. Qed.
 
   Lemma lt_le_subrel : subrelation (P,<)%signature (P,≤)%signature.
@@ -208,8 +208,8 @@ Section full_partial_order.
   Proof.
     rewrite (lt_iff_le_apart x y).
     intros E1 [E2a E2b].
-    contradict E2b. rewrite_on P -> (subantisymmetry (≤) x y E2a E1).
-     now apply (subirreflexivity _).
+    contradict E2b. rewrite_on P -> (antisymmetry (≤) x y E2a E1).
+     now apply (irreflexivity _).
   Qed.
 
   Lemma lt_not_le_flip x `{x ∊ P} y `{y ∊ P} : y < x → ¬x ≤ y.
@@ -223,7 +223,7 @@ Section full_partial_order.
     rewrite !lt_iff_le_apart; trivial.
     intros [E1a E1b] E2.
     split. subtransitivity y.
-    destruct (subcotransitivity E1b z) as [E3 | E3]; trivial.
+    destruct (cotransitivity E1b z) as [E3 | E3]; trivial.
     apply (lt_apart x z). subsymmetry in E3.
     subtransitivity y; rewrite lt_iff_le_apart; tauto.
   Qed.
@@ -233,7 +233,7 @@ Section full_partial_order.
     rewrite !lt_iff_le_apart; trivial.
     intros E2 [E1a E1b].
     split. subtransitivity y.
-    destruct (subcotransitivity E1b x) as [E3 | E3]; trivial.
+    destruct (cotransitivity E1b x) as [E3 | E3]; trivial.
     apply (lt_apart x z). subsymmetry in E3.
     subtransitivity y; rewrite lt_iff_le_apart; tauto.
   Qed.
@@ -256,7 +256,7 @@ Section full_partial_order.
        end
      | right E1 => right _
      end.
-  Next Obligation. apply (subantisymmetry (≤)); auto. Qed.
+  Next Obligation. apply (antisymmetry (≤)); auto. Qed.
   Next Obligation. intro E. subsymmetry in E. generalize E. apply not_le_ne; auto. Qed.
   Next Obligation. apply not_le_ne; auto. Qed.
 
@@ -269,7 +269,7 @@ Section full_partial_order.
        end
      | right E1 => right _
      end.
-  Next Obligation. now apply (subantisymmetry (≤)). Qed.
+  Next Obligation. now apply (antisymmetry (≤)). Qed.
   Next Obligation. intro E. subsymmetry in E. generalize E. now apply not_le_ne. Qed.
   Next Obligation. now apply not_le_ne. Qed.
 
@@ -300,7 +300,7 @@ Hint Extern 2 (subrelation (restrict_rel ?P lt) (restrict_rel ?P le)) => eapply 
 Hint Extern 2 (Find_Proper_Subrelation (restrict_rel ?P lt) (restrict_rel ?P le)) => eapply @lt_le_subrel : typeclass_instances.
 
 Section full_pseudo_order.
-  Context `{S:Subset} `{FullPseudoOrder _ (S:=S)}.
+  Context `{S:set} `{FullPseudoOrder _ (S:=S)}.
 
   Existing Instance pseudo_order_setoid.
 
@@ -312,14 +312,14 @@ Section full_pseudo_order.
   + intros ?? E1 ?? E2. unfold_sigs.
     rewrite !le_iff_not_lt_flip; trivial. intro.
     now rewrite_on S <- E1, <- E2.
-  + intros x ?. now apply not_lt_le_flip, (subirreflexivity (<) x).
+  + intros x ?. now apply not_lt_le_flip, (irreflexivity (<) x).
   + intros x ? y ? z ?.
     rewrite !le_iff_not_lt_flip; trivial.
     intros. change (complement (<) z x).
     subtransitivity y.
   + intros x ? y ?.
     rewrite !le_iff_not_lt_flip; trivial.
-    intros. now apply (subantisymmetry (complement (<))).
+    intros. now apply (antisymmetry (complement (<))).
   Qed.
 
   Global Instance: FullPartialOrder S.
@@ -387,7 +387,7 @@ semirings.lt_0_1 → lt_ne_flip → ...
 *)
 
 Section dec_strict_order.
-  Context `{S:Subset} `{StrictSetoidOrder _ (S:=S)} `{UnEq _} `{!DenialInequality S} `{!SubDecision S S (=)}.
+  Context `{S:set} `{StrictSetoidOrder _ (S:=S)} `{UnEq _} `{!DenialInequality S} `{!SubDecision S S (=)}.
 
   Existing Instance so_setoid.
   Instance: StrongSetoid S := dec_strong_setoid.
@@ -427,7 +427,7 @@ Section dec_partial_order.
     rewrite !denial_inequality; trivial. intros [E1a E1b] [E2a E2b].
     split. subtransitivity y.
     intros E3. destruct E2b.
-    apply (subantisymmetry (≤)); trivial.
+    apply (antisymmetry (≤)); trivial.
     now rewrite_on P <- E3.
   Qed.
 
@@ -453,12 +453,12 @@ Section dec_partial_order.
   Proof.
     split; try apply _.
     intros x ? y ?. rewrite (lt_correct _ _ _ _), (denial_inequality _ _). split.
-     intros ? [? []]. now apply (subantisymmetry (≤)).
+     intros ? [? []]. now apply (antisymmetry (≤)).
     intros E1.
     destruct (total (≤) x y); trivial.
     destruct (decide_sub (=) x y) as [E2|E2].
-     rewrite_on P -> E2. subreflexivity.
-    assert (¬y = x). contradict E2. subsymmetry.
+      now rewrite_on P -> E2.
+    assert (¬y = x). now contradict E2.
     intuition.
   Qed.
 End dec_partial_order.

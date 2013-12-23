@@ -11,7 +11,7 @@ Require Export
 
 Module Import BigQ_Rationals := QType_Rationals BigQ.
 
-Hint Extern 10 (@Subset bigQ) => eexact (every bigQ) : typeclass_instances.
+Hint Extern 10 (@set bigQ) => eexact (every bigQ) : typeclass_instances.
 
 Local Notation Z := (every Z).
 Local Notation bigN := (every bigN).
@@ -28,8 +28,8 @@ Proof. intros x y [_ E]. red_sig.
   repeat red in E. repeat red; simpl. now rewrite E.
 Qed.
 
-Instance: Ring_Morphism bigZ bigQ (').
-Proof. apply rings.ring_morphism_alt; try apply _; repeat (split; try apply _). Qed.
+Instance: SemiRing_Morphism bigZ bigQ (').
+Proof. apply (rings.ring_morphism_alt (cast bigZ bigQ)); try apply _; repeat (split; try apply _). Qed.
 
 Instance: Injective bigZ bigQ (').
 Proof. rewrite (integers_initial (cast bigZ bigQ)). apply _. Qed.
@@ -37,8 +37,8 @@ Proof. rewrite (integers_initial (cast bigZ bigQ)). apply _. Qed.
 Instance: SemiRing_Morphism bigN bigQ (') :=
   _ : SemiRing_Morphism bigN bigQ (cast bigZ bigQ ∘ cast bigN bigZ).
 
-Instance: Ring_Morphism Z bigQ (') :=
-  _ : Ring_Morphism Z bigQ (cast bigZ bigQ ∘ cast Z bigZ).
+Instance: SemiRing_Morphism Z bigQ (') :=
+  _ : SemiRing_Morphism Z bigQ (cast bigZ bigQ ∘ cast Z bigZ).
 
 Instance: StrongInjective bigN bigQ (') :=
   strong_setoids.dec_strong_injective (cast bigZ bigQ ∘ cast bigN bigZ).
@@ -123,7 +123,7 @@ Proof.
       red. red. simpl. rewrite ?(mult_1_r _). exact (commutativity (.*.) _ _).
 Qed.
 
-Instance: Ring_Morphism bigQ (Frac bigZ) (').
+Instance: SemiRing_Morphism bigQ (Frac bigZ) (').
 Proof. rewrite inject_bigQ_frac_bigZ_correct. apply _. Qed.
 
 Instance: Injective bigQ (Frac bigZ) (').

@@ -7,17 +7,17 @@ Require Import
 Local Notation ZZ := the_integers.
 
 Section contents.
-  Context `(R:Subset) `{CommutativeRing _ (R:=R)}.
+  Context `(R:set) `{CommutativeRing _ (R:=R)}.
 
   Notation ZZtoR := (integers_to_ring ZZ R).
 
-  Definition integral : Subset := ZZtoR⁺¹(ZZ).
+  Definition integral : set := ZZtoR⁺¹(ZZ).
 
   Hint Unfold integral : typeclass_instances.
 
   Notation Z := integral.
 
-  Instance integral_subset    : SubsetOf Z R := _.
+  Instance integral_subset    : Subset Z R := _.
   Instance integral_subsetoid : Z ⊆ R := _.
   Instance integral_comring: CommutativeRing Z := image_preserves_comring _.
   Instance integral_ring : Ring Z := _.
@@ -33,7 +33,7 @@ End contents.
 Hint Extern 2 (Equiv (elt_type (integral ?X))) => eexact (_ : Equiv X) : typeclass_instances.
 Hint Extern 2 (UnEq  (elt_type (integral ?X))) => eexact (_ : UnEq X) : typeclass_instances.
 
-Hint Extern 2 (SubsetOf (integral _) _) => eapply @integral_subset : typeclass_instances.
+Hint Extern 2 (Subset (integral _) _) => eapply @integral_subset : typeclass_instances.
 Hint Extern 2 (SubSetoid (integral _) _) => eapply @integral_subsetoid : typeclass_instances.
 Hint Extern 2 (CommutativeRing (integral _)) => eapply @integral_comring : typeclass_instances.
 Hint Extern 2 (Ring (integral _)) => eapply @integral_ring : typeclass_instances.
@@ -73,8 +73,8 @@ Section rationals.
     unfold Z_to_FracZ. now rewrite (Zb $ E).
   Qed.
 
-  Instance: Ring_Morphism Zb (integral (Frac Zb)) Z_to_FracZ.
-  Proof. apply ring_morphism_alt; try apply _; intros; unfold Z_to_FracZ.
+  Instance: SemiRing_Morphism Zb (integral (Frac Zb)) Z_to_FracZ.
+  Proof. apply (ring_morphism_alt Z_to_FracZ); try apply _; intros; unfold Z_to_FracZ.
   + exact (preserves_plus _ _).
   + exact (preserves_mult _ _).
   + exact preserves_1.
@@ -93,7 +93,7 @@ Section rationals.
     rewrite <-(Frac Zb $ to_ring_unique (cast Zb (Frac Zb)) _) in E.
     destruct x as [n d]. destruct el as [_ [_ d0]].
     unfold cast, frac_inject, equiv, frac_equiv in E |- *.
-    unfold FracZ_to_Z. simpl.
+    unfold FracZ_to_Z. simpl in *.
     rewrite (mult_1_l n) in E. change (BinInt.Z.mul xb d ≡ n) in E.
     rewrite <- E.
     rewrite (Zdiv.Z_div_mult_full xb d d0).
@@ -109,7 +109,7 @@ Section rationals.
 
   Instance: Bijective Zb (integral (Frac Zb)) Z_to_FracZ := {}.
 
-  Instance: Ring_Morphism (integral (Frac Zb)) Zb Z_to_FracZ⁻¹ := _.
+  Instance: SemiRing_Morphism (integral (Frac Zb)) Zb Z_to_FracZ⁻¹ := _.
   Instance: Bijective (integral (Frac Zb)) Zb Z_to_FracZ⁻¹ := _.
 
   Section another_rationals.
@@ -127,8 +127,8 @@ Section rationals.
       now rewrite (Q1 $ E).
     Qed.
 
-    Instance rat_to_rat_int_ring_mor: Ring_Morphism (integral Q1) (integral Q2) Q1_to_Q2.
-    Proof. apply ring_morphism_alt; try apply _; intros.
+    Instance rat_to_rat_int_ring_mor: SemiRing_Morphism (integral Q1) (integral Q2) Q1_to_Q2.
+    Proof. apply (ring_morphism_alt (Q1_to_Q2:integral Q1 ⇀ integral Q2)); try apply _; intros.
     + exact (preserves_plus _ _).
     + exact (preserves_mult _ _).
     + exact preserves_1.
@@ -167,7 +167,7 @@ Section rationals.
   Hint Unfold Zb_to_Q : typeclass_instances.
 
   Instance: Bijective Zb Z Zb_to_Q := _.
-  Instance: Ring_Morphism Zb Z Zb_to_Q := _.
+  Instance: SemiRing_Morphism Zb Z Zb_to_Q := _.
 
   Instance integral_rat_to_ring : IntegersToRing Z := retract_is_int_to_ring Zb_to_Q.
   Instance integral_rat_integers : Integers Z := retract_is_int Zb_to_Q.

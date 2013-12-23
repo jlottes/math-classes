@@ -20,7 +20,7 @@ Instance Q_inv : Inv Q := Qinv.
 Instance Q_le: Le Q := Qle.
 Instance Q_lt: Lt Q := Qlt.
 
-Hint Extern 10 (@Subset Q) => eexact (every Q) : typeclass_instances.
+Hint Extern 10 (@set Q) => eexact (every Q) : typeclass_instances.
 
 Local Notation Q   := (every Q  ).
 Local Notation Z   := (every Z  ).
@@ -77,11 +77,9 @@ Proof. intros x y [_ H]. red_sig.
   unfold cast, inject_Z. repeat red. simpl. do 2 red in H. now rewrite H.
 Qed.
 
-Instance: Ring_Morphism Z Q (').
-Proof.
-  repeat (split; try apply _).
+Instance: SemiRing_Morphism Z Q (').
+Proof. repeat (split; try apply _).
   intros x ? y ?. repeat red. simpl. now rewrite ?Zmult_1_r.
-  now exists_sub (1:Z).
 Qed.
 
 Instance: Injective Z Q (').
@@ -98,8 +96,8 @@ Proof. intros ? ? [_ E].
   do 2 red. simpl. now rewrite (commutativity (.*.) _ c).
 Qed.
 
-Instance: Ring_Morphism Q (Frac Z) (').
-Proof. apply ring_morphism_alt; try apply _.
+Instance: SemiRing_Morphism Q (Frac Z) (').
+Proof. apply (ring_morphism_alt (cast Q (Frac Z))); try apply _.
 + intros [a b] _ [c d] _. unfold cast, Q_to_fracZ, equiv, frac_equiv. simpl.
   change ((a * Zpos d + c * Zpos b) * ((Zpos b) * (Zpos d)) = (Zpos (Pos.mul b d)) * (a * (Zpos d) + (Zpos b) * c)).
   rewrite (Z $ commutativity (.*.) c (Zpos b)). 
@@ -123,9 +121,9 @@ Instance: Rationals Q := rationals.inj_pre_is_rationals (cast Z Q) (cast Q (Frac
 Instance: PartialOrder Q.
 Proof. split; try apply _.
 + intros ?? [_ E1] ?? [_ E2] ?. unfold equiv, Q_eq in E1,E2. now rewrite <- E1, <- E2.
-+ apply every_SubReflexive. exact Qle_refl.
-+ apply every_SubTransitive. exact Qle_trans.
-+ apply every_SubAntiSymmetric. exact Qle_antisym.
++ apply every_Reflexive. exact Qle_refl.
++ apply every_Transitive. exact Qle_trans.
++ apply every_AntiSymmetric. exact Qle_antisym.
 Qed.
 
 Instance: SemiRingOrder Q.
@@ -157,10 +155,10 @@ Next Obligation. now apply Qlt_not_le. Qed.
 
 (* additional operations *)
 Instance Q_abs : Abs QArith_base.Q := Qabs.
-Instance: DecAbs Q.
+(* Instance: DecAbs Q.
 Proof. split; [intros x ?; apply _ |..];
   intros x [??]; unfold abs, Q_abs; [now apply Qabs_pos | now apply Qabs_neg].
-Qed.
+Qed. *)
 
 Instance Q_pow: Pow QArith_base.Q BinNums.Z := Qpower.
 

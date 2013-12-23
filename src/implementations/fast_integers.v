@@ -8,7 +8,7 @@ Require Export
 
 Module BigZ_Integers := ZType_Integers BigZ.
 
-Hint Extern 10 (@Subset bigZ) => eexact (every bigZ) : typeclass_instances.
+Hint Extern 10 (@set bigZ) => eexact (every bigZ) : typeclass_instances.
 
 Local Notation bigN := (every bigN).
 Local Notation bigZ := (every bigZ).
@@ -29,13 +29,20 @@ Proof. split; unfold pow, bigZ_pow.
 + intros x _ n ?. rewrite BigZ.add_1_l. apply BigZ.pow_succ_r. now destruct (_ : n ∊ bigZ⁺).
 Qed.
 
+Instance: NonnegIntPowSpec bigZ bigZ _.
+Proof. split. apply _. apply binary_morphism_proper_back.
+  intros ?? E1 ?? E2. unfold_sigs. red_sig.
+  unfold equiv,BigZ_Integers.ZType_equiv in E1,E2.
+  unfold "^", bigZ_pow. now rewrite E1,E2.
+Qed.
+
 Instance bigZ_powN: Pow BigZ.t BigN.t := λ x n, x ^ ('n).
 
 Instance: NatPowSpec bigZ bigN _.
 Proof. pose proof nat_int.to_semiring_nonneg_mor : SemiRing_Morphism bigN bigZ⁺ (').
   split; unfold pow, bigZ_powN.
 + apply binary_morphism_proper_back. intros x y [_ E] m n E2. red_sig.
-  rewrite E. now rewrite (bigN $ E2).
+  now rewrite E, E2.
 + exact (nat_pow_0 (N:=bigZ⁺)).
 + intros x _ n _.
   replace (cast bigN bigZ (1+n)) with (1 + (cast bigN bigZ n))
@@ -52,3 +59,4 @@ Proof.
   change (0 ≤ cast bigN bigZ n).
   now apply nat_int.to_semiring_nonneg.
 Qed.
+

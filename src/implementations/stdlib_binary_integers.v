@@ -7,22 +7,26 @@ Require Import
   interfaces.additional_operations interfaces.orders
   nonneg_integers_naturals
   theory.setoids theory.jections theory.rings
+  orders.lattices orders.minmax lattice_ordered_rings
   stdlib_ring misc.quote.
 
 (* canonical names: *)
-Instance Z_equiv: Equiv Z := eq.
-Instance Z_plus: Plus Z := Zplus.
-Instance Z_0: Zero Z := 0%Z.
-Instance Z_1: One Z := 1%Z.
-Instance Z_mult: Mult Z := Zmult.
-Instance Z_negate: Negate Z := Zopp.
+Instance Z_equiv : Equiv  Z := eq.
+Instance Z_uneq  : UnEq   Z := _.
+Instance Z_plus  : Plus   Z := Z.add.
+Instance Z_0     : Zero   Z := 0%Z.
+Instance Z_1     : One    Z := 1%Z.
+Instance Z_mult  : Mult   Z := Z.mul.
+Instance Z_negate: Negate Z := Z.opp.
   (* some day we'd like to do this with [Existing Instance] *)
 
-Instance Z_le: Le Z := Zle.
-Instance Z_lt: Lt Z := Zlt.
+Instance Z_le: Le Z := Z.le.
+Instance Z_lt: Lt Z := Z.lt.
 
+Instance Z_div: DivEuclid Z := Z.div.
+Instance Z_mod: ModEuclid Z := Z.modulo.
 
-Hint Extern 10 (@Subset Z) => eexact (every Z) : typeclass_instances.
+Hint Extern 10 (@set Z) => eexact (every Z) : typeclass_instances.
 
 Local Notation Z   := (every Z  ).
 Local Notation N   := (every N  ).
@@ -31,15 +35,20 @@ Local Open Scope mc_fun_scope.
 
 Instance: Setoid Z := {}.
 
-Instance: CommutativeRing Z.
-Proof.
-  repeat match goal with
+Instance: DenialInequality Z.
+Proof. unfold Z_uneq. apply _. Qed.
+
+Local Ltac mor_tac := match goal with
   | |- Morphism (_ ⇒ _ ⇒ _) _ => apply binary_morphism_proper_back; intros ?? [_ E1] ?? [_ E2];
        red_sig; lazy in E1,E2; now rewrite E1,E2
   | |- Morphism _ _ => intros ?? [_ E1];
        red_sig; lazy in E1; now rewrite E1
-  | |- _ => split; try apply _
-  end; repeat intro.
+end.
+Local Hint Extern 10 (Morphism _ _) => mor_tac : typeclass_instances.
+
+Instance: CommutativeRing Z.
+Proof.
+  repeat (split; try apply _); repeat intro.
 + now apply Zplus_assoc.
 + now apply Zplus_comm.
 + now apply Zplus_opp_l.
@@ -52,8 +61,6 @@ Qed.
 (* misc: *)
 Instance: ∀ x y, Decision (x = y) := ZArith_dec.Z_eq_dec.
 
-Instance: DenialInequality Z := _.
-
 Add Ring Z: (stdlib_ring_theory Z).
 
 (* * Embedding N into Z *)
@@ -61,7 +68,7 @@ Instance inject_N_Z: Cast N Z := Z_of_N.
 
 Instance: SemiRing_Morphism N Z (').
 Proof. apply (semiring_morphism_alt _).
-+ intros ?? [_ E1]; red_sig; lazy in E1; now rewrite E1.
++ apply _.
 + intros x _ y _. exact (Znat.Z_of_N_plus _ _).
 + intros x _ y _. exact (Znat.Z_of_N_mult _ _).
 + reflexivity.
@@ -77,15 +84,15 @@ Qed.
 (* SRpair N and Z are isomorphic *)
 Definition Npair_to_Z : SRpair N ⇀ Z := λ x, 'pos x - 'neg x.
 
-Instance: Ring_Morphism (SRpair N) Z Npair_to_Z.
+Instance: SemiRing_Morphism (SRpair N) Z Npair_to_Z.
 Proof. apply (ring_morphism_alt _).
 + intros [a b] [c d] [_ E]. do 2 red in E. red_sig. unfold Npair_to_Z.
   simpl. apply (right_cancellation (+) ('d+'b) Z _ _).
-  transitivity ('a + 'd). subring (Z).
-  transitivity ('c + 'b); [| subring (Z)].
+  transitivity ('a + 'd). setring (Z).
+  transitivity ('c + 'b); [| setring (Z)].
   now rewrite <- !(Z $ preserves_plus _ _), (N $ E).
-+ intros [a b] _ [c d] _. unfold Npair_to_Z. simpl. preserves_simplify (cast N Z). subring (Z).
-+ intros [a b] _ [c d] _. unfold Npair_to_Z. simpl. preserves_simplify (cast N Z). subring (Z).
++ intros [a b] _ [c d] _. unfold Npair_to_Z. simpl. preserves_simplify (cast N Z). setring (Z).
++ intros [a b] _ [c d] _. unfold Npair_to_Z. simpl. preserves_simplify (cast N Z). setring (Z).
 + reflexivity.
 Qed.
 
@@ -93,7 +100,7 @@ Instance: Injective (SRpair N) Z Npair_to_Z.
 Proof. split; [| apply _].
   intros [a b] _ [c d] _ E. unfold Npair_to_Z in E. do 2 red. simpl in E.
   apply (injective (cast N Z) _ _). preserves_simplify (cast N Z).
-  apply (right_cancellation (+) ('a - 'b) Z _ _). rewrite_on Z -> E at 1. subring (Z).
+  apply (right_cancellation (+) ('a - 'b) Z _ _). rewrite_on Z -> E at 1. simpl. setring (Z).
 Qed.
 
 Definition Z_to_Npair: Z ⇀ SRpair N := λ x,
@@ -111,7 +118,7 @@ Qed.
 
 Instance: Bijective (SRpair N) Z Npair_to_Z := {}.
 
-Instance: Ring_Morphism Z (SRpair N) Z_to_Npair := _ : Ring_Morphism _ _ (Npair_to_Z⁻¹).
+Instance: SemiRing_Morphism Z (SRpair N) Z_to_Npair := _ : SemiRing_Morphism _ _ (Npair_to_Z⁻¹).
 
 Instance: IntegersToRing Z := integers.retract_is_int_to_ring Npair_to_Z.
 Instance: Integers Z := integers.retract_is_int Npair_to_Z.
@@ -146,6 +153,12 @@ Proof.
    intro. split. now apply Zorder.Zlt_le_weak. now apply Zorder.Zlt_not_eq.
   intros [E1 E2]. destruct (Zorder.Zle_lt_or_eq _ _ E1). easy. now destruct E2.
 Qed.
+
+Instance Z_max : Join BinNums.Z := max.
+Instance Z_min : Meet BinNums.Z := min.
+Instance: LatticeOrder Z := minmax_lattice.
+Instance: FullLatticeOrder Z := dec_full_lattice_order.
+Instance: SemiRingLatticeOrder Z := dec_semiring_lattice_order.
 
 (* * Embedding of the Peano naturals into [Z] *)
 Instance inject_nat_Z: Cast nat Z := Z_of_nat.
@@ -212,22 +225,6 @@ Proof. split.
   apply Z.pow_1_r.
 Qed.
 
-(*
-Instance Z_Npow: Pow Z N := λ x n, Z.pow x ('n).
-
-Instance: NatPowSpec Z N Z_Npow.
-Proof.
-  split; unfold pow, Z_Npow.
-    solve_proper.
-   intros. now apply Z.pow_0_r.
-  intros x n.
-  rewrite rings.preserves_plus, rings.preserves_1.
-  rewrite <-(Z.pow_1_r x) at 2. apply Z.pow_add_r.
-   auto with zarith.
-  now destruct n.
-Qed.
-*)
-
 (* Efficient shiftl *)
 Instance Z_shiftl: ShiftL Z Z⁺ := Z.shiftl.
 
@@ -239,34 +236,9 @@ Proof.
   now apply Z.shiftl_mul_pow2.
 Qed.
 
-(*
-Instance Z_Nshiftl: ShiftL Z N := λ x n, Z.shiftl x ('n).
-
-Instance: ShiftLSpec Z N Z_Nshiftl.
-Proof.
-  apply shiftl_spec_from_nat_pow.
-  intros x n.
-  apply Z.shiftl_mul_pow2.
-  now destruct n.
+Instance: EuclidSpec Z.
+Proof. split; try apply _.
++ intros x ? y [??]. now apply Z_div_mod_eq_full.
++ intros x ? y [??]. destruct (Z_mod_remainder x y); intuition.
 Qed.
 
-Program Instance Z_abs: Abs Z := Zabs.
-Next Obligation.
-  split; intros E.
-   now apply Z.abs_eq.
-  now apply Z.abs_neq.
-Qed.
-
-
-Instance Z_div: DivEuclid Z := Zdiv.
-Instance Z_mod: ModEuclid Z := Zmod.
-
-Instance: EuclidSpec Z _ _.
-Proof.
-  split; try apply _.
-     exact Z_div_mod_eq_full.
-    intros x y Ey. destruct (Z_mod_remainder x y); intuition.
-   now intros [].
-  now intros [].
-Qed.
-*)

@@ -2,8 +2,8 @@ Require Export
   canonical_names restrict_rel find_proper interfaces.common_props
   util decision propholds.
 
-Class Setoid `{Ae : Equiv A} S : Prop := setoid_eq : SubEquivalence S (=).
-Hint Extern 2 (SubEquivalence _ (=)) => eapply @setoid_eq : typeclass_instances.
+Class Setoid `{Ae : Equiv A} S : Prop := setoid_eq : Equivalence S (=).
+Hint Extern 2 (Equivalence _ (=)) => eapply @setoid_eq : typeclass_instances.
 
 Class InequalitySetoid `{Ae : Equiv A} {Aue : UnEq A} S : Prop :=
   { uneq_setoid :>> Setoid S
@@ -13,42 +13,50 @@ Class InequalitySetoid `{Ae : Equiv A} {Aue : UnEq A} S : Prop :=
   }.
 
 Class StrongSetoid `{Ae : Equiv A} {Aue : UnEq A} S : Prop :=
-  { strongsetoid_apart : SubApartness S (≠)
+  { strongsetoid_apart : Apartness S (≠)
   ; strongsetoid_tightapart :> TightApart S
   }.
-Hint Extern 2 (SubApartness _ (≠)) => eapply @strongsetoid_apart: typeclass_instances.
+Hint Extern 2 (Apartness _ (≠)) => eapply @strongsetoid_apart: typeclass_instances.
+
+Class StrongSubDecision `(S:set) `(T:set) (R:_ → _ → Prop)
+  := decide_sub_strong x y : {x ∊ S → y ∊ T → R x y} + {x ∊ S → y ∊ T → ¬ R x y}.
+Arguments decide_sub_strong {_ S _ T} R {_} x y.
+
+Class SubDecision `(S:set) `(T:set) R
+  := decide_sub `{x ∊ S} `{y ∊ T} : Decision (R x y).
+Arguments decide_sub {_ _ _ _} R {_} x {_} y {_}.
 
 Class SubSetoid `{Ae: Equiv A} S T : Prop :=
   { subsetoid_a :>> Setoid S  (* derivable from the other axioms, but convenient *)
   ; subsetoid_b :   Setoid T
   ; subsetoid_regular : Proper ((T,=) ==> impl) (∊ S)
-  ; subsetoid_subset : SubsetOf S T
+  ; subsetoid_subset : Subset S T
   }.
-Hint Extern 4 (SubsetOf _ _) => eapply @subsetoid_subset : typeclass_instances.
+Hint Extern 4 (Subset _ _) => eapply @subsetoid_subset : typeclass_instances.
 Notation "S ⊆ T" := (SubSetoid S T) (at level 70) : mc_scope.
 Notation "(⊆)" := (SubSetoid) (only parsing) : mc_scope.
 Notation "( S ⊆)" := (SubSetoid S) (only parsing) : mc_scope.
-Notation "(⊆ T )" := ((λ S, S ⊆ T) : Subset) (only parsing) : mc_scope.
+Notation "(⊆ T )" := ((λ S, S ⊆ T) : set) (only parsing) : mc_scope.
 (* Hint Extern 2 (?x ⊆ ?x) => reflexivity : typeclass_instances.
 Hint Extern 2 (?x ⊆ ?y) => auto_trans : typeclass_instances. *)
 Notation " ( S ,⊆) " := (restrict_rel S (⊆)) : signature_scope.
 Notation "S ⊆ T ⊆ U" := (S ⊆ T ∧ T ⊆ U) (at level 70, T at next level) : mc_scope.
 
-Hint Extern 2 (Equiv (elt_type (⊆ _))) => eapply @subset_equiv : typeclass_instances.
+Hint Extern 2 (Equiv (elt_type (⊆ _))) => eapply @set_equiv : typeclass_instances.
 
 
-Definition morphism {A B} (X:Subset) (Y:Subset) `{Equiv X} `{Equiv Y} : @Subset (A → B) := λ f, (@equiv (X ⇀ Y) _) f f.
+Definition morphism {A B} (X:set) (Y:set) `{Equiv X} `{Equiv Y} : @set (A → B) := λ (f:X ⇀ Y), f = f.
 Infix "⇒" := morphism (at level 65, right associativity) : mc_scope.
-Class Morphism `(S:Subset) f := morphism_prf : f ∊ S.
+Class Morphism `(S:set) f := morphism_prf : f ∊ S.
 Hint Extern 0 (_ ∊ _ ⇒ _) => eapply @morphism_prf : typeclass_instances.
 Hint Extern 0 (Equiv (elt_type (?X ⇒ ?Y))) => eapply (@ext_equiv _ X _ Y) : typeclass_instances.
 
-Class Strong_Morphism {A B} `{UnEq A} `{UnEq B} (X:@Subset A) (Y:@Subset B) f : Prop :=
+Class Strong_Morphism {A B} `{UnEq A} `{UnEq B} (X:@set A) (Y:@set B) f : Prop :=
   { strong_morphism_closed : Closed (X ⇀ Y) f
   ; strong_morphism_proper : strong_ext_equiv f f
   }.
 
-Class Strong_Binary_Morphism {A B C} `{UnEq A} `{UnEq B} `{UnEq C} (X:@Subset A) (Y:@Subset B) (Z:@Subset C) f : Prop :=
+Class Strong_Binary_Morphism {A B C} `{UnEq A} `{UnEq B} `{UnEq C} (X:@set A) (Y:@set B) (Z:@set C) f : Prop :=
   { strong_binary_morphism_closed : Closed (X ⇀ Y ⇀ Z) f
   ; strong_binary_morphism_proper : strong_ext_equiv (uncurry f) (uncurry f)
   }.
@@ -114,12 +122,12 @@ Hint Extern 0 (Associative (&) _) => class_apply @sg_ass : typeclass_instances.
 Hint Extern 0 (Morphism _ (&)) => class_apply @sg_op_proper : typeclass_instances.
 Hint Extern 0 (Commutative (&) _) => class_apply @comsg_commutative : typeclass_instances.
 Hint Extern 0 (BinaryIdempotent (&) _) => class_apply @semilattice_idempotent : typeclass_instances.
-Hint Extern 0 (mon_unit ∊ _) => class_apply @monoid_unit_exists : typeclass_instances.
-Hint Extern 0 (LeftIdentity  (&) _ _) => class_apply @monoid_left_id : typeclass_instances.
-Hint Extern 0 (RightIdentity (&) _ _) => class_apply @monoid_right_id : typeclass_instances.
+Hint Extern 0 (mon_unit ∊ _) => eapply @monoid_unit_exists : typeclass_instances.
+Hint Extern 0 (LeftIdentity  (&) _ _) => eapply @monoid_left_id : typeclass_instances.
+Hint Extern 0 (RightIdentity (&) _ _) => eapply @monoid_right_id : typeclass_instances.
 Hint Extern 5 (Morphism _ (⁻¹)) => class_apply @inverse_proper : typeclass_instances.
-Hint Extern 0 (LeftInverse  (&) _ _ _) => class_apply @inverse_l : typeclass_instances.
-Hint Extern 0 (RightInverse (&) _ _ _) => class_apply @inverse_r : typeclass_instances.
+Hint Extern 0 (LeftInverse  (&) _ _ _) => eapply @inverse_l : typeclass_instances.
+Hint Extern 0 (RightInverse (&) _ _ _) => eapply @inverse_r : typeclass_instances.
 Hint Extern 0 (Strong_Binary_Morphism _ _ _ (&)) => class_apply @strong_sg_op_proper : typeclass_instances.
 
 Arguments inverse_l {A op unit Ainv Ae G Group} _ {_}.
@@ -292,7 +300,7 @@ Class SemiGroup_Morphism {A B Aop Bop Ae Be} S T f :=
   ; sgmor_subsetmor :>> Morphism (S ⇒ T) f
   ; sgmor_preserves_sg_op `{x ∊ S} `{y ∊ S} : f (x & y) = f x & f y
   }.
-Definition preserves_sg_op `{S:Subset} `{T:Subset} {f : S ⇀ T}
+Definition preserves_sg_op `{S:set} `{T:set} {f : S ⇀ T}
   `{SemiGroup_Morphism _ _ (S:=S) (T:=T) (f:=f)} x `{x ∊ S} y `{y ∊ S} := sgmor_preserves_sg_op (x:=x) (y:=y).
 
 Class JoinSemiLattice_Morphism {A B Ajoin Bjoin Ae Be} L K f :=
@@ -313,7 +321,7 @@ Class Monoid_Morphism {A B Aop Bop Aunit Bunit Ae Be} M N f :=
   ; monmor_sgmor :>> SemiGroup_Morphism M N f
   ; monmor_preserves_mon_unit : f mon_unit = mon_unit
   }.
-Definition preserves_mon_unit `{M:Subset} `{N:Subset} {f : M ⇀ N}
+Definition preserves_mon_unit `{M:set} `{N:set} {f : M ⇀ N}
   `{Monoid_Morphism _ _ (M:=M) (N:=N) (f:=f)} := monmor_preserves_mon_unit.
 
 Class BoundedJoinSemiLattice_Morphism {A B Ajoin Bjoin Abottom Bbottom Ae Be} L K f :=
@@ -359,28 +367,12 @@ Section ring_morphism_classes.
     ; sringmor_srng_mor :>> SemiRng_Morphism R S f
     ; sringmor_preserves_1 : f 1 = 1
     }.
-
-  Context {Anegate :Negate A} {Bnegate :Negate B}.
-
-  Class Rng_Morphism R S f :=
-    { rngmor_a : Rng (A:=A) R
-    ; rngmor_b : Rng (A:=B) S
-    ; rngmor_plus_mor :>> AdditiveSemiGroup_Morphism R S f
-    ; rngmor_mult_mor :>> MultiplicativeSemiGroup_Morphism R S f
-    }.
-
-  Class Ring_Morphism R S f :=
-    { ringmor_a : Ring (A:=A) R
-    ; ringmor_b : Ring (A:=B) S
-    ; ringmor_rngmor :>> Rng_Morphism R S f
-    ; ringmor_1 : ∃ `{x ∊ R}, f x = 1
-    }.
 End ring_morphism_classes.
 Definition preserves_1 `{SemiRing (R:=R1)} `{SemiRing (R:=R2)} {f : R1 ⇀ R2} `{!SemiRing_Morphism R1 R2 f} := sringmor_preserves_1.
 
 Section jections.
   Context {A B} {Ae:Equiv A} {Aue:UnEq A} {Be:Equiv B} {Bue:UnEq B}.
-  Context (S:@Subset A) (T:@Subset B) (f : A → B) {inv : Inverse (f : S ⇀ T)}.
+  Context (S:@set A) (T:@set B) (f : A → B) {inv : Inverse (f : S ⇀ T)}.
 
   Open Scope mc_fun_scope.
 
@@ -413,7 +405,7 @@ Arguments surjective {A B Ae Be S T} f {_} {_} _ _ _.
 Arguments surjective_mor {A B Ae Be S T} f {_} {_} _ _ _.
 Arguments surjective_closed {A B Ae Be S T} f {_} {_} _ {_}.
 
-Definition injective `{S:Subset} `{T:Subset} `{Equiv S} `{Equiv T}
+Definition injective `{S:set} `{T:set} `{Equiv S} `{Equiv T}
   (f : S ⇀ T) `{!Injective S T f} x `{x ∊ S} y `{y ∊ S} := injective_def S T f (x:=x) (y:=y).
 
 Hint Extern 5 (inverse _ _ ∊ _) => eapply @surjective_closed : typeclass_instances.

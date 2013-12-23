@@ -2,8 +2,9 @@ Require Import
   abstract_algebra interfaces.orders interfaces.metric_spaces
   theory.setoids theory.products theory.lattices theory.powerset orders.lattices orders.minmax
   orders.affinely_extended_field
-  metric.metric_spaces metric.maps metric.products cauchy_completion metric.uniform_continuity
-  stdlib_field.
+  metric.metric_spaces metric.maps_continuous metric.products
+  cauchy_completion metric.uniform_continuity
+  stdlib_field_dec.
 
 Local Notation AQ := TheAERationals.A.
 Local Notation Q := the_ae_rationals.
@@ -20,21 +21,19 @@ Section extended_domain.
   Lemma ext_domain_ambient : (-(closure g⁺¹(∼ X))) = X'.
   Proof. now rewrite complement_ambient, (image_empty g), closure_empty, metric_complement_empty. Qed.
 
-  Context D `{D ⊆ X} `{!MetricComplementStable D}.
+  Context D `{D ⊆ X} .
 
   Notation D' := (-(closure g⁺¹(∼ D))) .
 
   Hint Extern 5 (_ ∊ X) => apply (_ : ∼D ⊆ X) : typeclass_instances.
   Hint Extern 5 (_ ∊ X') => apply (_ : ∼D' ⊆ X') : typeclass_instances.
 
-  Instance: Open D := metric_complement_stable_open _.
-
   Instance ext_domain_contains_image_comp : g⁺¹(∼D) ⊆ ∼D'.
   Proof. transitivity (closure g⁺¹(∼ D)); apply _. Qed.
 
-  Instance ext_domain_contains_image : g⁺¹(D) ⊆ D'.
+  Instance ext_domain_contains_image `{!Open D} : g⁺¹(D) ⊆ D'.
   Proof.
-    apply (subsetoid_from_subsetof X' _ _).
+    apply (subsetoid_from_subset X' _ _).
     intros x' [?[x [? Ex]]]. pose proof _ : D ⊆ X. rewrite <-(X' $ Ex). clear dependent x'.
     split. apply _.
     destruct (open D x) as [q[? Bx]]. exists_sub (q/2).
@@ -47,11 +46,13 @@ Section extended_domain.
     destruct (P (q/2) _) as [? [[?[s'[? Es']]] Bs']].
     rewrite <-(_ $ Es') in Bs'. intro Bs.
     pose proof ball_triangle _ _ _ _ _ Bs Bs' as Bxs.
-    mc_replace (q/2+q/2) with q on Q in Bxs by subfield Q.
+    mc_replace (q/2+q/2) with q on Q in Bxs by decfield Q.
     rewrite <-(isometric g _ _ _) in Bxs.
     assert (s' ∊ D). rewrite <- Bx. apply _.
     exact (complement_contradiction D s').
   Qed.
+
+  Context `{!MetricComplementStable D}.
 
   Lemma ext_domain_exact_image x `{x ∊ X} `{g x ∊ D'} : x ∊ D.
   Proof. rewrite <-(metric_complement_stable D). split. apply _.
@@ -94,16 +95,12 @@ Section subdomain.
   Hint Extern 5 (_ ∊ X') => apply (_ : D' ⊆ X') : typeclass_instances.
   Hint Extern 6 (_ ∊ X') => apply (_ : ∼D' ⊆ X') : typeclass_instances.
 
-  Definition shrink q : Subset := X ⊓ (λ y, ∀ z `{z ∊ ∼D'}, ¬ ball q (g y) z).
+  Let shrink q : set := D ⊓ (λ x, ∀ y `{y ∊ X}, ball q x y → y ∊ D).
 
   Instance shrink_subsetoid q `{q ∊ Q₊} : shrink q ⊆ D.
-  Proof. apply subsetoid_alt. apply _.
-  + intros ?? E [_ P]. unfold_sigs. split. apply _. intros z ?.
-      rewrite <-(X $ E). exact (P z _).
-  + intros x [? P]. red in P. rewrite <-(metric_complement_stable D).
-    split. trivial. exists_sub q.
-    intros z ?. pose proof ext_domain_contains_image_comp g D.
-    rewrite (isometric g _ _ _). apply P. apply _.
+  Proof. apply subsetoid_alt. apply _. 2:firstorder.
+    intros x y E [_ P]. unfold_sigs. split. apply _. intros z ??.
+    apply (P _ _). now rewrite (X $ E).
   Qed.
 
   Instance shrink_subsetoid2 q `{q ∊ Q₊} : shrink q ⊆ X.
@@ -116,81 +113,106 @@ Section subdomain.
 
   Instance cont_subdom_wc x `{x ∊ D} r `{r ∊ Q⁺} q `{q ∊ Q₊} `{x ∊ shrink q}
     : cont_subdom x r q ⊂⊂ D.
-  Proof. apply (well_contained_stable _ _).
+  Proof. apply (well_contained_alt _ _). 
   + unfold cont_subdom. rewrite (_ : B r x ⊓ shrink q ⊆ B r x). apply _.
   + exists x. split; apply _.
-  + exists_sub q. intros ? [_ [? P]] z ?. red in P.
-    pose proof ext_domain_contains_image_comp g D.
-    rewrite (isometric g _ _ _). apply P. apply _.
+  + exists_sub q. intros y ? u [? [? P]] Byu. subsymmetry in Byu. now apply P.
   Qed.
 
   Instance cont_subdom_im_wc x `{x ∊ D} r `{r ∊ Q⁺} q `{q ∊ Q₊} `{x ∊ shrink q}
     : g⁺¹(cont_subdom x r q) ⊂⊂ D'.
-  Proof. apply (well_contained_stable _ _).
-  + eapply @strongly_ufm_cont; apply _.
+  Proof. apply (well_contained_alt _ _).
+  + apply isometry_bounded_image; apply _.
   + apply _.
-  + exists_sub q. intros u' [?[u [[?[? P]] E]]] z ?.
-    rewrite <-(_ $ E). now apply P.
+  + exists_sub (q/3). intros y ? u' [?[u [[?[? P]] E]]]. red in P.
+    rewrite <-(_ $ E). clear E. intros Bygu. split. apply _.
+    exists_sub (q/3). intros s [? Cs] ?.
+    destruct (Cs (q/3) _) as [t' [[?[t [? Et]]]?]].
+    cut (t ∊ D). intro. destruct (complement_contradiction D t).
+    apply (P _ _). apply (isometric g _ _ _). rewrite (X' $ Et).
+    apply ball_weaken_le with (q/3+q/3+q/3); try apply _.
+    apply (ball_triangle _ _ _ s _ ); trivial.
+    apply (ball_triangle _ _ _ y _ ); trivial. subsymmetry.
+    apply (eq_le _ _); decfield Q.
   Qed.
 
-  Lemma proj_subdom_aux U' `{U' ⊆ D'} q `{q ∊ Q₊} x' `{x' ∊ U'} s `{s ∊ D}
-    : set_separated q U' (∼D') → ball (q / 2) x' (g s) → s ∊ shrink (q / 2).
-  Proof. intros HS ?. split. apply _. intros z ??.
-      destruct (HS x' _ z _).
-      mc_replace q with (q/2+q/2) on Q by subfield Q.
-      apply (ball_triangle _ _ _ (g s) _); trivial.
-  Qed.
+  Section aux.
+    Context U' `{U' ⊂⊂ D'} .
+    Context d `{d ∊ Q⁺} (BU' : ∀ x, x ∊ U' → ∀ y, y ∊ U' → ball d x y).
+    Context q `{q ∊ Q₊} (HS : set_within q U' D').
 
-  Lemma proj_subdom U' `{U' ⊂⊂ D'} : ∃ U, U ⊂⊂ D ∧ closure g⁺¹(U) ⊂⊂ D' ∧ g⁻¹(U') ⊆ U ∧ U' ⊆ closure g⁺¹(U).
-  Proof. pose proof _ : U' ⊆ D'.
-    destruct (inhabited U') as [x' ?].
-    destruct (bounded U') as [d [? HB]].
-    destruct (set_apart_finite U' (∼D')) as [q [? HS]].
-    destruct (dense g⁺¹(D) (X:=D') x' (q/2)) as [s' [[?[s[? Es]]] Bxs]].
-      rewrite <-(X' $ Es) in Bxs. clear dependent s'.
-    assert (s ∊ shrink (q / 2)) by now apply (proj_subdom_aux U' q x' _).
-    exists (cont_subdom s (q/2+d+q/2) (q/2)). intuition.
-    + apply _.
-    + apply (well_contained_closure _ _).
-    + apply (subsetoid_from_subsetof X _ _). intros u [??]. split.
+    Let sub : U' ⊆ D' := _.
+
+    Let HS' u' `{u' ∊ U'} y `{y ∊ X} : ball q u' (g y) → y ∊ D .
+    Proof.
+      intros ?. apply (ext_domain_exact_image g _). apply _.
+      apply (HS _ _ u' _). subsymmetry.
+    Qed.
+
+    Let in_shrink u' `{u' ∊ U'} u `{u ∊ D} : ball (q / 2) u' (g u) → u ∊ shrink (q / 2).
+    Proof. intro. split. apply _. intros y ??. apply (HS' u' _).
+      apply ball_weaken_le with (q/2+q/2); try apply _.
+      apply (ball_triangle _ _ _ (g u) _); trivial.
+      now apply (isometric g _ _ _).
+      now rewrite (_ $ ae_in_halves q).
+    Qed.
+
+    Context x' `{x' ∊ U'} u `{u ∊ D} (Bxu : ball (q / 2) x' (g u)).
+
+    Instance : u ∊ shrink (q / 2) := in_shrink x' u Bxu.
+
+    Notation U := ( cont_subdom u (q/2+d+q/2) (q/2) ) .
+
+    Lemma cont_subdom_1 : g⁻¹(U') ⊆ U ⊂⊂ D .
+    Proof. split. 2: apply _.
+      apply (subsetoid_from_subset X _ _). intros v [??]. split.
       split; trivial. red. rewrite (isometric g _ _ _). subsymmetry.
         apply (ball_triangle _ _ _ x' _); trivial.
         rewrite (_ $ commutativity (+) _ _). apply (ball_weaken_plus); try apply _.
-        now apply HB.
-      split; trivial. intros z ? B. destruct (HS (g u) _ z _).
-        mc_replace q with (q/2+q/2) on Q by subfield Q.
-        apply (ball_weaken_plus); try apply _. trivial.
-    + apply (subsetoid_from_subsetof X' _ _).
+        now apply BU'.
+      assert (v ∊ D). apply (ext_domain_exact_image g _); apply _.
+      now apply (in_shrink (g v) _).
+    Qed.
+
+    Lemma cont_subdom_2 : U' ⊆ closure g⁺¹(U) ⊂⊂ D' .
+    Proof. split. 2: apply _.
+      apply (subsetoid_from_subset X' _ _).
       intros y' ?. split. apply _. intros ε ?.
       ae_rat_set_min p ε (q/2) Ea Eb.  pose proof (ae_pos_finite_bound _ _ Eb).
       destruct (dense g⁺¹(D) (X:=D') y' p) as [t' [[?[t[? Et]]] Byt]].
         rewrite <-(X' $ Et) in Byt. clear dependent t'.
-      cut (t ∊ cont_subdom s (q/2+d+q/2) (q/2)). intro. exists_sub (g t). now rewrite <-(_ $ Ea).
+      cut (t ∊ cont_subdom u (q/2+d+q/2) (q/2)). intro. exists_sub (g t). now rewrite <-(_ $ Ea).
       split.
       * split; [red | apply _].
         rewrite (isometric g _ _ _).
         apply (ball_triangle _ _ _ y' _).
         apply (ball_triangle _ _ _ x' _); [subsymmetry|].
-        now apply HB. now rewrite <-(_ $ Eb).
-      * apply (proj_subdom_aux U' q y' _). trivial. now rewrite <-(_ $ Eb).
+        now apply BU'. now rewrite <-(_ $ Eb).
+      * apply (in_shrink y' _). now rewrite <-(_ $ Eb).
+     Qed.
+  End aux.
+
+  Lemma proj_subdom U' `{U' ⊂⊂ D'} : ∃ U, g⁻¹(U') ⊆ U ⊂⊂ D ∧ U' ⊆ closure g⁺¹(U) ⊂⊂ D'.
+  Proof. pose proof _ : U' ⊆ D' .
+    destruct (inhabited U') as [x' ?].
+    destruct (bounded U') as [d [? BU']].
+    destruct (set_contained_finite U' D') as [q [? HS]].
+    destruct (dense g⁺¹(D) (X:=D') x' (q/2)) as [u' [[?[u[? Eu]]] Bxu]].
+      rewrite <-(X' $ Eu) in Bxu. clear dependent u'.
+    exists (cont_subdom u (q/2+d+q/2) (q/2)). split.
+    now apply cont_subdom_1 with x'.
+    now apply cont_subdom_2 with x'.
   Qed.
 
   Lemma proj_subdom_point x' `{x' ∊ D'} : ∃ U, U ⊂⊂ D ∧ closure g⁺¹(U) ⊂⊂ D'
      ∧ (∀ x, x ∊ X → g x = x' → x ∊ U) ∧ x' ∊ closure g⁺¹(U).
   Proof.
     cut (∃ U', U' ⊂⊂ D' ∧ x' ∊ U').
-      intros [U' [??]]. destruct (proj_subdom U') as [U [?[?[??]]]].
+      intros [U' [??]]. destruct (proj_subdom U') as [U [[??][??]]].
       exists U. split.  apply _. split. apply _. split.
         intros x ? E. apply (_ : g⁻¹(U') ⊆ U). split. apply _. now rewrite (X' $ E).
         apply _.
-    assert (x' ∊ -∼D') as E by now rewrite (metric_complement_stable D').
-    destruct E as [? [q [? P]]].
-    exists (B 0 x'). split; [| apply _].
-    assert (∀ y', y' ∊ B 0 x' → (X',=)%signature x' y') as E.
-      intros y' [E ?]. red in E. rewrite (ball_separated x' y') in E. now red_sig.
-    apply well_contained_alt; try apply _.
-    * apply (subsetoid_from_subsetof X' _ _). intros y' ?. now rewrite <-(E y' _).
-    * exists_sub q. intros y' ? z ?. rewrite <-(E y' _). now apply P.
+    exists ({{x' | X'}}). split; apply _.
   Qed.
 
   Context U `{U ⊂⊂ D}.
@@ -201,7 +223,7 @@ Section subdomain.
 
   Instance restrict_g_iso: Isometry U U' g'.
   Proof. split; try apply _.
-  + rewrite <-(_ : SubsetOf (U ⇒ g⁺¹(U)) (U ⇒ U')). apply _.
+  + rewrite <-(_ : Subset (U ⇒ g⁺¹(U)) (U ⇒ U')). apply _.
   + intros. pose proof _ : U ⊆ X. exact (isometric g _ _ _).
   Qed.
 
@@ -222,8 +244,8 @@ Section subdomain.
 End subdomain.
 
 Section continuous_extension.
-  Context `{MetricSpace (X:=X)} `{MetricSpace (X:=X')}.
-  Context `{MetricSpace (X:=Y)} `{CompleteMetricSpace (X:=Y')}.
+  Context `{MetricSpace (X:=X)} `{MetricSpace (X:=X')} `{!LocallyTotallyBounded X'}.
+  Context `{MetricSpace (X:=Y)} `{CompleteMetricSpace (X:=Y')} `{!LocallyTotallyBounded Y'}.
   Context g `{!Isometry X X' g} `{!Dense (X:=X') g⁺¹(X)}.
   Context h `{!Isometry Y Y' h}.
 
@@ -233,7 +255,7 @@ Section continuous_extension.
   Hint Extern 0 AmbientSpace => eexact Y' : typeclass_instances.
 
   Context D `{D ⊆ X} `{!MetricComplementStable D}.
-  Context R `{R ⊆ Y} `{!MetricComplementStable R}.
+  Context R `{R ⊆ Y} `{!Open R}.
   Notation D' := (-(closure (X:=X') g⁺¹(∼D))) .
   Notation R' := (-(closure (X:=Y') h⁺¹(∼R))) .
   Instance: Setoid D' := subsetoid_a.
@@ -281,30 +303,23 @@ Section continuous_extension.
     Proof. now destruct ( ufm_cont_ext_extends_2 g' h' (M:=U==>V) id f x x (_: Proper (U,=) x) ). Qed. 
 
     Instance sub_range_wc : V' ⊂⊂ R' .
-    Proof. apply (well_contained_stable _ _).
-    + apply closure_bounded. apply (strongly_ufm_cont Y Y'); apply _.
+    Proof. apply (well_contained_closure). apply (well_contained_alt _ _).
+    + apply isometry_bounded_image; apply _.
     + apply _.
-    + apply set_apart_closure_l; try apply _.
-      destruct (set_apart V (∼R)) as [q[? P]].
-      exists_sub (q/3).
-      intros u' [? [u[? Eu]]] v' ? Bu'v'.
-      assert (u ∊ Y) by now apply (_ : V ⊆ Y).
-      assert (v' ∊ Y') by now apply (_ : ∼R' ⊆ Y').
-      cut (v' ∊ R'). intro. exact (complement_contradiction R' v').
-      split. apply _. exists_sub (q/3).
-      intros s' [? P'] ?.
-      destruct (P' (q/3) _) as [t'[[?[t[? Et]]]?]].
-      assert (t ∊ Y) by now apply (_ : ∼R ⊆ Y).
-      destruct (ae_decompose_pos q) as [Eq|?].
-        destruct (P u _ t _).
-        apply (ball_weaken_le) with ∞; try apply _.
-        exact (msp_ball_inf _ _). apply (eq_le (P:=Qfull) _ _). subsymmetry.
-      destruct (P u _ t _).
+    + destruct (set_contained (X:=Y) V R) as [q[elq P]].
+      exists_sub (q/3). intros y' ? y [?[x [? E]]] ?.
+      split. apply _. exists_sub (q/3). intros t' [? Ct] ?.
+      destruct (Ct (q/3) _) as [t[[?[s[? Es]]]?]].
+      cut (s ∊ R). intro. exact (complement_contradiction R s).
+      assert (x ∊ Y) by now apply (_ : V ⊆ Y).
+      assert (s ∊ Y) by now apply (_ : ∼R ⊆ Y).
+      apply (P s _ x _). apply (isometric h _ _ _).
+      rewrite (Y' $ Es), (Y' $ E).
+      destruct (ae_decompose_pos q) as [Eq|?]. rewrite (_ $ Eq). exact (msp_ball_inf _ _).
       apply (ball_weaken_le) with (q/3+q/3+q/3); try apply _.
-      rewrite (isometric h _ _ _), (Y' $ Eu), (Y' $ Et).
-      apply (ball_triangle _ _ _ s' _); trivial.
-      apply (ball_triangle _ _ _ v' _); trivial.
-      apply (eq_le _ _). subfield Q.
+      apply (ball_triangle _ _ _ y' _); trivial.
+      apply (ball_triangle _ _ _ t' _); subsymmetry.
+      apply (eq_le _ _); decfield Q.
     Qed.
 
     Instance sub_range_sub : V' ⊆ R' := _.
@@ -341,7 +356,7 @@ Section continuous_extension.
     Notation U1' := (closure (X:=X') g⁺¹(U1)).
     Notation U2' := (closure (X:=X') g⁺¹(U2)).
     
-    Notation U := (@join _ subset_union U1 U2).
+    Notation U := (@join _ set_union U1 U2).
 
     Notation U' := (closure (X:=X') g⁺¹(U1) ⊓ closure (X:=X') g⁺¹(U2)).
     Instance : Setoid U' := subsetoid_a.
@@ -385,7 +400,7 @@ Section continuous_extension.
       destruct (uniform_continuity (sub_ext f U1) (ε/3)) as [δ₁ [el1 C1]].
       destruct (uniform_continuity (sub_ext f U2) (ε/3)) as [δ₂ [el2 C2]].
       destruct (uniform_continuity (f : U ⇀ R) (ε/3)) as [δ [el3 Cf]].
-      mc_replace ε with (ε/3+ε/3+ε/3) on Q by subfield Q.
+      mc_replace ε with (ε/3+ε/3+ε/3) on Q by decfield Q.
       pose proof _ : δ/2 ∊ Q∞₊.
       ae_rat_set_min a δ₁ (δ/2) Ea1 Ea2.
       ae_rat_set_min b δ₂ (δ/2) Eb1 Eb2.
@@ -406,120 +421,67 @@ Section continuous_extension.
     Proof. now destruct ( subext_proper _ _ (_ : Proper (U',=) x) ). Qed.
   End subext_proper.
 
-  Section def.
-    Context f `{!Continuous D R f}.
+  Definition cont_ext_desc (f : D ⇀ R) x : set := R' ⊓ (λ y,
+    ∀ `{U ⊂⊂ D}, x ∊ closure g⁺¹(U) → y = sub_ext f U x
+  ).
+  Notation S := cont_ext_desc.
 
-    Notation C := (CauchyFamilies Y').
+  Instance: ∀ f `{!Continuous D R f} x `{x ∊ D'}, Singleton (S f x) Y'.
+  Proof. intros f ? x ?. split.
+  + apply subsetoid_alt. apply _.
+    * intros y1 y2 Ey [? P]. split. now rewrite <-Ey.
+      red. intros U ??. rewrite <-Ey. now apply P.
+    * intros ? [??]. now apply (_ : R' ⊆ Y').
+  + destruct (proj_subdom_point D g x) as [U[?[?[??]]]].
+    exists (sub_ext f U x). split. apply _.
+    intros U2 ? ?. now apply subext_proper_point.
+  + intros y₁ [? P₁] y₂ [? P₂].
+    destruct (proj_subdom_point D g x) as [U[?[?[??]]]].
+    now rewrite (Y' $ P₁ U _ _), (Y' $ P₂ U _ _).
+  Qed.
 
-    Definition cont_ext_family : D' ⇀ C := λ x, family (λ _ y,
-      y ∊ R' ∧ ∀ `{U ⊂⊂ D}, x ∊ closure g⁺¹(U) → y = sub_ext f U x
-    ).
-
-    Notation S := cont_ext_family.
-
-    Instance: ∀ x `{x ∊ D'} q, S x q ⊆ R'.
-    Proof with intuition. intros. apply subsetoid_alt. apply subsetoid_a.
-    + intros y1 y2 Ey [? P]... split... now rewrite <-Ey.
-      pose proof (_ : R' ⊆ Y'). rewrite <-Ey. now apply P.
-    + now intros ?[??].
-    Qed.
-
-    Instance: ∀ x `{x ∊ D'} q, S x q ⊆ Y'.
-    Proof. intros. transitivity R'; apply _. Qed.
-
-    Instance: ∀ x `{x ∊ D'} q, Setoid (S x q).
-    Proof. intros. exact (subsetoid_a (T:=R')). Qed.
-
-    Lemma cont_ext_family_proper_1 x `{x ∊ D'} p q : ∀ `{y ∊ S x p}, y ∊ S x q.
-    Proof. tauto. Qed.
-
-    Lemma cont_ext_family_proper_2 x₁ `{x₁ ∊ D'} x₂ `{x₂ ∊ D'} : x₁ = x₂  →
-      S x₁ = S x₂.
-    Proof. intro E.
-      intros q₁ ? q₂ ? y₁ [? P₁].
-      intros           y₂ [? P₂].
-      destruct (proj_subdom_point D g x₁) as [U[?[?[??]]]].
-      assert (x₂ ∊ closure g⁺¹(U)) by now rewrite <-(D' $ E).
-      rewrite (Y' $ P₁ U _ _), (Y' $ P₂ U _ _).
-      destruct ( sub_ext_mor f U _ _ (closure g⁺¹(U) $ E) ) as [_ E'].
-      now rewrite (Y' $ E').
-    Qed.
-
-    Instance: ∀ x `{x ∊ D'}, S x ∊ C.
-    Proof. intros. split. apply _.
-    + intros ?? E. unfold_sigs. red_sig.
-      split; apply cont_ext_family_proper_1; trivial; try apply _.
-    + intros q ?.
-      destruct (proj_subdom_point D g x) as [U[?[?[??]]]].
-      exists (sub_ext f U x). split. apply _.
-      intros U2 ? ?. now apply subext_proper_point.
-    + now apply cont_ext_family_proper_2.
-    Qed.
-
-    Instance cont_ext_family_mor : Morphism (D' ⇒ C) S.
-    Proof. intros ???. unfold_sigs. red_sig. now apply cont_ext_family_proper_2. Qed.
-
-  End def.
-
-  Definition continuous_extension : (D --> R) ⇀ (D' --> R') := λ f, limit ∘ (cont_ext_family f).
+  Definition continuous_extension : (D --> R) ⇀ (D' --> R') := λ f x, metric_description (S f x).
 
   Section continuity.
     Context f `{!Continuous D R f}.
 
     Notation f' := (continuous_extension f).
 
-    Existing Instance cont_ext_family_mor.
+    Instance: ∀ x `{x ∊ D'}, f' x ∊ R'.
+    Proof. intros ??. now destruct (metric_description_spec (S f x)). Qed.
 
-    Section patch.
-      Context U `{U ⊂⊂ D}.
-      Notation U' := (closure (X:=X') g⁺¹(U)).
-      Context `{U' ⊂⊂ D'}.
+    Instance: ∀ x `{x ∊ D'}, f' x ∊ Y'.
+    Proof. intros. apply (_ : R' ⊆ Y'). apply _. Qed.
 
-      Hint Extern 5 (_ ∊ D') => apply (_ : U' ⊆ D') : typeclass_instances.
- 
-      Lemma cont_ext_patch : (f' : U' ⇀ Y') = (sub_ext f U : U' ⇀ Y').
-      Proof. intros ?? E. unfold_sigs. unfold continuous_extension. red_sig.
-        unfold compose. apply limit_const.
-        apply (morphism_closed _ (m:=cont_ext_family_mor f) _ _). apply _.
-        intros q ?. split. apply _.
-        intros U2 ? ?. subsymmetry in E.
-        assert (y ∊ closure g⁺¹(U2)) by now rewrite (_ $ E).
-        now destruct (subext_proper f U U2 _ _ (U' ⊓ closure (X:=X') g⁺¹(U2) $ E)).
-      Qed.
-    End patch.
+    Let spec x `{x ∊ D'} U `{U ⊂⊂ D} : x ∊ closure g⁺¹(U) → f' x = sub_ext f U x .
+    Proof. destruct (metric_description_spec (S f x)) as [_ P]. exact (P U _). Qed.
 
     Instance cont_ext_mor: Morphism (D' ⇒ R') f'.
-    Proof. intros x y E. unfold_sigs.
-      destruct (proj_subdom_point D g x) as [U[?[?[??]]]].
-      assert (y ∊ closure g⁺¹(U)) by now rewrite <-(D' $ E).
-      assert (∀ z, z ∊ closure g⁺¹(U) -> f' z ∊ R').
-        intros. rewrite (cont_ext_patch U _ _ (_ : Proper (closure g⁺¹(U),=) z)). apply _.
-      red_sig.
-      rewrite (cont_ext_patch U _ _ (closure g⁺¹(U) $ E)).
-      now rewrite (cont_ext_patch U _ _ (_ : Proper (closure g⁺¹(U),=) y)).
+    Proof. intros x₁ x₂ E. unfold_sigs. red_sig.
+      destruct (proj_subdom_point D g x₁) as [U[?[?[??]]]].
+      assert (x₂ ∊ closure g⁺¹(U)) by now rewrite <-(D' $ E).
+      rewrite (Y' $ spec x₁ U _), (Y' $ spec x₂ U _).
+      now destruct ( sub_ext_mor f U _ _ (closure g⁺¹(U) $ E) ).
     Qed.
-
-    Hint Extern 2 (f' _ ∊ R') => apply (morphism_closed _ (m:=cont_ext_mor)) : typeclass_instances.
 
     Lemma cont_ext_cont: Continuous D' R' f'.
     Proof. apply continuity_alt. apply _.
       intros U' ?. pose proof _ : U' ⊆ D'.
-      destruct (proj_subdom D g U') as [U[?[?[??]]]]. pose proof _ : U ⊆ D.
+      destruct (proj_subdom D g U') as [U[[??][??]]]. pose proof _ : U ⊆ D.
       pose proof continuity_ufm (f:=f) U. pose proof continuity_wc_range (f:=f) U.
       split.
-    + split; try apply _. rewrite <-(_ : SubsetOf (D' ⇒ R') (U' ⇒ R')). apply _.
+    + split; try apply _. rewrite <-(_ : Subset (D' ⇒ R') (U' ⇒ R')). apply _.
       intros ε ?.
       destruct (uniform_continuity (sub_ext f U) ε) as [δ[el P]].
       exists_sub δ. intros x ? y ? ?.
-      rewrite (cont_ext_patch U _ _ (_ : Proper (closure g⁺¹(U),=) x)).
-      rewrite (cont_ext_patch U _ _ (_ : Proper (closure g⁺¹(U),=) y)).
+      rewrite (Y' $ spec x U _), (Y' $ spec y U _).
       now apply (P x _ y _).
     + cut (f'⁺¹(U') ⊂⊂ R'). intuition; apply _.
       cut (f'⁺¹(U') ⊆ closure h⁺¹(f⁺¹(U))). intro E.
         rewrite (Inhabited $ E). exact (sub_range_wc f U).
-      apply (subsetoid_from_subsetof Y'). transitivity R'; apply _. apply _.
+      apply (subsetoid_from_subset Y'). transitivity R'; apply _. apply _.
       intros y [?[x[? E]]]. rewrite <-(_ $ E). clear dependent y.
-      rewrite (cont_ext_patch U _ _ (_ : Proper (closure g⁺¹(U),=) x)).
+      rewrite (Y' $ spec x U _).
       apply (morphism_closed _ (m:=sub_ext_mor f U) _ _).
     Qed.
 
@@ -531,11 +493,10 @@ Section continuous_extension.
       destruct (proj_subdom_point D g (g x)) as [U[?[?[P ?]]]]; pose proof _ : U ⊆ D.
       assert (g x = g y) as E2 by now rewrite (X $ E).
       assert (g y ∊ closure g⁺¹(U)) by now rewrite <-(_ $ E2).
-      rewrite (cont_ext_patch U _ _ (closure g⁺¹(U) $ E2)).
+      rewrite (D' $ E2), (Y' $ spec (g y) U _).
       assert (y ∊ U). apply (P _ _). subsymmetry.
       exact (sub_ext_extends f U y).
     Qed.
-
   End continuity.
 
 End continuous_extension.
@@ -560,54 +521,24 @@ Section continuous_equal_on_dense.
   Instance: C ⊆ X.    Proof. transitivity D; apply _. Qed.
   Hint Extern 6 (_ ∊ D) => apply (_ : C ⊆ D) : typeclass_instances.
 
-  Section patch.
-    Context x `{x ∊ D}.
-
-    Let finite_ball : ∃ `{q ∊ Q₊}, ∀ s, s ∊ ∼D → ¬ball q x s.
-    Proof.
-      pose proof _ : x ∊ D as E. rewrite <-(metric_complement_stable D) in E.
-      destruct E as [?[q[? P]]]. (* x is distance q from the boundary *)
-      destruct (ae_decompose_pos q) as [Eq|?].
-        exists_sub 1. intros s ?. destruct (P s _).
-        rewrite (_ $ Eq). exact (msp_ball_inf _ _).
-      now exists_sub q.
-    Qed.
-
-    Lemma cont_patch : ∃ U, U ⊂⊂ D ∧ x ∊ U ∧ Dense (X:=U) (C ⊓ U).
-    Proof.
-      destruct finite_ball as [q[? P]]. (* x is distance q from the boundary *)
-      assert (x ∊ (B (q / 2) x)°).
-        split. apply _. exists_sub (q/2). apply _.
-      assert ((B (q / 2) x)° ⊂⊂ D).
-        apply (well_contained_stable _ _).
-          rewrite (_ : (B (q / 2) x)° ⊆ (B (q / 2) x)). apply _.
-          exists x. apply _.
-          rewrite (_ : (B (q / 2) x)° ⊆ (B (q / 2) x)).
-          exists_sub (q/2). intros y [??] z ??.
-          destruct (P z _). mc_replace q with (q/2+q/2) on Q by subfield Q.
-          now apply (ball_triangle _ _ _ y _ ).
-      exists (interior (B (q/2) x) ). do 3 (split; trivial).
-      * exact sub_metric_space.
-      * apply (subsetoid_from_subsetof X _ _). firstorder.
-      * intro y. split. firstorder. intro. split; trivial.
-        pose proof _ : y ∊ (B (q / 2) x)° as E. destruct E as [?[r[? S]]].
-        assert (y ∊ D) by now apply ( _ : (B (q / 2) x)° ⊆ D).
-        intros ε ?. pose proof _ : r/2 ∊ Q∞₊ . ae_rat_set_min a ε (r/2) E1 E2.
-        destruct (dense (X:=D) C y a) as [s[??]].
-        assert (s ∊ (B (q / 2) x)°). split.
-            apply S. split; [|apply _]. red.
-            apply (ball_weaken_le) with (r/2+r/2); try apply _.
-              apply (ball_weaken_plus); try apply _.
-              now rewrite <-(Qfull $ E2).
-            apply (eq_le (P:=Qfull) _ _). exact (ae_in_halves _).
-          exists_sub (r/2). transitivity (B r y); trivial.
-          intros z [??]. split; [| apply _]. red.
-          apply (ball_weaken_le) with (r/2+r/2); try apply _.
-            apply (ball_triangle _ _ _ s _ ); trivial. now rewrite <-(Qfull $ E2).
-          apply (eq_le (P:=Qfull) _ _). exact (ae_in_halves _).
-        exists_sub s. now rewrite <-(Qfull $ E1).
-    Qed.
-  End patch.
+  Let patch x `{x ∊ D} : ∃ U, U ⊂⊂ D ∧ x ∊ U ∧ Dense (X:=U) (C ⊓ U).
+  Proof. destruct (open_wc D x) as [q[? ?]]. exists (B q x)°.
+    assert (x ∊ (B q x)°). split. apply _. exists_sub q. apply _.
+    assert (Inhabited (B q x)°) by now exists x.
+    pose proof (_ : (B q x)° ⊆ B q x) as E.
+    intuition. now rewrite (Inhabited $ E).
+    split. exact sub_metric_space. apply _. apply subset_antisym.
+    + intros y [[? [p [??]]] Cy]. split. apply _. now exists_sub p.
+    + intros y ely. split. apply _. intros ε ?.
+      assert (y ∊ D) by now apply (_ : B q x ⊆ D), E.
+      rewrite <-(interior_idempotent (B q x)) in ely.
+      destruct ely as [[??] [p [? ?]]].
+      ae_rat_set_min a p ε Ea1 Ea2.
+      destruct (dense (X:=D) C y a) as [s[??]].
+      cut (s ∊ C ⊓ (B q x)°). intro. exists_sub s. now rewrite <-(Qfull $ Ea2).
+      split. apply _. apply (_ :  Subset (B p y) (B q x)° ).
+      split. 2: apply _. red. now rewrite <-(Qfull $ Ea1).
+  Qed.
 
   Hint Extern 10 (MetricSpace _) => eapply @sub_metric_space : typeclass_instances.
 
@@ -616,7 +547,7 @@ Section continuous_equal_on_dense.
   Proof. split.
   + intros E x y Ex. unfold_sigs. red_sig.
     rewrite <- ( (_ : Morphism _ g) _ _ (D $ Ex) ). clear dependent y.
-    destruct (cont_patch x) as [U[?[??]]].
+    destruct (patch x) as [U[?[??]]].
     pose proof (continuity_ufm (f:=f) U).
     pose proof (continuity_ufm (f:=g) U).
     cut ((f:U ⇀ R) = (g:U ⇀ R)). intros EU. apply EU. now red_sig.
@@ -631,8 +562,8 @@ Section continuous_equal_on_dense_image.
   Context `{Continuous (X:=X) (Y:=Y) (D:=D) (R:=R) (f:=f)}.
   Context g `{!Continuous (X:=X) (Y:=Y) D R g}.
 
-  Instance: MetricSpace X.   Proof. now destruct (_ : (D --> R)%subset f ). Qed.
-  Instance: MetricSpace Y.   Proof. now destruct (_ : (D --> R)%subset f ). Qed.
+  Instance: MetricSpace X.   Proof. now destruct (_ : (D --> R)%set f ). Qed.
+  Instance: MetricSpace Y.   Proof. now destruct (_ : (D --> R)%set f ). Qed.
 
   Context `{Setoid (S:=C)} (k:C ⇀ D) `{!Morphism (C ⇒ D) k} `{!Dense (X:=D) k⁺¹(C)}.
 

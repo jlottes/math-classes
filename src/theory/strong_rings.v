@@ -3,11 +3,11 @@ Require Import
 Require Export
   theory.rings.
 
-Lemma NonZero_strong_setoid       `{Zero}   `{StrongSetoid _ (S:=R)} : StrongSetoid (R ₀). Proof. now rewrite (_:SubsetOf (R ₀) R). Qed.
-Lemma NonNeg_strong_setoid  `{Le} `{Zero _} `{StrongSetoid _ (S:=R)} : StrongSetoid R⁺.    Proof. now rewrite (_:SubsetOf R⁺  R). Qed.
-Lemma NonPos_strong_setoid  `{Le} `{Zero _} `{StrongSetoid _ (S:=R)} : StrongSetoid R⁻.    Proof. now rewrite (_:SubsetOf R⁻  R). Qed.
-Lemma Pos_strong_setoid     `{Lt} `{Zero _} `{StrongSetoid _ (S:=R)} : StrongSetoid R₊.    Proof. now rewrite (_:SubsetOf R₊  R). Qed.
-Lemma Neg_strong_setoid     `{Lt} `{Zero _} `{StrongSetoid _ (S:=R)} : StrongSetoid R₋.    Proof. now rewrite (_:SubsetOf R₋  R). Qed.
+Lemma NonZero_strong_setoid       `{Zero}   `{StrongSetoid _ (S:=R)} : StrongSetoid (R ₀). Proof. now rewrite (_:Subset (R ₀) R). Qed.
+Lemma NonNeg_strong_setoid  `{Le} `{Zero _} `{StrongSetoid _ (S:=R)} : StrongSetoid R⁺.    Proof. now rewrite (_:Subset R⁺  R). Qed.
+Lemma NonPos_strong_setoid  `{Le} `{Zero _} `{StrongSetoid _ (S:=R)} : StrongSetoid R⁻.    Proof. now rewrite (_:Subset R⁻  R). Qed.
+Lemma Pos_strong_setoid     `{Lt} `{Zero _} `{StrongSetoid _ (S:=R)} : StrongSetoid R₊.    Proof. now rewrite (_:Subset R₊  R). Qed.
+Lemma Neg_strong_setoid     `{Lt} `{Zero _} `{StrongSetoid _ (S:=R)} : StrongSetoid R₋.    Proof. now rewrite (_:Subset R₋  R). Qed.
 
 Hint Extern 2 (StrongSetoid (_ ₀)) => eapply @NonZero_strong_setoid : typeclass_instances. 
 Hint Extern 2 (StrongSetoid _⁺   ) => eapply @NonNeg_strong_setoid  : typeclass_instances. 
@@ -55,7 +55,7 @@ Section rngs.
   Proof. intro. apply (nonzero_product x y). Qed.
 
   Lemma negate_nonzero x `{x ∊ R ₀} : -x ∊ R ₀.
-  Proof. split. apply _. rewrite <- (R $ negate_0). apply (strong_injective (-) _ _). firstorder. Qed.
+  Proof. split. apply _. red. rewrite <- (R $ negate_0). apply (strong_injective (-) _ _). firstorder. Qed.
 
 End rngs.
 
@@ -99,10 +99,15 @@ End morphisms_semirngs.
 
 Hint Extern 10 (Strong_Morphism _ (_ ₀) _) => class_apply @strong_injective_nonzero : typeclass_instances.
 
+Hint Extern 10 (?f ?x ∊ ?Y ₀) =>
+  match type of f with elt_type (?X ⇀ ?Y) =>
+    apply (strong_morphism_closed (X:=X ₀) (Y:=Y ₀))
+  end : typeclass_instances.
+
 Section morphisms_rngs.
   Context `{Rng A (R:=R1)} {Aue:UnEq A} `{!StrongRngOps R1}
           `{Rng B (R:=R2)} {Bue:UnEq B} `{!StrongRngOps R2}
-           {f:R1 ⇀ R2} `{!Rng_Morphism R1 R2 f}.
+           {f:R1 ⇀ R2} `{!SemiRng_Morphism R1 R2 f}.
 
   Lemma strong_injective_preserves_0 `{!Strong_Morphism R1 R2 f} :
     (∀ `{x ∊ R1 ₀}, f x ∊ R2 ₀) → StrongInjective R1 R2 f.
@@ -110,7 +115,7 @@ Section morphisms_rngs.
     apply (strong_extensionality (+ -f y)).
     rewrite (R2 $ plus_negate_r _).
     rewrite_on R2 <- (preserves_minus x y).
-    assert (x - y ∊ R1 ₀). split. apply _.
+    assert (x - y ∊ R1 ₀). split. apply _. red.
       apply (strong_extensionality (+ y)).
       now rewrite (R1 $ plus_plus_negate_l _ _), (R1 $ plus_0_l _).
     now destruct (_ : f (x-y) ∊ R2 ₀).

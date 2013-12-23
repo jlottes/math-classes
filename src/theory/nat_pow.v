@@ -4,19 +4,45 @@ Require Import
 Require Import
   stdlib_ring.
 
+(* choose subsets R and N by looking for a NatPowSpec instance *)
+Hint Extern 5 (Morphism _ (@pow ?A ?B ?pw)) =>
+  let X := fresh "X" in let Y := fresh "Y" in
+  evar (X:@set A); evar (Y:@set B);
+  let X' := eval unfold X in X in clear X;
+  let Y' := eval unfold Y in Y in clear Y;
+  let spec := constr:(_ : NatPowSpec X' Y' pw) in
+  instantiate; eapply (nat_pow_proper (NatPowSpec:=spec))
+: typeclass_instances.
+
 Lemma nat_pow_closed `{SemiRing (R:=R)} `{Naturals (N:=N)} {pw} {spec:NatPowSpec R N pw} :
   Closed (R ⇀ N ⇀ R) (^).
 Proof _.
 
-(* choose subsets R and N by looking for a NatPowSpec instance *)
 Hint Extern 5 (@pow ?A ?B ?pw _ _ ∊ _) =>
   let X := fresh "X" in let Y := fresh "Y" in
-  evar (X:@Subset A); evar (Y:@Subset B);
+  evar (X:@set A); evar (Y:@set B);
   let X' := eval unfold X in X in clear X;
   let Y' := eval unfold Y in Y in clear Y;
   let spec := constr:(_ : NatPowSpec X' Y' pw) in
-  instantiate; eapply (@nat_pow_closed _ _ _ _ _ _ X' _ _ _ _ _ _ _ Y')
+  instantiate; eapply (nat_pow_closed (spec:=spec))
 : typeclass_instances.
+
+Lemma natpowspec_proper: Find_Proper_Signature (@NatPowSpec) 0
+  (∀ A B Ae Be Aone Amult Bzero Bone Bplus, Proper ((=) ==> (=) ==> eq ==> impl)
+      (@NatPowSpec A B Ae Be Aone Amult Bzero Bone Bplus)).
+Proof. red. intros. intros R1 R2 ER N1 N2 EN pw pw2 Epw ?.
+  rewrite <-Epw. clear dependent pw2.
+  assert (Subset R1 R2) by (rewrite ER; apply _).
+  assert (Subset R2 R1) by (rewrite ER; apply _).
+  assert (Subset N1 N2) by (rewrite EN; apply _).
+  assert (Subset N2 N1) by (rewrite EN; apply _).
+  split.
+  rewrite <-(_ : Subset (R1 ⇒ N1 ⇒ R1) (R2 ⇒ N2 ⇒ R2) ). apply _.
+  intros x ? . exact (nat_pow_0 x).
+  intros x ? n ?. exact (nat_pow_S x n).
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@NatPowSpec) 0 _) => eexact natpowspec_proper : typeclass_instances.
+
 
 (* * Properties of Nat Pow *)
 Section nat_pow_properties.
@@ -123,8 +149,8 @@ Qed.
 
 End nat_pow_properties.
 
-Arguments nat_pow_1 {_ _ _ _ _ _ R _ _ _ _ _ _ _ N _ _ _ _} _ {_}.
-Arguments nat_pow_base_1 {_ _ _ _ _ _ R _ _ _ _ _ _ _ N _ _ _ _} _ {_}.
+Arguments nat_pow_1 {_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _} _ {_}.
+Arguments nat_pow_base_1 {_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _} _ {_}.
 Hint Extern 5 (RightIdentity (^) _ _) => class_apply @nat_pow_1 : typeclass_instances.
 Hint Extern 5 (LeftAbsorb (^) _ _) => class_apply @nat_pow_base_1 : typeclass_instances.
 Hint Extern 8 (_ ^ _ ∊ _ ₀) => eapply @nat_pow_nonzero : typeclass_instances.
@@ -140,7 +166,7 @@ Lemma nat_pow_base_mult x `{x ∊ R} y `{y ∊ R} n `{n ∊ N} :
   (x * y) ^ n = x ^ n * y ^ n.
 Proof. nat_induction n E.
 + now rewrite ?(R $ nat_pow_0 _), (R $ mult_1_l _).
-+ rewrite ?(R $ nat_pow_S _ _), (R $ E). subring R.
++ rewrite ?(R $ nat_pow_S _ _), (R $ E). setring R.
 Qed.
 
 End nat_pow_properties_comm.

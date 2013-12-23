@@ -1,18 +1,19 @@
 Require Import
   abstract_algebra interfaces.naturals interfaces.orders
-  theory.naturals orders.naturals
+  theory.rings theory.naturals orders.naturals
+  orders.lattices orders.minmax lattice_ordered_rings
   peano_naturals.
 
 Module Type TheNaturalsSig.
   Parameter A : Type.
-  Parameter N : @Subset A.
+  Parameter N : @set A.
   Parameter plus : Plus A.
   Parameter mult : Mult A.
   Parameter zero : Zero A.
   Parameter one  : One A.
   Parameter equiv: Equiv A.
   Parameter U    : NaturalsToSemiRing N.
-  Parameter naturals : @Naturals A plus mult zero one equiv N U.
+  Parameter naturals : @Naturals A N plus mult zero one equiv U.
   Parameter uneq : UnEq A.
   Parameter denial_inequality : DenialInequality N.
   Parameter le   : Le A.
@@ -25,7 +26,7 @@ Local Notation X := (every nat).
 
 Module TheNaturals : TheNaturalsSig.
   Definition A : Type := T.
-  Definition N : @Subset A := X.
+  Definition N : @set A := X.
   Definition plus  := _ : Plus T.
   Definition mult  := _ : Mult T.
   Definition zero  := _ : Zero T.
@@ -43,3 +44,8 @@ End TheNaturals.
 Notation the_naturals := TheNaturals.N.
 
 Instance: StrongSetoid the_naturals := strong_setoids.dec_strong_setoid.
+
+Instance: FullLatticeOrder the_naturals := dec_full_lattice_order.
+Instance: SemiRingLatticeOrder the_naturals := dec_semiring_lattice_order.
+
+Hint Extern 5 (?x * ?y ∊ the_naturals ₀) => eapply @dec_mult_nonzero: typeclass_instances.

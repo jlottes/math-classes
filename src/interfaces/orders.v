@@ -2,14 +2,14 @@ Require Import abstract_algebra.
 
 Section orders.
 
-  Context `{Ae : Equiv A} {Ale : Le A} {Alt : Lt A} {Ameet: Meet A} {AJoin: Join A}.
+  Context `{Ae : Equiv A} {Ale : Le A} {Alt : Lt A} {Ameet: Meet A} {Ajoin: Join A}.
 
   Class PartialOrder P : Prop :=
     { po_setoid : Setoid P
     ; po_proper  : Proper ((P,=) ==> (P,=) ==> impl) (≤)
-    ; po_refl    :> SubReflexive  P (≤)
-    ; po_trans   :> SubTransitive P (≤)
-    ; po_antisym :> SubAntiSymmetric P (≤)
+    ; po_refl    :> Reflexive  P (≤)
+    ; po_trans   :> Transitive P (≤)
+    ; po_antisym :> AntiSymmetric P (≤)
     }.
 
   Class TotalOrder S : Prop :=
@@ -50,8 +50,8 @@ Section orders.
   Class StrictSetoidOrder S : Prop :=
     { so_setoid : Setoid S
     ; so_proper  : Proper ((S,=) ==> (S,=) ==> impl) (<)
-    ; so_irrefl  :> SubIrreflexive S (<)
-    ; so_trans   :> SubTransitive  S (<)
+    ; so_irrefl  :> Irreflexive S (<)
+    ; so_trans   :> Transitive  S (<)
     }.
 
   Context {Aue : UnEq A}.
@@ -61,7 +61,7 @@ Section orders.
   Class PseudoOrder S : Prop :=
     { pseudo_order_setoid : StrongSetoid S
     ; pseudo_order_antisym x `{x ∊ S} y `{y ∊ S} : ¬(x < y ∧ y < x)
-    ; pseudo_order_cotrans :> SubCoTransitive S (<)
+    ; pseudo_order_cotrans :> CoTransitive S (<)
     ; apart_iff_total_lt x `{x ∊ S} y `{y ∊ S} : x ≠ y ↔ x < y ∨ y < x
     }.
 
@@ -70,7 +70,7 @@ Section orders.
   Class FullPartialOrder P : Prop :=
     { strict_po_setoid : StrongSetoid P
     ; strict_po_po :> PartialOrder P
-    ; strict_po_trans :> SubTransitive P (<)
+    ; strict_po_trans :> Transitive P (<)
     ; lt_iff_le_apart x `{x ∊ P} y `{y ∊ P} : x < y ↔ x ≤ y ∧ x ≠ y
     }.
 
@@ -81,11 +81,33 @@ Section orders.
     ; le_iff_not_lt_flip x `{x ∊ S} y `{y ∊ S} : x ≤ y ↔ ¬y < x
     }.
 
+
+  Class FullMeetSemiLatticeOrder L : Prop :=
+    { full_meet_sl_order :>> FullPseudoOrder L
+    ; full_meet_closed : Closed (L ⇀ L ⇀ L) (⊓)
+    ; full_meet_lb_l x `{x ∊ L} y `{y ∊ L} : x ⊓ y ≤ x
+    ; full_meet_lb_r x `{x ∊ L} y `{y ∊ L} : x ⊓ y ≤ y
+    ; meet_slb x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : x ⊓ y < z → x < z ∨ y < z
+    }.
+
+  Class FullJoinSemiLatticeOrder L : Prop :=
+    { full_join_sl_order :>> FullPseudoOrder L
+    ; full_join_closed : Closed (L ⇀ L ⇀ L) (⊔)
+    ; full_join_ub_l x `{x ∊ L} y `{y ∊ L} : x ≤ x ⊔ y
+    ; full_join_ub_r x `{x ∊ L} y `{y ∊ L} : y ≤ x ⊔ y
+    ; join_sub x `{x ∊ L} y `{y ∊ L} z `{z ∊ L} : z < x ⊔ y → z < x ∨ z < y
+    }.
+
+  Class FullLatticeOrder L : Prop :=
+    { full_lattice_meet_order :>> FullMeetSemiLatticeOrder L
+    ; full_lattice_join_order :>> FullJoinSemiLatticeOrder L
+    }.
+
 End orders.
 
 Section order_maps.
   Context {A B} {Ae: Equiv A} {Ale: Le A} {Alt: Lt A} {Be: Equiv B} {Ble: Le B} {Blt: Lt B}.
-  Context (S:@Subset A) (T:@Subset B) (f : A → B).
+  Context (S:@set A) (T:@set B) (f : A → B).
 
   (* An Order_Morphism is just the factoring out of the common parts of
     OrderPreserving and OrderReflecting *)
@@ -187,12 +209,28 @@ Hint Extern 4 (_ * _ ∊ _₊) => eapply @pos_mult_compat    : typeclass_instanc
 Hint Extern 20 (Closed (?R⁺ ⇀ ?R⁺ ⇀ ?R⁺) (.*.)) => eapply @nonneg_mult_compat : typeclass_instances. 
 Hint Extern 20 (Closed (?R₊ ⇀ ?R₊ ⇀ ?R₊) (.*.)) => eapply @pos_mult_compat    : typeclass_instances. 
 
-(* Absolute value for ring orders, useful only for total orders *)
+Class SemiRingLatticeOrder `{Equiv A} `{Plus A} `{Mult A}
+    `{Zero A} `{One A} {Ale : Le A} {Ameet: Meet A} {Ajoin: Join A} R :=
+  { srlatorder_sro :>> SemiRingOrder R
+  ; srlatorder_latorder :>> LatticeOrder R
+  ; srlatorder_distlat :>> DistributiveLattice R
+  ; plus_join_distr_l : LeftDistribute (+) (⊔) R
+  ; plus_meet_distr_l : LeftDistribute (+) (⊓) R
+  ; nonneg_mult_join_l x `{x ∊ R⁺} y `{y ∊ R} z `{z ∊ R} : x * (y ⊔ z) = x*y ⊔ x*z
+  ; nonneg_mult_meet_l x `{x ∊ R⁺} y `{y ∊ R} z `{z ∊ R} : x * (y ⊓ z) = x*y ⊓ x*z
+  ; nonneg_mult_join_r x `{x ∊ R⁺} y `{y ∊ R} z `{z ∊ R} : (y ⊔ z) * x = y*x ⊔ z*x
+  ; nonneg_mult_meet_r x `{x ∊ R⁺} y `{y ∊ R} z `{z ∊ R} : (y ⊓ z) * x = y*x ⊓ z*x
+  }.
+Hint Extern 2 (LeftDistribute (+) (⊔) _) => class_apply @plus_join_distr_l : typeclass_instances.
+Hint Extern 2 (LeftDistribute (+) (⊓) _) => class_apply @plus_meet_distr_l : typeclass_instances.
+
+Arguments plus_meet_distr_l {_ _ _ _ _ _ _ _ _ R _} x {_} y {_} z {_}.
+Arguments plus_join_distr_l {_ _ _ _ _ _ _ _ _ R _} x {_} y {_} z {_}.
+
 Local Open Scope mc_abs_scope.
-Class DecAbs `{Equiv A} `{Negate A} `{Zero A} {l:Le A} {a:Abs A} R :=
-  { abs_closed : Closed (R ⇀ R) |·|
-  ; abs_nonneg x `{x ∊ R⁺} : |x| = x
-  ; abs_nonpos x `{x ∊ R⁻} : |x| = -x
+Class LatticeAbs `{Equiv A} `{Zero A} `{Negate A} `{Le A} `{Join A} {a:Abs A} R :=
+  { abs_closed : Closed (R ⇀ R⁺) |·|
+  ; abs_def x `{x ∊ R} : |x| = x ⊔ -x
   }.
 
 (* Due to bug #2528 *)

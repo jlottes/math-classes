@@ -30,9 +30,9 @@ Lemma restrict_sub_sub `(S:A → Prop) (R1 R2:relation A) {sub:subrelation R1 R2
   : subrelation (restrict_rel S R1) (restrict_rel S R2).
 Proof. intros ?? [[??]?]. split. split; assumption. now apply sub. Qed.
 
-Lemma restrict_antisym `(S:A → Prop) (eq le:relation A) `{!AntiSymmetric eq le}
-  : AntiSymmetric (restrict_rel S eq)%signature (restrict_rel S le)%signature.
-Proof. intros ?? [[??]?] [[??]?]. split. split; assumption. now apply (antisymmetry le). Qed.
+Lemma restrict_antisym `(S:A → Prop) (eq le:relation A) `{!AntiSymmetricT eq le}
+  : AntiSymmetricT (restrict_rel S eq)%signature (restrict_rel S le)%signature.
+Proof. intros ?? [[??]?] [[??]?]. split. split; assumption. now apply (antisymmetry_t le). Qed.
 
 (*
 Hint Extern 15 (@RelationClasses.PER _ (@restrict_rel _ _ _)) => eapply @restrict_rel_per : typeclass_instances.

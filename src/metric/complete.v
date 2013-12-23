@@ -1,7 +1,7 @@
 Require Import
   abstract_algebra interfaces.orders interfaces.rationals interfaces.metric_spaces
   theory.setoids theory.jections theory.fields theory.rationals
-  orders.affinely_extended_field stdlib_field
+  orders.affinely_extended_field stdlib_field_dec
   orders.minmax orders.lattices
   metric.metric_spaces metric.maps prelength
   theory.products metric.products.
@@ -20,7 +20,7 @@ Local Notation Qfull := (aff_ext_full Q).
 Hint Extern 10 (ToCompletion ?X ?Y) => eexact (id : X ⇀ Y) : typeclass_instances.
 
 Section complete_dense_completion.
-  Context `(X:Subset) (Y:Subset) `{CompleteMetricSpace _ (X:=Y)} `{!Dense (X:=Y) X}.
+  Context `(X:set) (Y:set) `{CompleteMetricSpace _ (X:=Y)} `{!Dense (X:=Y) X}.
 
   Let sub := _ : X ⊆ Y.
   Instance: MetricSpace X := sub_metric_space.
@@ -32,9 +32,7 @@ Section complete_dense_completion.
   Qed.
 End complete_dense_completion.
 
-Hint Extern 10 (Completion _ _) => eapply @complete_dense_subset_completion : typeclass_instances.
-
-
+Hint Extern 10 (@Completion ?A _ ?e ?b ?A _ ?e ?b _ _) => eapply @complete_dense_subset_completion : typeclass_instances.
 
 (** The universal property of the completion of a metric space. *)
 
@@ -68,16 +66,10 @@ Section ufm_lift_to_completion.
     Proof ufm_cont_ext_unique_2 (to_completion X Y) id (id:(X ==> Z) ⇀ (X ==> Z)) _ _.
   End ufm.
 
-  Instance ufm_lift_to_completion_cont_strong `{!StronglyUniformlyContinuous X Z f}
-    : StronglyUniformlyContinuous Y Z f'.
-  Proof. unfold ufm_lift_to_completion.
-    now apply (ufm_cont_ext_strong # id (id:(X ==> Z) ⇀ (X ==> Z)) 0 f f).
-  Qed.
-
   Instance ufm_lift_to_completion_iso `{!Isometry X Z f} : Isometry Y Z f'.
   Proof. apply ( extend_isometry f' #⁺¹(X) ).
     split. exact (sub_metric_space (X:=Y)). apply _.
-      rewrite <-(_:SubsetOf (Y ⇒ Z) (#⁺¹(X) ⇒ Z)). apply _.
+      rewrite <-(_:Subset (Y ⇒ Z) (#⁺¹(X) ⇒ Z)). apply _.
     intros ε ? x' [?[x[? Ex]]] y' [?[y[? Ey]]].
     rewrite <-(Y $ Ex), <-(Y $ Ey), <-(isometric # _ _ _).
     setoid_rewrite (ufm_lift_to_completion_extends _ _ (_:Proper (X,=) x)).
@@ -90,7 +82,6 @@ End ufm_lift_to_completion.
 Hint Extern 2 (Morphism _ (ufm_lift_to_completion _)) => eapply @ufm_lift_to_completion_mor : typeclass_instances.
 Hint Extern 2 (UniformlyContinuous _ _ (ufm_lift_to_completion _)) => eapply @ufm_lift_to_completion_cont : typeclass_instances.
 Hint Extern 2 (Isometry _ _ ufm_lift_to_completion) => eapply @ufm_lift_to_completion_isometry : typeclass_instances.
-Hint Extern 2 (StronglyUniformlyContinuous _ _ (ufm_lift_to_completion _)) => eapply @ufm_lift_to_completion_cont_strong : typeclass_instances.
 Hint Extern 2 (Isometry _ _ (ufm_lift_to_completion _)) => eapply @ufm_lift_to_completion_iso : typeclass_instances.
 
 (** The map function of the completion monad. *)
@@ -112,10 +103,6 @@ Section ufm_completion_map.
 
   Context (f:X ⇀ Y).
   Notation f' := (ufm_completion_map f).
-
-  Lemma ufm_completion_map_cont_strong `{!StronglyUniformlyContinuous X Y f}
-  : StronglyUniformlyContinuous CX CY f'.
-  Proof. unfold ufm_completion_map, compose at 1. apply _. Qed.
 
   Lemma ufm_completion_map_iso `{!Isometry X Y f} : Isometry CX CY f'.
   Proof. unfold ufm_completion_map, compose at 1. apply _. Qed.
@@ -140,11 +127,10 @@ End ufm_completion_map.
 Hint Extern 2 (Morphism _ (ufm_completion_map _)) => eapply @ufm_completion_map_mor : typeclass_instances.
 Hint Extern 2 (UniformlyContinuous _ _ (ufm_completion_map _)) => eapply @ufm_completion_map_cont : typeclass_instances.
 Hint Extern 2 (Isometry _ _ ufm_completion_map) => eapply @ufm_completion_map_isometry : typeclass_instances.
-Hint Extern 2 (StronglyUniformlyContinuous _ _ (ufm_completion_map _)) => eapply @ufm_completion_map_cont_strong : typeclass_instances.
 Hint Extern 2 (Isometry _ _ (ufm_completion_map _)) => eapply @ufm_completion_map_iso : typeclass_instances.
 
 Local Hint Extern 5 (?x ∊ ?X) => match goal with
-  H : x ∊ ?S ?q |- _ => eapply (_: SubsetOf (S q) X)
+  H : x ∊ ?S ?q |- _ => eapply (_: Subset (S q) X)
 end : typeclass_instances.
 Local Hint Extern 5 (Cauchy ?S) => eexact (_ : S ∊ (CauchyFamilies _)) : typeclass_instances.
 
@@ -194,7 +180,7 @@ Section complete_prod_space.
     ae_rat_set_min c a b Ea Eb. ae_rat_set_min δ c (ε/2) Ec E.
     pose proof (ae_pos_finite_bound δ _ E).
     destruct (cauchy_family_inhabited (S:=S) δ) as [y ?].
-    assert (p+ε/2+ε/2 ≤ p+ε) as Ep by (apply (eq_le _ _); subfield Q).
+    assert (p+ε/2+ε/2 ≤ p+ε) as Ep by (apply (eq_le _ _); decfield Q).
     apply (ball_weaken_le (X:=X*Y) (p+ε/2+ε/2) _ _); trivial; try apply _.
     apply (ball_triangle (X:=X*Y) _ _ _ (fst' (g y), snd' (g y)) _).
     * setoid_rewrite (ufm_lift_to_completion_extends (X:=X*Y) (Y:=C) fst y y (_:Proper (X*Y,=) y)).
@@ -205,14 +191,14 @@ Section complete_prod_space.
     * split; simpl.
       - apply (C1 _ _ _ _). apply (ball_weaken_le δ _ _); try apply _.
         subsymmetry. apply (family_const_dist _ _ _).
-        apply (subtransitivity (S:=Q∞)) with c; trivial; apply _.
+        apply (transitivity (S:=Q∞)) with c; trivial; apply _.
       - apply (C2 _ _ _ _). apply (ball_weaken_le δ _ _); try apply _.
         subsymmetry. apply (family_const_dist _ _ _).
-        apply (subtransitivity (S:=Q∞)) with c; trivial; apply _.
+        apply (transitivity (S:=Q∞)) with c; trivial; apply _.
   Qed.
 End complete_prod_space.
-Hint Extern 2 (Limit (prod_subset _ _)) => eapply @prod_space_limit : typeclass_instances.
-Hint Extern 2 (CompleteMetricSpace (prod_subset _ _)) => eapply @prod_space_complete : typeclass_instances.
+Hint Extern 2 (Limit (prod_set _ _)) => eapply @prod_space_limit : typeclass_instances.
+Hint Extern 2 (CompleteMetricSpace (prod_set _ _)) => eapply @prod_space_complete : typeclass_instances.
 
 (** The product of completions is a completion. *)
 
@@ -238,56 +224,3 @@ Section prod_space_completion.
 End prod_space_completion.
 Hint Extern 2 (ToCompletion (_ * _) (_ * _)) => eapply @to_prod_space_completion : typeclass_instances.
 Hint Extern 2 (Completion (_ * _) (_ * _)) => eapply @prod_space_completion : typeclass_instances.
-
-(** A map for lifting binary functions to the completed domains and range.
-    Not actually that useful: the space (X==>Y==>Z) denotes functions
-    with a modulus of continuity for the second argument that may depend on the first.
-    Hence currying/uncurrying is a better approach.  *)
-
-Section ufm_completion_map_2.
-  Context `{Completion (X:=X) (X':=CX)}.
-  Context `{Completion (X:=Y) (X':=CY)}.
-  Context `{Completion (X:=Z) (X':=CZ)}.
-
-  Notation g := (to_completion X CX).
-  Notation h := (to_completion Y CY).
-  Notation k := (to_completion Z CZ).
-
-  Definition ufm_completion_map_2 : (X==>Y==>Z) ⇀ (CX==>CY==>CZ)
-    := ufm_cont_extension g ufm_completion_map id.
-
-  Hint Unfold ufm_completion_map_2 : typeclass_instances.
-
-  Instance ufm_completion_map_2_isometry:
-    Isometry (X==>Y==>Z) (CX==>CY==>CZ) ufm_completion_map_2 := _.
-
-  Context (f:X ⇀ Y ⇀ Z) `{!(X==>Y==>Z)%subset f}.
-
-  Instance: Morphism (X ⇒ Y ⇒ Z) f.
-  Proof. rewrite <-(_ : SubsetOf (X ⇒ Y ==> Z) (X ⇒ Y ⇒ Z)). apply _. Qed.
-
-  Instance ufm_completion_map_2_mor : Morphism (CX ⇒ CY ⇒ CZ) (ufm_completion_map_2 f).
-  Proof. rewrite <-(_ : SubsetOf (CX ⇒ CY ==> CZ) (CX ⇒ CY ⇒ CZ)). apply _. Qed.
-
-  Instance ufm_completion_map_2_cont : (CX==>CY==>CZ)%subset (ufm_completion_map_2 f) := _.
-
-  Lemma ufm_completion_map_2_extends x `{x ∊ X} y `{y ∊ Y}
-    : (ufm_completion_map_2 f) (g x) (h y) = k (f x y).
-  Proof. 
-    pose proof _ : (f x) ∊ (Y ==> Z) as Cfx. red in Cfx.
-    subtransitivity (ufm_completion_map (f x) (h y)).
-    + pose proof (ufm_cont_ext_extends_2 g ufm_completion_map id f x x (_:Proper (X,=) x)) as E.
-      unfold_sigs. apply (E (h y) (h y)). now red_sig.
-    + change ((ufm_completion_map (f x) ∘ h) y = (k ∘ (f x)) y).
-      apply (ufm_completion_map_extends _). now red_sig.
-  Qed.
-
-(*  Lemma completion_map_unique (cf:CX ⇀ CY) `{!UniformlyContinuous CX CY cf}
-  : cf ∘ g = h ∘ f → cf = (completion_map f).
-  Proof lift_to_completion_unique _ _. *)
-
-End ufm_completion_map_2.
-Hint Extern 2 (Morphism _ (ufm_completion_map_2 _)) => eapply @ufm_completion_map_2_mor : typeclass_instances.
-Hint Extern 2 (UniformlyContinuous _ _ (ufm_completion_map_2 _)) => eapply @ufm_completion_map_2_cont : typeclass_instances.
-Hint Extern 2 (Isometry _ _ ufm_completion_map_2) => eapply @ufm_completion_map_2_isometry : typeclass_instances.
-

@@ -1,18 +1,19 @@
 Require Import
-  abstract_algebra interfaces.orders interfaces.archimedean_ordered_field interfaces.metric_spaces
+  abstract_algebra interfaces.orders interfaces.archimedean_fields interfaces.metric_spaces
   interfaces.rationals the_ae_rationals
   theory.setoids theory.products theory.fields
-  metric.metric_spaces metric.maps metric.prelength metric.products
+  metric.metric_spaces metric.totally_bounded metric.maps_continuous
+  metric.prelength metric.products
   cauchy_completion metric.complete metric.continuity
-  metric.archimedean_ordered_field.
+  metric.archimedean_fields.
 Require Export
   arch_field_completion_ops.
 
 Local Open Scope grp_scope.
 
 Section contents.
-  Context `{ArchimedeanOrderedField A1 (F:=F)} `{Ball F} `{!ArchimedeanOrderedField_Metric F}.
-  Context `{R:@Subset A2} {Re:Equiv R} {Rue:UnEq R} {Rball:Ball R} {Rlimit:Limit R}.
+  Context `{ArchimedeanField A1 (F:=F)} `{Ball F} `{!ArchimedeanField_Metric F}.
+  Context `{R:@set A2} {Re:Equiv R} {Rue:UnEq R} {Rball:Ball R} {Rlimit:Limit R}.
   Context `{!ToCompletion F R} `{!Completion F R} `{!MetricInequality R}.
 
   Hint Extern 0 AmbientSpace => eexact F : typeclass_instances.
@@ -23,6 +24,7 @@ Section contents.
   Instance: FinitePoints R := finite_points_completion.
   Instance: LocatedPoints R := located_points_completion.
   Instance: StrongSetoid R := metric_inequality_strong_setoid.
+  Instance: LocallyTotallyBounded R := locally_totally_bounded_completion.
 
   Instance: StrongInjective F R #. Proof isometry_str_injective _.
   Instance: Strong_Morphism F R #. Proof strong_injective_mor _.
@@ -33,6 +35,12 @@ Section contents.
   Hint Extern 0 (Plus   A2) => eexact (Creals_plus   (F:=F) (R:=R)) : typeclass_instances.
   Hint Extern 0 (Mult   A2) => eexact (Creals_mult   (F:=F) (R:=R)) : typeclass_instances.
   Hint Extern 0 (Inv    A2) => eexact (Creals_inv    (F:=F) (R:=R)) : typeclass_instances.
+  Hint Extern 0 (Zero   (elt_type R)) => eexact (Creals_zero   (F:=F) (R:=R)) : typeclass_instances.
+  Hint Extern 0 (One    (elt_type R)) => eexact (Creals_one    (F:=F) (R:=R)) : typeclass_instances.
+  Hint Extern 0 (Negate (elt_type R)) => eexact (Creals_negate (F:=F) (R:=R)) : typeclass_instances.
+  Hint Extern 0 (Plus   (elt_type R)) => eexact (Creals_plus   (F:=F) (R:=R)) : typeclass_instances.
+  Hint Extern 0 (Mult   (elt_type R)) => eexact (Creals_mult   (F:=F) (R:=R)) : typeclass_instances.
+  Hint Extern 0 (Inv    (elt_type R)) => eexact (Creals_inv    (F:=F) (R:=R)) : typeclass_instances.
 
   Instance: 0 ∊ R := _ : # 0 ∊ R.
   Instance: 1 ∊ R := _ : # 1 ∊ R.
@@ -42,8 +50,8 @@ Section contents.
   Instance: ClosedFun (R ⇀ R) (-) := morphism_closed _.
   Hint Extern 5 (- _ ∊ R) => eapply (_ : ClosedFun (R ⇀ R) (-)) : typeclass_instances.
 
-  Instance Creals_plus_cont: StronglyUniformlyContinuous (R*R) R (uncurry (+) : R*R ⇀ R).
-  Proof. pose proof _ : StronglyUniformlyContinuous (R*R) R (ufm_completion_map (uncurry (+) : F*F ⇀ F)).
+  Instance Creals_plus_cont: UniformlyContinuous (R*R) R (uncurry (+) : R*R ⇀ R).
+  Proof. pose proof _ : UniformlyContinuous (R*R) R (ufm_completion_map (uncurry (+) : F*F ⇀ F)).
     cut (@equiv _ (ext_equiv (X:=R*R) (Y:=R)) (ufm_completion_map (uncurry (+) : F*F ⇀ F)) (uncurry (+))).
       intro E. now rewrite <-E.
     intros ?? E. unfold plus at 2. unfold Creals_plus.
@@ -55,7 +63,7 @@ Section contents.
   Instance: ClosedFun (R ⇀ R ⇀ R) (+) := binary_morphism_closed _.
   Hint Extern 5 (_ + _ ∊ R) => eapply (_ : ClosedFun (R ⇀ R ⇀ R) (+)) : typeclass_instances.
 
-  Notation mult_ext := (continuous_extension (to_completion (F*F) (R*R)) # (F*F) F (uncurry (.*.))).
+  Notation mult_ext := (continuous_extension (to_completion (F*F) (R*R)) # (F*F) F (uncurry (.*.)): R*R ⇀ R).
   Instance Creals_mult_cont: Continuous (R*R) R (uncurry (.*.) : R*R ⇀ R).
   Proof. cut (Continuous (R*R) R mult_ext).
       intro.
@@ -96,22 +104,19 @@ Section contents.
 
   Let preserves_negate x `{x ∊ F} : # (-x) = - # x.
   Proof.
-    destruct ( ufm_completion_map_extends (CX:=R) (-) _ _ (_:Proper (F,=) x) ).
-    subsymmetry.
+    now destruct ( ufm_completion_map_extends (CX:=R) (-) _ _ (_:Proper (F,=) x) ).
   Qed.
 
   Let preserves_plus x `{x ∊ F} y `{y ∊ F} : # (x+y) = # x + # y.
   Proof.
-    destruct ( ufm_completion_map_extends (CX:=R*R) (uncurry (+) : F*F ⇀ F ) (x,y) (x,y)
+    now destruct ( ufm_completion_map_extends (CX:=R*R) (uncurry (+) : F*F ⇀ F ) (x,y) (x,y)
       (_:Proper (F*F,=) (x,y)) ).
-    subsymmetry.
   Qed.
 
   Let preserves_mult x `{x ∊ F} y `{y ∊ F} : # (x*y) = # x * # y.
   Proof.
-    destruct ( cont_ext_extends (to_completion (F*F) (R*R)) # (F*F) F (uncurry (.*.))
+    now destruct ( cont_ext_extends (to_completion (F*F) (R*R)) # (F*F) F (uncurry (.*.))
       (x,y) (x,y) (_:Proper (F*F,=) (x,y)) ) .
-    subsymmetry.
   Qed.
 
   Instance: ∀ x, x ∊ F ₀ → #x ∊ R ₀.
@@ -206,7 +211,7 @@ Section contents.
   Instance: CommutativeRing R.
   Proof. repeat (split; try apply _). Qed.
 
-  Instance Creals_inject_ring_mor: Ring_Morphism F R #.
+  Instance Creals_inject_ring_mor: SemiRing_Morphism F R #.
   Proof. apply (ring_morphism_alt _ _).
     exact preserves_plus.
     exact preserves_mult.

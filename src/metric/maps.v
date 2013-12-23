@@ -12,8 +12,8 @@ Local Notation Qfull := (aff_ext_full Q).
 
 (* f = g → UniformlyContinuous X Y f ↔ UniformlyContinuous X Y g *)
 Lemma uniformly_continuous_proper: Find_Proper_Signature (@UniformlyContinuous) 0
-  (∀ A1 (Ae1:Equiv A1) (Aball1:Ball A1) (X:@Subset A1)
-     A2 (Ae2:Equiv A2) (Aball2:Ball A2) (Y:@Subset A2),
+  (∀ A1 (Ae1:Equiv A1) (Aball1:Ball A1) (X:@set A1)
+     A2 (Ae2:Equiv A2) (Aball2:Ball A2) (Y:@set A2),
      Proper ((=) ==> impl) (UniformlyContinuous X Y)).
 Proof. red; intros. intros f g E ?.
   destruct (_ : UniformlyContinuous X Y f) as [?? _ _ _].
@@ -25,8 +25,8 @@ Qed.
 Hint Extern 0 (Find_Proper_Signature (@UniformlyContinuous) 0 _) => eexact uniformly_continuous_proper : typeclass_instances.
 
 Lemma ufm_continuous_dom_ran_proper
-  {A} `{Equiv A} `{Ball A} (X:@Subset A)
-  {B} `{Equiv B} `{Ball B} (Y:@Subset B)
+  {A} `{Equiv A} `{Ball A} (X:@set A)
+  {B} `{Equiv B} `{Ball B} (Y:@set B)
   f `{!UniformlyContinuous X Y f}
   X' Y' : X = X' → Y = Y' → UniformlyContinuous X' Y' f.
 Proof. intros EX EY.
@@ -35,7 +35,7 @@ Proof. intros EX EY.
   assert (Y' ⊆ Y) by (rewrite <-EY; apply _).
   split. exact sub_metric_space. exact sub_metric_space.
   assert (Y ⊆ Y') by (rewrite <-EY; apply _).
-  rewrite <-(_ : SubsetOf (X ⇒ Y) (X' ⇒ Y')). apply _.
+  rewrite <-(_ : Subset (X ⇒ Y) (X' ⇒ Y')). apply _.
   intros ε ?. destruct (uniform_continuity_def X Y ε) as [δ [el P]].
   exists_sub δ. intros x ? y ?.
   assert (x ∊ X) by (rewrite EX; apply _).
@@ -45,8 +45,8 @@ Qed.
 
 (* f = g → Isometry X Y f ↔ Isometry X Y g *)
 Lemma isometry_proper: Find_Proper_Signature (@Isometry) 0
-  (∀ A1 (Ae1:Equiv A1) (Aball1:Ball A1) (X:@Subset A1)
-     A2 (Ae2:Equiv A2) (Aball2:Ball A2) (Y:@Subset A2),
+  (∀ A1 (Ae1:Equiv A1) (Aball1:Ball A1) (X:@set A1)
+     A2 (Ae2:Equiv A2) (Aball2:Ball A2) (Y:@set A2),
    Proper ((=) ==> impl) (Isometry X Y)).
 Proof. red; intros. intros f g E ?.
   destruct (_ : Isometry X Y f) as [?? _ _].
@@ -56,22 +56,9 @@ Proof. red; intros. intros f g E ?.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@Isometry) 0 _) => eexact isometry_proper : typeclass_instances.
 
-(* f = g → StronglyUniformlyContinuous X Y f ↔ StronglyUniformlyContinuous X Y g *)
-Lemma strongly_uniformly_continuous_proper: Find_Proper_Signature (@StronglyUniformlyContinuous) 0
-  (∀ A1 (Ae1:Equiv A1) (Aball1:Ball A1) (X:@Subset A1)
-     A2 (Ae2:Equiv A2) (Aball2:Ball A2) (Y:@Subset A2),
-     Proper ((=) ==> impl) (StronglyUniformlyContinuous X Y)).
-Proof. red; intros. intros f g E ?.
-  destruct (_ : UniformlyContinuous X Y f) as [?? _ _ _].
-  assert (UniformlyContinuous X Y g) by (rewrite <- E; apply _).
-  split; try apply _.
-  intros U ??. rewrite <-E. now apply (strongly_ufm_cont _ _).
-Qed.
-Hint Extern 0 (Find_Proper_Signature (@StronglyUniformlyContinuous) 0 _) => eexact strongly_uniformly_continuous_proper : typeclass_instances.
-
 Section maps.
-  Context `{X:Subset} `{Equiv X} `{Ball X}.
-  Context `{Y:Subset} `{Equiv Y} `{Ball Y}.
+  Context `{X:set} `{Equiv X} `{Ball X}.
+  Context `{Y:set} `{Equiv Y} `{Ball Y}.
 
   Existing Instance uniform_cont_X.
   Existing Instance uniform_cont_Y.
@@ -84,6 +71,14 @@ Section maps.
    destruct (ae_decompose_pos ε) as [E|?].
    + exists_sub ∞. intros. rewrite (_ $ E). exact (msp_ball_inf _ _).
    + destruct (uniform_continuity_def X Y ε) as [δ[? P]]. now exists_sub δ.
+  Qed.
+
+  Lemma uniform_continuity_finite f `{!UniformlyContinuous X Y f} ε `{ε ∊ Q∞₊} :  ∃ `{δ ∊ Q₊},
+    ∀ `{x ∊ X} `{y ∊ X}, ball δ x y → ball ε (f x) (f y).
+  Proof.
+   destruct (uniform_continuity f ε) as [δ[elδ Cf]].
+   destruct (ae_decompose_pos δ) as [Einf|?]. 2: now exists_sub δ.
+   exists_sub 1. intros x ? y ? _. apply (Cf _ _ _ _). rewrite (_ $ Einf). exact (msp_ball_inf _ _).
   Qed.
 
   Lemma isometric f `{!Isometry X Y f} ε `{ε ∊ Qfull} x `{x ∊ X} y `{y ∊ X}
@@ -101,21 +96,12 @@ Section maps.
     intros ε ?. exists_sub ε. intros. now rewrite <-(isometric f _ _ _).
   Qed.
 
-  Lemma isometry_strongly_uniformly_continuous f `{!Isometry X Y f} : StronglyUniformlyContinuous X Y f.
-  Proof. split. now apply isometry_uniformly_continuous.
-    destruct (_ : Isometry X Y f) as [?? _ _].
-    intros U [_ ?[d[? P]]] [x ?].
-    split; try apply _. exists_sub d.
-    intros ? [? [x1 [? Ex1]]] ? [? [x2 [? Ex2]]].
-    rewrite <- (_ $ Ex1), <- (_ $ Ex2), <- (isometric f _ _ _). now apply P.
-  Qed.
-
   Instance restrict_uniformly_continuous `{Y' ⊆ Y} `{!MetricSpace Y}
-      f `{!UniformlyContinuous X Y' f} (X':Subset) `{X' ⊆ X} : UniformlyContinuous X' Y f.
+      f `{!UniformlyContinuous X Y' f} (X':set) `{X' ⊆ X} : UniformlyContinuous X' Y f.
   Proof.
     split; trivial.
     + exact sub_metric_space.
-    + rewrite <-(_ : SubsetOf (X ⇒ Y') (X' ⇒ Y)). apply _.
+    + rewrite <-(_ : Subset (X ⇒ Y') (X' ⇒ Y)). apply _.
     + intros. pose proof (sub_metric_space : MetricSpace Y').
         destruct (uniform_continuity_def X Y' ε) as [δ[? P]]. exists_sub δ.
       intros. now apply (P _ _ _ _).
@@ -128,32 +114,31 @@ Section maps.
     now destruct (restrict_uniformly_continuous f S).
   Qed.
 
-  Lemma restrict_str_uniformly_continuous
-     f `{!StronglyUniformlyContinuous X Y f} (X':Subset) `{X' ⊆ X} : StronglyUniformlyContinuous X' Y f.
-  Proof. pose proof restrict_uniformly_continuous f X'.
-    split. apply _.
-    intros U [???] ?. split; try apply _.  apply subsetoid_image; apply _.
-    assert (Bounded (X:=X) U). split; trivial; try apply _. now transitivity X'.
-    now destruct (strongly_ufm_cont _ _ U).
+  Lemma isometry_bounded_image f `{!Isometry X Y f} U `{!Bounded (X:=X) U} : Bounded (X:=Y) f⁺¹(U).
+  Proof. 
+    split; try apply _.
+    destruct (bounded (X:=X) U) as [d[? P]].
+    exists_sub d.
+    intros a' [?[a[? Ea]]] b' [?[b[? Eb]]].
+    pose proof (_ : U ⊆ X).
+    rewrite <-(Y $ Ea), <-(Y $ Eb).
+    rewrite <-(isometric f _ _ _).
+    now apply P.
   Qed.
 
-  Lemma restrict_str_ufm_cont_image f `{!StronglyUniformlyContinuous X Y f} S `{!S ⊆ X}
-    : StronglyUniformlyContinuous S f⁺¹(S) f.
-  Proof. split. exact (restrict_ufm_cont_image f S).
-    pose proof restrict_str_uniformly_continuous f S.
-    intros U ??.
-    assert (U ⊆ X). transitivity S; apply _.
-    rewrite (subimage_image _).
-    split. exact sub_metric_space. exact (image_order_preserving _ _ _).
-    now destruct (strongly_ufm_cont S Y U).
+  Lemma isometry_bounded_inv_image f `{!Isometry X Y f} U `{!Bounded (X:=Y) U} : Bounded (X:=X) f⁻¹(U).
+  Proof. 
+    split; try apply _.
+    destruct (bounded (X:=Y) U) as [d[? P]].
+    exists_sub d.
+    intros a [??] b [??].
+    rewrite (isometric f _ _ _).
+    now apply P.
   Qed.
-
 End maps.
 
 Hint Extern 20 (UniformlyContinuous _ _ _) => eapply @isometry_uniformly_continuous : typeclass_instances.
-Hint Extern 20 (StronglyUniformlyContinuous _ _ _) => eapply @isometry_strongly_uniformly_continuous : typeclass_instances.
 Hint Extern 5 (UniformlyContinuous ?S ?f⁺¹(?S) ?f) => eapply @restrict_ufm_cont_image : typeclass_instances.
-Hint Extern 5 (StronglyUniformlyContinuous ?S ?f⁺¹(?S) ?f) => eapply @restrict_str_ufm_cont_image : typeclass_instances.
 
 Lemma id_isometry `{MetricSpace (X:=X)} `{Y ⊆ X} : Isometry Y X (id:Y ⇀ X).
 Proof. split; try apply _. exact sub_metric_space. tauto. Qed.
@@ -163,28 +148,16 @@ Lemma id_uniformly_cont `{MetricSpace (X:=X)} `{Y ⊆ X} : UniformlyContinuous Y
 Proof _.
 Hint Extern 2 (UniformlyContinuous _ _ id) => eapply @id_uniformly_cont : typeclass_instances.
 
-Lemma id_str_uniformly_cont `{MetricSpace (X:=X)} `{Y ⊆ X} : StronglyUniformlyContinuous Y X id.
-Proof _.
-Hint Extern 2 (StronglyUniformlyContinuous _ _ id) => eapply @id_str_uniformly_cont : typeclass_instances.
-
 Lemma const_uniformly_cont `{MetricSpace (X:=X)} `{MetricSpace (X:=Y)} c `{c ∊ Y}
   : UniformlyContinuous X Y (λ _, c).
 Proof. split; try apply _. intros ??. exists_sub ∞. now intros. Qed.
 Hint Extern 5 (UniformlyContinuous _ _ (λ _, ?c)) => eapply @const_uniformly_cont : typeclass_instances.
 
-Lemma const_str_uniformly_cont `{MetricSpace (X:=X)} `{MetricSpace (X:=Y)} c `{c ∊ Y}
-  : StronglyUniformlyContinuous X Y (λ _, c).
-Proof. split; try apply _. intros ???. split; try apply _.
-  exists_sub 0. intros ? [?[?[? E1]]] ? [?[?[? E2]]].
-  now rewrite <-(_ $ E1), <-(_ $ E2).
-Qed.
-Hint Extern 5 (StronglyUniformlyContinuous _ _ (λ _, ?c)) => eapply @const_str_uniformly_cont : typeclass_instances.
-
 
 Section more_maps.
-  Context `{X:Subset} `{Equiv X} `{Ball X}.
-  Context `{Y:Subset} `{Equiv Y} `{Ball Y}.
-  Context `{Z:Subset} `{Equiv Z} `{Ball Z}.
+  Context `{X:set} `{Equiv X} `{Ball X}.
+  Context `{Y:set} `{Equiv Y} `{Ball Y}.
+  Context `{Z:set} `{Equiv Z} `{Ball Z}.
 
   Existing Instance uniform_cont_X.
   Existing Instance uniform_cont_Y.
@@ -217,16 +190,6 @@ Section more_maps.
     destruct (uniform_continuity g ε) as [δ₁[? P1]].
     destruct (uniform_continuity f δ₁) as [δ₂[? P2]].
     exists_sub δ₂. intros. apply (P1 _ _ _ _). now apply P2.
-  Qed.
-
-  Lemma compose_str_uniformly_cont
-    f g `{!StronglyUniformlyContinuous X Y f} `{!StronglyUniformlyContinuous Y Z g}
-  : StronglyUniformlyContinuous X Z (g ∘ f).
-  Proof.
-    split; try apply _. intros U ??.
-    rewrite (compose_image _ _ _).
-    pose proof (strongly_ufm_cont X Y U).
-    apply (strongly_ufm_cont Y Z _).
   Qed.
 
   Lemma isometry_injective f `{!Isometry X Y f} : Injective X Y f.
@@ -269,7 +232,6 @@ End more_maps.
 Hint Extern 4 (Isometry _ _ (_ ∘ _)) =>  eapply @compose_isometry : typeclass_instances.
 Hint Extern 4 (Isometry _ _ (inverse _)) => eapply @invert_isometry : typeclass_instances.
 Hint Extern 4 (UniformlyContinuous _ _ (_ ∘ _)) => eapply @compose_uniformly_cont : typeclass_instances.
-Hint Extern 4 (StronglyUniformlyContinuous _ _ (_ ∘ _)) => eapply @compose_str_uniformly_cont : typeclass_instances.
 (*
 Hint Extern 10 (Strong_Morphism _ _ _) => eapply @uniformly_cont_strong_mor : typeclass_instances.
 Hint Extern 20 (Injective _ _ _) => eapply @isometry_injective : typeclass_instances.
@@ -300,8 +262,8 @@ Qed.
 Hint Extern 5 (Dense (_ ∘ _)⁺¹(_)) => eapply @dense_compose_iso : typeclass_instances.
 
 Section uniform_continuity_closure.
-  Context `{X:Subset} `{Equiv X} `{Ball X}.
-  Context `{Y:Subset} `{Equiv Y} `{Ball Y}.
+  Context `{X:set} `{Equiv X} `{Ball X}.
+  Context `{Y:set} `{Equiv Y} `{Ball Y}.
 
   Existing Instance uniform_cont_X.
   Existing Instance uniform_cont_Y.
@@ -320,37 +282,37 @@ Section uniform_continuity_closure.
   Qed.
 End uniform_continuity_closure.
 
+(*
 Section continuity_alt.
-  Context `{MetricSpace (X:=X)} `{D ⊆ X} `{!MetricComplementStable (X:=X) D}.
-  Context `{MetricSpace (X:=Y)} `{R ⊆ Y} `{!MetricComplementStable (X:=Y) R}.
+  Context `{MetricSpace (X:=X)} `{D ⊆ X} `{!Open (X:=X) D}.
+  Context `{MetricSpace (X:=Y)} `{R ⊆ Y} `{!Open (X:=Y) R}.
   Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
   Hint Extern 0 AmbientSpace => eexact Y : typeclass_instances.
 
-
   Lemma continuity_alt (f:D ⇀ R) `{!Morphism (D ⇒ R) f}
-    : (∀ `{U ⊂⊂ D}, UniformlyContinuous U R f ∧ Bounded f⁺¹(U) ∧ SetApart f⁺¹(U) (∼R))
+    : (∀ `{U ⊂⊂ D}, UniformlyContinuous U R f ∧ Bounded f⁺¹(U) ∧ SetContained f⁺¹(U) R)
      → Continuous D R f.
   Proof. intro P. split; try apply _; intros U ?. now destruct (P U _).
     split; try apply _; try apply (P U _).
   Qed.
 End continuity_alt.
 
-Lemma strongly_uniformly_continuous_continuous
-  `{MetricSpace (X:=X)} `{D ⊆ X} `{!MetricComplementStable (X:=X) D}
+Lemma bounded_uniformly_continuous_continuous
+  `{MetricSpace (X:=X)} `{D ⊆ X} `{!Open (X:=X) D}
   `{MetricSpace (X:=Y)}
-  f `{!StronglyUniformlyContinuous D Y f} : Continuous (X:=X) (Y:=Y) D Y f.
+  f `{!BoundedUniformlyContinuous D Y f} : Continuous (X:=X) (Y:=Y) D Y f.
 Proof. apply (continuity_alt f). intros U ?.
-  pose proof (restrict_str_uniformly_continuous f U).
+  pose proof (restrict_bounded_uniformly_continuous f U).
   assert (Bounded (X:=D) U). split; [ exact sub_metric_space | apply _ | exact (bounded U)].
-  pose proof (strongly_ufm_cont _ _ U).
+  pose proof (bounded_ufm_cont _ _ U).
   split; [| split]; apply _.
 Qed.
-Hint Extern 20 (Continuous _ _ _) => eapply @strongly_uniformly_continuous_continuous : typeclass_instances.
+Hint Extern 20 (Continuous _ _ _) => eapply @bounded_uniformly_continuous_continuous : typeclass_instances.
 
 (* f = g → Continuous D R f ↔ Continuous D R g *)
 Lemma continuous_proper: Find_Proper_Signature (@Continuous) 0
-  (∀ A1 (Ae1:Equiv A1) (Aball1:Ball A1) (X:@Subset A1) D
-     A2 (Ae2:Equiv A2) (Aball2:Ball A2) (Y:@Subset A2) R,
+  (∀ A1 (Ae1:Equiv A1) (Aball1:Ball A1) (X:@set A1) D
+     A2 (Ae2:Equiv A2) (Aball2:Ball A2) (Y:@set A2) R,
      Proper ((=)==> impl) (Continuous (X:=X) (Y:=Y) D R)).
 Proof. red; intros. intros f g Ef ?.
   destruct (_ : Continuous (X:=X) (Y:=Y) D R f) as [?? ?? _ _ _ _ _].
@@ -367,12 +329,12 @@ Lemma continuous_dom_ran_proper `{MetricSpace (X:=X)} `{MetricSpace (X:=Y)}
 Proof. intros ED ER.
   assert (D' ⊆ X) by (rewrite <-ED; apply _).
   assert (R' ⊆ Y) by (rewrite <-ER; apply _).
-  assert (MetricComplementStable (X:=X) D') by (rewrite <-ED; apply _).
-  assert (MetricComplementStable (X:=Y) R') by (rewrite <-ER; apply _).
+  assert (Open (X:=X) D') by (rewrite <-ED; apply _).
+  assert (Open (X:=Y) R') by (rewrite <-ER; apply _).
   assert (D' ⊆ D) by (rewrite <-ED; apply _).
   assert (R ⊆ R') by (rewrite <-ER; apply _).
   apply continuity_alt.
-  rewrite <-(_ : SubsetOf (D ⇒ R) (D' ⇒ R')). apply _.
+  rewrite <-(_ : Subset (D ⇒ R) (D' ⇒ R')). apply _.
   intros U ?. assert (WellContained (X:=X) U D) by (rewrite ED; apply _).
   pose proof (continuity_ufm (X:=X) (Y:=Y) U).
   pose proof (continuity_wc_range (X:=X) (Y:=Y) U).
@@ -386,8 +348,7 @@ Section id_continuous.
   Context `{MetricSpace (X:=X)}.
   Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
 
-  Lemma id_continuous `{R ⊆ X} `{D ⊆ R}
-    `{!MetricComplementStable D} `{!MetricComplementStable R}
+  Lemma id_continuous `{R ⊆ X} `{D ⊆ R} `{!Open D} `{!Open R}
   : Continuous D R id.
   Proof. assert (D ⊆ X) by (transitivity R; apply _).
     split; try apply _; intros U ?;
@@ -401,12 +362,12 @@ Hint Extern 2 (Continuous _ _ id) => eapply @id_continuous : typeclass_instances
 
 Section continuous_subsetoid.
   Context
-    `{X:Subset} `{Equiv X} `{Ball X}
-    `{Y:Subset} `{Equiv Y} `{Ball Y}.
+    `{X:set} `{Equiv X} `{Ball X}
+    `{Y:set} `{Equiv Y} `{Ball Y}.
   Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
   Hint Extern 0 AmbientSpace => eexact Y : typeclass_instances.
 
-  Instance continuous_subsetoid (D:@Subset X) (R:@Subset Y) `{!Setoid D} `{!Setoid R} : D --> R ⊆ D ⇒ R.
+  Instance continuous_subsetoid (D:@set X) (R:@set Y) `{!Setoid D} `{!Setoid R} : D --> R ⊆ D ⇒ R.
   Proof. apply subsetoid_alt. apply _. intros f g E P. red in P.
     red. unfold_sigs. now rewrite <-E.
     now intros ? [??? _].
@@ -417,9 +378,9 @@ Hint Extern 2 (Setoid (?X --> ?Y)) => eapply (subsetoid_a (T:=(X ⇒ Y))) : type
 
 Section compose_continuous.
   Context
-    `{X:Subset} `{Equiv X} `{Ball X}
-    `{Y:Subset} `{Equiv Y} `{Ball Y}
-    `{Z:Subset} `{Equiv Z} `{Ball Z}.
+    `{X:set} `{Equiv X} `{Ball X}
+    `{Y:set} `{Equiv Y} `{Ball Y}
+    `{Z:set} `{Equiv Z} `{Ball Z}.
   Hint Extern 0 AmbientSpace => eexact X : typeclass_instances.
   Hint Extern 0 AmbientSpace => eexact Y : typeclass_instances.
   Hint Extern 0 AmbientSpace => eexact Z : typeclass_instances.
@@ -435,7 +396,7 @@ Section compose_continuous.
     pose proof cont_Y : MetricSpace Y.
     pose proof cont_Y : MetricSpace Z.
     assert (Morphism (D₁ ⇒ D₂) f).
-      rewrite <-(_:SubsetOf (D₁ ⇒ R₁) (D₁ ⇒ D₂)). apply _.
+      rewrite <-(_:Subset (D₁ ⇒ R₁) (D₁ ⇒ D₂)). apply _.
     pose proof _ : Morphism (D₁ ⇒ R₂) (g ∘ (f:D₁ ⇀ D₂)).
     apply (continuity_alt _). intros U ?.
     pose proof (continuity_ufm U). pose proof (continuity_wc_range U).
@@ -447,7 +408,7 @@ Section compose_continuous.
     + cut ((g ∘ f)⁺¹(U) ⊂⊂ R₂). intuition; apply _.
       rewrite (compose_image); trivial; try apply _.
       rewrite <-(image_dom_range_proper f U D₂ U). apply _.
-      rewrite <-(_:SubsetOf (D₁ ⇒ R₁) (U ⇒ D₂)). apply _.
+      rewrite <-(_:Subset (D₁ ⇒ R₁) (U ⇒ D₂)). apply _.
   Qed.
 End compose_continuous.
 Hint Extern 2 (Continuous ?X ?Z (@compose _ ?X _ ?Y _ ?Z ?g ?f))
@@ -494,7 +455,7 @@ Section continuous_misc.
 
   Lemma pointwise_continuity x `{x ∊ D} ε `{ε ∊ Q∞₊} :  ∃ `{δ ∊ Q₊},
     ∀ `{y ∊ D}, ball δ x y → ball ε (f x) (f y).
-  Proof. destruct (ball_well_contained_stable (X:=X) D x) as [q[??]].
+  Proof. destruct (open_wc (X:=X) D x) as [q[??]].
     pose proof (continuity_ufm (B q x)).
     destruct (uniform_continuity (f:B q x ⇀ R) ε) as [δ[? C]].
     ae_rat_set_min r q δ E1 E2. pose proof (ae_pos_finite_bound r _ E1).
@@ -505,26 +466,21 @@ Section continuous_misc.
       apply (ball_weaken_le) with r; trivial; try apply _.
   Qed.
 
-  Context D' `{D' ⊆ D} `{!MetricComplementStable (X:=X) D'}.
+  Context D' `{D' ⊆ D} `{!Open D'}.
 
   Instance: D' ⊆ X. Proof. transitivity D; apply _. Qed.
 
   Lemma restrict_continuous : Continuous D' R f.
-  Proof. apply continuity_alt.
-    rewrite <- (_ : SubsetOf (D ⇒ R) (D' ⇒ R)). apply _.
-    intros U P.
-    rewrite ((⊆ X) $ (_ : D' ⊆ D)) in P.
-    pose proof (continuity_ufm U). pose proof (continuity_wc_range U).
-    repeat (split; [apply _ |]). apply _.
-  Qed.
+  Proof. change (Continuous D' R (f ∘ (id:D' ⇀ D)) ). apply _. Qed.
 
 End continuous_misc.
 Arguments pointwise_continuity {_ X _ _ _ Y _ _ D R} f {_} x {_} ε {_}.
+*)
 
 Hint Extern 30 (@Subset (elt_type (?X ⇀ ?Y))) => eapply ((UniformlyContinuous X Y) : Subset) : typeclass_instances.
 Hint Extern 30 (@Subset (elt_type (?X ⇀ ?Y))) => eapply ((Continuous X Y) : Subset) : typeclass_instances.
 
-Definition sup_ball `{X:Subset} `{Y:Subset} `{Ball Y} : Ball (X ⇀ Y)
+Definition sup_ball `{X:set} `{Y:set} `{Ball Y} : Ball (X ⇀ Y)
   := λ ε f g, ε ∊ Q∞⁺ ∧ ∀ `{x ∊ X}, ball ε (f x) (g x).
 Hint Extern 4 (Ball (elt_type (?X ⇀ ?Y))) => eexact (sup_ball (X:=X) (Y:=Y)) : typeclass_instances.
 Hint Extern 4 (Ball (elt_type (?X ⇒ ?Y))) => eexact (sup_ball (X:=X) (Y:=Y)) : typeclass_instances.
@@ -539,7 +495,7 @@ Hint Extern 4 (Equiv (elt_type (Isometry ?X ?Y))) => eapply (@ext_equiv _ X _ Y)
 
 
 Section fun_space.
-  Context `{Setoid (S:=X)} `{Y:Subset} `{Ball Y} `{Equiv Y} `{!MetricSpace Y}.
+  Context `{Setoid (S:=X)} `{Y:set} `{Ball Y} `{Equiv Y} `{!MetricSpace Y}.
 
   Ltac mor_prem_tac :=
     repeat match goal with H : ?f ∊ ?X ⇒ ?Y |- _ => change (Morphism (X ⇒ Y) f) in H end.

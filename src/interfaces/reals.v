@@ -1,30 +1,34 @@
 Require Import
-  abstract_algebra interfaces.orders interfaces.archimedean_ordered_field.
+  abstract_algebra interfaces.orders interfaces.archimedean_fields.
 
-Class FieldToReals `(R:Subset)
-  := field_to_reals: ∀ `{F:Subset} `{Equiv F} `{Le F} `{Mult F} `{Plus F} `{One F} `{Zero F} `{Negate F} `{Inv F}, F ⇀ R.
-Arguments field_to_reals {_} R {FieldToReals _} F {_ _ _ _ _ _ _ _} _.
-Instance: Params (@field_to_reals) 13.
+Class ToReals `(R:set)
+  := to_reals: ∀ `{F:set} `{Equiv F} `{Le F} `{Mult F} `{Plus F} `{One F} `{Zero F} `{Negate F} `{Inv F}, F ⇀ R.
+Arguments to_reals {_} R {ToReals _} F {_ _ _ _ _ _ _ _} _.
+Instance: Params (@to_reals) 13.
 
 Section definition.
-  Context `(R:Subset) `{ArchimedeanOrderedField _ (F:=R)}.
+  Context `(R:set) `{ArchimedeanField _ (F:=R)}.
 
-  Section spec.
-    Context `{ArchimedeanOrderedField (F:=F)}.
+  Local Notation f := (to_reals _ _).
 
-    Class FieldToRealsSpec (f:F ⇀ R) : Prop :=
-    { field_to_reals_mor : Ring_Morphism F R f
-    ; field_to_reals_embedding : StrictOrderEmbedding F R f
-    ; unique (g:F ⇀ R) `{!Ring_Morphism F R g} `{!StrictOrderEmbedding F R g} : g = f
-    }.
-  End spec.
-
-  Class Reals {U:FieldToReals R} : Prop :=
-  { reals_arch_ord_field :>> ArchimedeanOrderedField R
-  ; reals_spec `{ArchimedeanOrderedField (F:=F)} :> FieldToRealsSpec (field_to_reals R F)
+  Class Reals {U:ToReals R} : Prop :=
+  { reals_arch_field :>> ArchimedeanField R
+  ; to_reals_mor       `{ArchimedeanField (F:=F)} : SemiRing_Morphism    F R f
+  ; to_reals_embedding `{ArchimedeanField (F:=F)} : StrictOrderEmbedding F R f
+  ; to_reals_terminal  `{ArchimedeanField (F:=F)}
+      (g:F ⇀ R) `{!SemiRing_Morphism F R g} `{!StrictOrderEmbedding F R g} : g = f
   }.
 End definition.
 
-Hint Extern 2 (Ring_Morphism _ _ (field_to_reals _ _)) => eapply @field_to_reals_mor : typeclass_instances.
-Hint Extern 2 (StrictOrderEmbedding _ _ (field_to_reals _ _)) => eapply @field_to_reals_embedding : typeclass_instances.
+Hint Extern 2 (SemiRing_Morphism    _ _ (to_reals _ _)) => eapply @to_reals_mor : typeclass_instances.
+Hint Extern 2 (StrictOrderEmbedding _ _ (to_reals _ _)) => eapply @to_reals_embedding : typeclass_instances.
 
+(* The following class allows a specified reals instance to be referenced implicitly *)
+Class TheReals {A} := thereals : @set A.
+Identity Coercion Id_TheReals_Subset : TheReals >-> set.
+
+Ltac reals_of_type A := let H := constr:(@thereals A _) in eval unfold thereals in H.
+Ltac ensure_reals R :=
+  match type of R with @set ?A =>
+    let H := constr:(_ : @TheReals A) in unify H R
+  end.

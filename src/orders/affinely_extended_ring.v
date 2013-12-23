@@ -11,14 +11,14 @@ Local Notation notR := (ae_inf_undef _).
 
 Section closed.
   Context `{AffinelyExtendedRing A (R:=R)}.
-  Hint Extern 10 (@Subset A) => eexact F : typeclass_instances.
+  Hint Extern 10 (@set A) => eexact F : typeclass_instances.
 
   Lemma ae_plus_closed_F : Closed (F ⇀ F ⇀ F) (+).   Proof binary_morphism_closed (+).
   Lemma ae_mult_closed_F : Closed (F ⇀ F ⇀ F) (.*.). Proof binary_morphism_closed (.*.).
   Lemma ae_negate_closed_F : Closed (F ⇀ F) (-). Proof morphism_closed (-).
 
-  Lemma ae_zero_el_F : 0 ∊ F. Proof. apply (_ : SubsetOf R F). apply _. Qed.
-  Lemma ae_one_el_F : 1 ∊ F. Proof. apply (_ : SubsetOf R F). apply _. Qed.
+  Lemma ae_zero_el_F : 0 ∊ F. Proof. apply (_ : Subset R F). apply _. Qed.
+  Lemma ae_one_el_F : 1 ∊ F. Proof. apply (_ : Subset R F). apply _. Qed.
 
   Lemma ae_neg_proper_F : Proper ((F,=) ==> (F,=)) (-). Proof morphism_proper _.
   Lemma ae_plus_proper_F : Proper ((F,=) ==> (F,=) ==> (F,=)) (+). Proof binary_morphism_proper _.
@@ -48,11 +48,11 @@ Local Ltac decompose_ext x := let E := fresh "E" in cases_ext x E; [| rewrite (F
 
 Section subsetoid.
   Context `{AffinelyExtendedRing A (R:=R)}.
-  Hint Extern 10 (@Subset A) => eexact F : typeclass_instances.
+  Hint Extern 10 (@set A) => eexact F : typeclass_instances.
 
-  Instance: SubsetOf R∞ F.
+  Instance: Subset R∞ F.
   Proof. intros ? el. rewrite ae_set_def in el.
-    destruct el as [?|[??]]; trivial. now apply (_ : SubsetOf R F).
+    destruct el as [?|[??]]; trivial. now apply (_ : Subset R F).
   Qed.
 
   Lemma ae_inf_el_ext : ∞ ∊ R∞.
@@ -61,8 +61,8 @@ Section subsetoid.
   Instance ae_im_subsetoid : R ⊆ R∞.
   Proof. apply subsetoid_alt. apply _.
   + intros ?? [[el1 el2] E].
-    apply (_ : SubsetOf R∞ F) in el1.
-    apply (_ : SubsetOf R∞ F) in el2.
+    apply (_ : Subset R∞ F) in el1.
+    apply (_ : Subset R∞ F) in el2.
     intro. now rewrite <-(F $ E).
   + rewrite ae_set_def. intros ??. now left.
   Qed.
@@ -79,7 +79,7 @@ Section subsetoid.
     now intros ?[??].
   Qed.
 
-  Lemma ae_undef_notR : SubsetOf U notR.
+  Lemma ae_undef_notR : Subset U notR.
   Proof. intros ? [? el]. split. apply _. contradict el.
     rewrite ae_set_def. now left.
   Qed.
@@ -90,7 +90,7 @@ Section subsetoid.
     now intros ?[??].
   Qed.
 
-  Instance: 0 ∊ R∞. Proof. apply (_:SubsetOf R (aff_ext R)). apply _. Qed.
+  Instance: 0 ∊ R∞. Proof. apply (_:Subset R (aff_ext R)). apply _. Qed.
 
   Instance ae_nonneg_subsetoid : R∞⁺ ⊆ F.   Proof. transitivity R∞; apply _. Qed.
   Instance ae_nonpos_subsetoid : R∞⁻ ⊆ F.   Proof. transitivity R∞; apply _. Qed.
@@ -99,7 +99,7 @@ Section subsetoid.
 
   Local Ltac solve_cone := apply subsetoid_alt; [ apply _ 
   | intros ?? [[[??][??]]E]; intros [??]; split; [| apply _ ]; now rewrite <- (R∞ $ E)
-  | intros ? [??]; split; [apply (_:SubsetOf R (aff_ext R))|]; apply _
+  | intros ? [??]; split; [apply (_:Subset R (aff_ext R))|]; apply _
   ].
 
   Instance ae_nonneg_subsetoid_ext : R⁺ ⊆ R∞⁺.  Proof. solve_cone. Qed.
@@ -126,7 +126,7 @@ Hint Extern 2 (?R ⊆ aff_ext ?R) => eapply @ae_im_subsetoid : typeclass_instanc
 Hint Extern 2 (R∞ ⊆ F) => eapply @ae_ext_subsetoid : typeclass_instances.
 Hint Extern 2 (U ⊆ F) => eapply @ae_undef_subsetoid : typeclass_instances.
 Hint Extern 2 (notR ⊆ F) => eapply @ae_notR_subsetoid : typeclass_instances.
-Hint Extern 2 (SubsetOf U notR) => eapply @ae_undef_notR : typeclass_instances.
+Hint Extern 2 (Subset U notR) => eapply @ae_undef_notR : typeclass_instances.
 Hint Extern 2 (R∞⁺ ⊆ F) => eapply @ae_nonneg_subsetoid : typeclass_instances.
 Hint Extern 2 (R∞⁻ ⊆ F) => eapply @ae_nonpos_subsetoid : typeclass_instances.
 Hint Extern 2 (R∞₊ ⊆ F) => eapply @ae_pos_subsetoid : typeclass_instances.
@@ -142,19 +142,19 @@ Hint Extern 2 (?R₋ ⊆ (aff_ext_full ?R)) => eapply @ae_im_neg_subsetoid : typ
 Hint Extern 4 (- _ ∊ R∞) => eapply @ae_negate_closed_ext : typeclass_instances.
 Hint Extern 2 (∞ ∊ R∞₊) => eexact (conj ae_inf_el_ext (ae_inf_sub 0)) : typeclass_instances.
 
-Hint Extern 10 (_ ∊ (aff_ext ?R)⁺) => eapply (_:SubsetOf R⁺ (aff_ext R)⁺) : typeclass_instances.
-Hint Extern 10 (_ ∊ (aff_ext ?R)⁻) => eapply (_:SubsetOf R⁻ (aff_ext R)⁻) : typeclass_instances.
-Hint Extern 10 (_ ∊ (aff_ext ?R)₊) => eapply (_:SubsetOf R₊ (aff_ext R)₊) : typeclass_instances.
-Hint Extern 10 (_ ∊ (aff_ext ?R)₋) => eapply (_:SubsetOf R₋ (aff_ext R)₋) : typeclass_instances.
-Hint Extern 10 (_ ∊ aff_ext ?R) => eapply (_:SubsetOf R (aff_ext R)) : typeclass_instances.
-Hint Extern 10 (_ ∊ F) => eapply (_:SubsetOf R∞ F) : typeclass_instances.
+Hint Extern 10 (_ ∊ (aff_ext ?R)⁺) => eapply (_:Subset R⁺ (aff_ext R)⁺) : typeclass_instances.
+Hint Extern 10 (_ ∊ (aff_ext ?R)⁻) => eapply (_:Subset R⁻ (aff_ext R)⁻) : typeclass_instances.
+Hint Extern 10 (_ ∊ (aff_ext ?R)₊) => eapply (_:Subset R₊ (aff_ext R)₊) : typeclass_instances.
+Hint Extern 10 (_ ∊ (aff_ext ?R)₋) => eapply (_:Subset R₋ (aff_ext R)₋) : typeclass_instances.
+Hint Extern 10 (_ ∊ aff_ext ?R) => eapply (_:Subset R (aff_ext R)) : typeclass_instances.
+Hint Extern 10 (_ ∊ F) => eapply (_:Subset R∞ F) : typeclass_instances.
 
 Local Ltac undef_eq  := apply (ae_undef_eq); apply _.
 Local Ltac destr_F x := destruct (ae_decompose_full x); [| undef_eq ].
 
 Section negate.
   Context `{AffinelyExtendedRing A (R:=R)}.
-  Hint Extern 10 (@Subset A) => eexact F : typeclass_instances.
+  Hint Extern 10 (@set A) => eexact F : typeclass_instances.
 
   Lemma ae_minf_lt_inf : -∞ < ∞.
   Proof. subtransitivity 0. exact (ae_minf_slb 0). exact (ae_inf_sub 0). Qed.
@@ -253,7 +253,7 @@ Section negate.
   Lemma ae_inf_ub x `{el : x ∊ R∞} : x ≤ ∞.
   Proof. decompose_ext x.
     apply (lt_le (P:=R∞) _ _). exact (ae_inf_sub _).
-    apply (subreflexivity (S:=R∞)). apply _.
+    apply (reflexivity (S:=R∞)). apply _.
     apply (lt_le (P:=R∞) _ _). exact (ae_minf_lt_inf).
   Qed.
 
@@ -261,12 +261,12 @@ Section negate.
   Proof. decompose_ext x.
     apply (lt_le (P:=R∞) _ _). exact (ae_minf_slb _).
     apply (lt_le (P:=R∞) _ _). exact (ae_minf_lt_inf).
-    apply (subreflexivity (S:=R∞)). apply _.
+    apply (reflexivity (S:=R∞)). apply _.
   Qed.
 
   Lemma ae_sub_inf x `{el: x ∊ R∞} : (∀ `{y ∊ R}, y < x) → x = ∞.
   Proof. intro P. decompose_ext x.
-  + destruct (subirreflexivity (<) x). exact (P x _).
+  + destruct (irreflexivity (<) x). exact (P x _).
   + easy.
   + destruct ( lt_flip (S:=R∞) (-∞) 0 ). exact (ae_minf_slb 0).
     rewrite <- (R∞ $ E). exact (P 0 _).
@@ -274,7 +274,7 @@ Section negate.
 
   Lemma ae_slb_minf x `{el: x ∊ R∞} : (∀ `{y ∊ R}, x < y) → x = -∞.
   Proof. intro P. decompose_ext x.
-  + destruct (subirreflexivity (<) x). exact (P x _).
+  + destruct (irreflexivity (<) x). exact (P x _).
   + destruct ( lt_flip (S:=R∞) 0 ∞). exact (ae_inf_sub 0).
     rewrite <- (R∞ $ E). exact (P 0 _).
   + easy.
@@ -328,7 +328,7 @@ Section negate.
   Next Obligation. match goal with H : _ -> _ -> ¬ rel _ _ |- _ => exact (H _ _) end. Qed.
 
   Lemma ae_negate_invl_ext : Involutive (-) R∞.
-  Proof. intros x ?. decompose_ext x. exact (involutive _).
+  Proof. intros x ?. decompose_ext x. exact (negate_involutive _).
     exact ae_neg_inf_invl.
     now rewrite (F $ ae_neg_inf_invl).
   Qed.
@@ -384,7 +384,7 @@ Local Ltac decompose_pos x := let E := fresh "E" in cases_pos x E; [rewrite (F $
 
 Section negate2.
   Context `{AffinelyExtendedRing A (R:=R)}.
-  Hint Extern 10 (@Subset A) => eexact F : typeclass_instances.
+  Hint Extern 10 (@set A) => eexact F : typeclass_instances.
 
   Lemma ae_nonneg_negate : Closed (R∞⁺ ⇀ R∞⁻) (-).
   Proof. intros x ?. decompose_nonneg x.
@@ -436,7 +436,7 @@ Ltac destr_notR x := let E := fresh "E" in cases_notR x E; [| rewrite (F $ E)..]
 
 Section plus.
   Context `{AffinelyExtendedRing A (R:=R)}.
-  Hint Extern 10 (@Subset A) => eexact F : typeclass_instances.
+  Hint Extern 10 (@set A) => eexact F : typeclass_instances.
 
   Lemma ae_inf_plus_inf   :  ∞ + ∞ =  ∞.  Proof ae_plus_inf_l    ∞  ae_minf_lt_inf.
   Lemma ae_minf_minus_inf : -∞ - ∞ = -∞.  Proof ae_minus_inf_l (-∞) ae_minf_lt_inf.
@@ -583,7 +583,7 @@ Hint Extern 3 (_ + _ ∊ R∞₋) => eapply @ae_neg_plus_compat : typeclass_inst
 
 Section plus_order.
   Context `{AffinelyExtendedRing A (R:=R)}.
-  Hint Extern 10 (@Subset A) => eexact F : typeclass_instances.
+  Hint Extern 10 (@set A) => eexact F : typeclass_instances.
 
   Global Instance ae_plus_order_embedding_l `{z ∊ R} : OrderEmbedding F F (z+).
   Proof. split; (split; [split; try apply _; apply (submorphism_1 (X:=F) _ _) |..]); intros x ? y ?.
@@ -636,7 +636,7 @@ End plus_order.
 
 Section mult.
   Context `{AffinelyExtendedRing A (R:=R)}.
-  Hint Extern 10 (@Subset A) => eexact F : typeclass_instances.
+  Hint Extern 10 (@set A) => eexact F : typeclass_instances.
 
   Lemma ae_decompose_R_notR x `{x ∊ F} : x ∊ R ∨ x ∊ notR.
   Proof. destruct (ae_decompose_full x). cases_ext x E. now left.
@@ -758,13 +758,13 @@ Section mult.
 
   Lemma ae_mult_closed_notR_l : Closed (notR ⇀ F ⇀ notR) (.*.).
   Proof. intros x ? y ?. assert (x ∊ F) by firstorder. destruct (ae_decompose_R_notR y).
-    destr_notR x. apply (_ : SubsetOf U notR). apply _.
+    destr_notR x. apply (_ : Subset U notR). apply _.
     destruct (ae_decompose_ext_sign y) as [Ey|[?|?]]. rewrite (F $ Ey).
-      apply (_ : SubsetOf U notR). apply (ae_mult_0_notR_r _). apply _.
+      apply (_ : Subset U notR). apply (ae_mult_0_notR_r _). apply _.
       rewrite (F $ ae_pos_mult_inf_l y). apply _.
       rewrite (F $ ae_neg_mult_inf_l y). apply _.
     destruct (ae_decompose_ext_sign y) as [Ey|[?|?]]. rewrite (F $ Ey).
-      apply (_ : SubsetOf U notR). apply (ae_mult_0_notR_r _). apply _.
+      apply (_ : Subset U notR). apply (ae_mult_0_notR_r _). apply _.
       rewrite (F $ ae_pos_mult_minf_l y). apply _.
       rewrite (F $ ae_neg_mult_minf_l y). apply _.
     now apply ae_mult_closed_notR.
@@ -791,7 +791,7 @@ Hint Extern 2 (Commutative (.*.) F) => eapply @ae_mult_comm : typeclass_instance
 
 Section mult_ass.
   Context `{AffinelyExtendedRing A (R:=R)}.
-  Hint Extern 10 (@Subset A) => eexact F : typeclass_instances.
+  Hint Extern 10 (@set A) => eexact F : typeclass_instances.
   Context `{!DenialInequality F} `{!SubDecision F F (=)}.
 
   Lemma ae_mult_ass_0_1 x `{x ∊ F} y `{y ∊ F} : 0 * (x * y) = 0 * x * y.
@@ -872,7 +872,7 @@ Hint Extern 2 (Associative (.*.) F) => eapply @ae_mult_ass : typeclass_instances
 
 Section misc.
   Context `{AffinelyExtendedRing A (R:=R)}.
-  Hint Extern 10 (@Subset A) => eexact F : typeclass_instances.
+  Hint Extern 10 (@set A) => eexact F : typeclass_instances.
 
   Lemma ae_nonneg_sum_finite_bound x `{x ∊ R∞⁺} y `{y ∊ R∞⁺} z `{z ∊ R}
     : x + y ≤ z → x ∊ R⁺ ∧ y ∊ R⁺.

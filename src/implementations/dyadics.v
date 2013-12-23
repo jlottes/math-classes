@@ -9,9 +9,10 @@ Require Import
   interfaces.integers interfaces.naturals interfaces.rationals
   interfaces.additional_operations interfaces.orders
   orders.rings orders.integers orders.rationals
+  theory.lattices orders.lattices orders.minmax lattice_ordered_rings orders.abs
   nonneg_integers_naturals
   theory.fields
-  theory.rationals theory.shiftl theory.int_pow theory.nat_pow orders.abs
+  theory.rationals theory.shiftl theory.int_pow theory.nat_pow theory.nonneg_int_pow
   misc.quote stdlib_ring.
 
 Inductive DyadicT A := dyadic { mant : A ; expo : A }.
@@ -22,16 +23,16 @@ Arguments expo {A} _.
 Infix "▼" := dyadic (at level 69).
 
 Section def.
-  Context `(Z : @Subset A).
+  Context `(Z : @set A).
 
-  Definition Dyadic : @Subset (DyadicT A) := λ d, let (m,e) := d in m ∊ Z ∧ e ∊ Z.
+  Definition Dyadic : @set (DyadicT A) := λ d, mant d ∊ Z ∧ expo d ∊ Z.
 
   Lemma dyadic_closed : Closed (Z ⇀ Z ⇀ Dyadic) dyadic. Proof. split; apply _. Qed.
   Lemma mant_closed : Closed (Dyadic ⇀ Z) mant. Proof. now intros [??][??]. Qed.
   Lemma expo_closed : Closed (Dyadic ⇀ Z) expo. Proof. now intros [??][??]. Qed.
 End def.
 
-Hint Extern 10 (@Subset (DyadicT _)) => eapply @Dyadic : typeclass_instances.
+Hint Extern 10 (@set (DyadicT _)) => eapply @Dyadic : typeclass_instances.
 Hint Extern 5 (_ ▼ _ ∊ _) => eapply @dyadic_closed : typeclass_instances.
 Hint Extern 5 (mant _ ∊ _) => eapply @mant_closed : typeclass_instances.
 Hint Extern 5 (expo _ ∊ _) => eapply @expo_closed : typeclass_instances.
@@ -48,7 +49,6 @@ Section ops.
   Instance dy_1: One Dyadic := cast Z Dyadic 1.
 
   Instance dy_abs `{!Abs Z} : Abs Dyadic := λ x, abs (mant x) ▼ expo x.
-  Instance dy_pow `{!Pow A A} : Pow Dyadic A := λ x n, (mant x)^n ▼ n * expo x.
   Instance dy_shiftl: ShiftL Dyadic A := λ x n, mant x ▼ n + expo x.
 
   Section DtoQ_slow.
@@ -62,6 +62,11 @@ Section ops.
     if decide_sub_strong (≤) (expo x) (expo y)
     then mant x + mant y ≪ (expo y - expo x) ▼ expo x
     else mant x ≪ (expo x - expo y) + mant y ▼ expo y.
+
+  Instance dy_pow `{!Pow A A} : Pow Dyadic A := λ x n,
+    if decide_sub_strong (≤) 0 n
+    then (mant x)^n ▼ n * expo x
+    else 0.
 
   Instance dy_equiv: Equiv Dyadic := λ x y, mant (x - y) = 0.
   Instance dy_le   : Le    Dyadic := λ x y, mant (x - y) ≤ 0.
@@ -83,8 +88,9 @@ Hint Extern 0 (One    (DyadicT _)  ) => eapply @dy_1      : typeclass_instances.
 Hint Extern 0 (Abs    (DyadicT _)  ) => eapply @dy_abs    : typeclass_instances.
 Hint Extern 0 (Pow    (DyadicT _) _) => eapply @dy_pow    : typeclass_instances.
 Hint Extern 0 (ShiftL (DyadicT _) _) => eapply @dy_shiftl : typeclass_instances.
-Hint Extern 0 (Zero   (elt_type (Dyadic _))) => eapply @dy_0 : typeclass_instances.
-Hint Extern 0 (One    (elt_type (Dyadic _))) => eapply @dy_1 : typeclass_instances.
+Hint Extern 0 (Pow    (elt_type (Dyadic _)) _) => eapply @dy_pow    : typeclass_instances.
+Hint Extern 0 (Zero   (elt_type (Dyadic _)))   => eapply @dy_0 : typeclass_instances.
+Hint Extern 0 (One    (elt_type (Dyadic _)))   => eapply @dy_1 : typeclass_instances.
 
 Hint Extern 0 (Equiv (DyadicT _)) => eapply @dy_equiv : typeclass_instances.
 Hint Extern 0 (UnEq  (DyadicT _)) => eapply @default_uneq : typeclass_instances.
@@ -100,11 +106,11 @@ Section contents.
 
   Notation Dyadic := (Dyadic Z).
 
-  Instance: Closed (Z ⇀ Dyadic) (').                 Proof. split; apply _. Qed.
-  Instance: Closed (Dyadic ⇀ Dyadic) (-).            Proof. split; apply _. Qed.
-  Instance: Closed (Dyadic ⇀ Dyadic ⇀ Dyadic) (.*.). Proof. split; apply _. Qed.
-  Instance: 0 ∊ Dyadic.                              Proof. split; apply _. Qed.
-  Instance: 1 ∊ Dyadic.                              Proof. split; apply _. Qed.
+  Instance: Closed (Z ⇀ Dyadic) (').                 Proof. split; simpl; apply _. Qed.
+  Instance: Closed (Dyadic ⇀ Dyadic) (-).            Proof. split; simpl; apply _. Qed.
+  Instance: Closed (Dyadic ⇀ Dyadic ⇀ Dyadic) (.*.). Proof. split; simpl; apply _. Qed.
+  Instance: 0 ∊ Dyadic.                              Proof. split; simpl; apply _. Qed.
+  Instance: 1 ∊ Dyadic.                              Proof. split; simpl; apply _. Qed.
 
   Context `{UnEq _} `{!DenialInequality Z} `{Lt _} `{!FullPseudoSemiRingOrder Z}.
   Context `{!StrongSubDecision Z Z (=)}.
@@ -125,7 +131,7 @@ Section contents.
     Instance: Pow A A := _.
     Instance: NatPowSpec Z Z⁺ _ := _.
 
-    Context `{Rationals (Q:=Q)} `{!IntPowSpec Q Z ipw} `{!Ring_Morphism Z Q (ZtoQ: Z ⇀ Q)}
+    Context `{Rationals (Q:=Q)} `{!IntPowSpec Q Z ipw} `{!SemiRing_Morphism Z Q (ZtoQ: Z ⇀ Q)}
       `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder Q}.
     Add Ring Q : (stdlib_ring_theory Q).
 
@@ -137,6 +143,7 @@ Section contents.
     Proof. rewrite (Z $ shiftl_nat_pow (N:=Z⁺) _ _).
       preserves_simplify ZtoQ.
       rewrite (Q $ preserves_nat_pow (N:=Z⁺) (f:=ZtoQ) _ _).
+      mc_replace (ZtoQ 2 ^ n) with (2^n) on Q. easy.
       now mc_replace (ZtoQ 2) with 2 on (Q ₀) by (now preserves_simplify ZtoQ).
     Qed.
 
@@ -161,14 +168,14 @@ Section contents.
     Qed.
 
     Lemma DtoQ_slow_preserves_negate x `{x ∊ Dyadic} : DtoQ_slow' (-x) = -DtoQ_slow' x.
-    Proof. unfold DtoQ_slow. simpl. preserves_simplify ZtoQ. subring Q. Qed.
+    Proof. unfold DtoQ_slow. simpl. preserves_simplify ZtoQ. setring Q. Qed.
 
     Lemma DtoQ_slow_preserves_mult x {elx:x ∊ Dyadic} y {ely:y ∊ Dyadic}
       : DtoQ_slow' (x * y) = DtoQ_slow' x * DtoQ_slow' y.
     Proof.
       destruct x as [xn xe], y as [yn ye], elx, ely.
       unfold DtoQ_slow. simpl. preserves_simplify ZtoQ.
-      rewrite (Q $ int_pow_exp_plus 2 _ _). subring Q.
+      rewrite (Q $ int_pow_exp_plus 2 _ _). setring Q.
     Qed.
 
     Lemma DtoQ_slow_preserves_0 : DtoQ_slow' 0 = 0.
@@ -249,8 +256,8 @@ Section contents.
   + exact DtoQ_slow_preserves_negate.
   Qed.
 
-  Instance: Ring_Morphism Dyadic StdQ DtoStdQ.
-  Proof. apply ring_morphism_alt; try apply _.
+  Instance: SemiRing_Morphism Dyadic StdQ DtoStdQ.
+  Proof. apply (ring_morphism_alt _); try apply _.
   + exact DtoQ_slow_preserves_plus.
   + exact DtoQ_slow_preserves_mult.
   + exact DtoQ_slow_preserves_1.
@@ -268,11 +275,11 @@ Section contents.
     now rewrite (Z $ E).
   Qed.
 
-  Global Instance dy_inject_ring_mor: Ring_Morphism Z Dyadic (').
-  Proof. apply ring_morphism_alt. apply _. apply _. apply _.
+  Global Instance dy_inject_ring_mor: SemiRing_Morphism Z Dyadic (').
+  Proof. apply (ring_morphism_alt _). apply _.
   + intros x ? y ?. unfold plus at 2. unfold cast, dy_inject, dy_plus. simpl.
     destruct (decide_sub_strong le 0 0);
-    mc_replace (0 - 0) with 0 on Z⁺ by subring Z.
+    mc_replace (0 - 0) with 0 on Z⁺ by setring Z.
     now rewrite_on Z ->(shiftl_0 (N:=Z⁺) y).
     now rewrite_on Z ->(shiftl_0 (N:=Z⁺) x).
   + intros x ? y ?. unfold mult at 2. unfold cast, dy_inject, dy_mult. simpl.
@@ -316,7 +323,7 @@ Section contents.
   Proof. intros Ee. assert (expo y - expo x ∊ Z⁺) by now apply (flip_nonneg_minus _ _).
     rewrite (DtoQ_slow_preserves_equiv (ZtoQ:=ZtoStdQ) _ _).
     split; intro E; (
-      apply (subantisymmetry le _ _);
+      apply (antisymmetry le _ _);
       try rewrite <-(DtoQ_slow_preserves_le (ZtoQ:=ZtoStdQ) _ _);
       [ apply (dy_le_dec_aux_1 _ _ Ee) | apply (dy_le_dec_aux_2 _ _ Ee) ];
       try now rewrite (Z $ E)
@@ -398,32 +405,51 @@ Section contents.
     now rewrite <- ( embeds_nonpos (2^expo x *.) _), (embeds_nonpos ZtoStdQ _).
   Qed.
 
+  Instance dy_max : Join Dyadic := max (X:=Dyadic).
+  Instance dy_min : Meet Dyadic := min (X:=Dyadic).
+  Global Instance : LatticeOrder Dyadic := minmax_lattice.
+  Global Instance : FullLatticeOrder Dyadic := dec_full_lattice_order.
+  Global Instance : SemiRingLatticeOrder Dyadic := dec_semiring_lattice_order.
+
   Section abs.
-    Context `{Abs Z} `{!DecAbs Z}.
+    Context `{Abs Z} `{!LatticeOrder Z} `{!LatticeAbs Z}.
 
     Instance dy_abs_closed: Closed (Dyadic ⇀ Dyadic) (abs).
     Proof. intros ??. unfold abs, dy_abs. apply _. Qed.
 
-    Global Instance: DecAbs Dyadic.
-    Proof. split; [ apply _ | intros; unfold abs, dy_abs ..].
-    + assert (mant x ∊ Z⁺) by now apply (nonneg_mant x).
-      rewrite (Z $ abs_nonneg (mant x)). now destruct x.
-    + assert (mant x ∊ Z⁻) by now apply (nonpos_mant x).
-      rewrite (Z $ abs_nonpos (mant x)). now destruct x.
+    Global Instance: LatticeAbs Dyadic.
+    Proof. split; unfold abs, dy_abs.
+    + intros x ?. apply (nonneg_mant _). simpl. apply _.
+    + intros x ?. rewrite (_ $ abs_def _).
+      destruct (total (≤) (- mant x) (mant x)) as [E|E].
+      * rewrite (Z $ join_l _ _ E) . subtransitivity x. now destruct x.
+        subsymmetry. apply (join_l _ _). apply (nonneg_between (R:=Dyadic)).
+        rewrite (nonneg_mant _). now apply (between_nonneg _).
+      * rewrite (Z $ join_r _ _ E) . subtransitivity (-x). now destruct x.
+        subsymmetry. apply (join_r _ _). rewrite <-(_ $ negate_involutive x) at 1.
+        apply (nonneg_between (R:=Dyadic)).
+        rewrite (nonneg_mant _). simpl. apply (between_nonneg _).
+        now rewrite (_ $ negate_involutive _).
     Qed.
   End abs.
 
   Section pow.
     Context `{!NatPowSpec Z Z⁺ pw}.
 
-    Instance dy_pow_closed: Closed (Dyadic ⇀ Z⁺ ⇀ Dyadic) (^).
-    Proof. intros ????. unfold pow, dy_pow. apply _. Qed.
+    Instance dy_pow_closed: Closed (Dyadic ⇀ Z ⇀ Dyadic) (^).
+    Proof. intros ?? n ?. unfold pow, dy_pow.
+      destruct_dec_sub_strong E; [| apply _].
+      assert (n ∊ Z⁺) by now split.
+      apply _.
+    Qed.
 
     Hint Extern 2 (@pow _ _ dy_pow _ _ ∊ Dyadic) => eapply @dy_pow_closed : typeclass_instances.
 
     Lemma DtoStdQ_preserves_pow x `{x ∊ Dyadic} n `{n ∊ Z⁺}
       : DtoStdQ (x^n) = DtoStdQ x ^ n.
-    Proof. unfold pow at 1, dy_pow. unfold DtoQ_slow. simpl.
+    Proof. unfold pow at 1, dy_pow.
+      destruct_dec_sub_strong E; [| contradict E; apply (_ : n ∊ Z⁺)]; clear E.
+      unfold DtoQ_slow. simpl.
       rewrite (StdQ $ preserves_nat_pow (N:=Z⁺) _ _).
       mc_replace ((2:StdQ) ^ (n * expo x)) with ((2:StdQ) ^ (expo x * n)) on StdQ by
         now rewrite (Z $ commutativity (.*.) n (expo x)).
@@ -431,7 +457,7 @@ Section contents.
       subsymmetry. exact (int_pow_mult_nonneg _ _ _).
     Qed.
 
-    Global Instance: NatPowSpec Dyadic Z⁺ dy_pow.
+    Instance: NatPowSpec Dyadic Z⁺ dy_pow.
     Proof. intros. split.
     + apply binary_morphism_proper_back. intros x y E1 n m E2. unfold_sigs. red_sig.
       apply (injective DtoStdQ _ _).
@@ -442,6 +468,21 @@ Section contents.
     + intros. apply (injective DtoStdQ _ _).
       preserves_simplify (DtoStdQ). rewrite 2!(StdQ $ DtoStdQ_preserves_pow _ _).
       exact (nat_pow_S (N:=Z⁺) _ _).
+    Qed.
+
+    Global Instance: NonnegIntPowSpec Dyadic Z dy_pow.
+    Proof. split. apply _. apply binary_morphism_proper_back.
+      intros x y E1 a b E2. unfold_sigs. red_sig.
+      destruct (nonneg_or_neg a).
+      + assert (b ∊ Z⁺) by now rewrite <-(_ $ E2).
+        now destruct ( (_ : Proper ((Dyadic,=)==>(Z⁺,=)==>(Dyadic,=)) (^))
+               _ _ (Dyadic $ E1) _ _ (Z⁺ $ E2) ).
+      + unfold pow, dy_pow.
+        destruct_dec_sub_strong E3. assert (a ∊ Z⁺) by now split.
+          now destruct (nonneg_not_neg a).
+        destruct_dec_sub_strong E4. assert (b ∊ Z⁺) by now split.
+          destruct (nonneg_not_neg b). now rewrite <-(_ $ E2).
+        easy.
     Qed.
   End pow.
 
@@ -477,7 +518,7 @@ Section contents.
   Qed.
 
   Section embed_rationals.
-    Context `{Rationals B (Q:=Q)} `{!Ring_Morphism Z Q (ZtoQ: Z ⇀ Q)}.
+    Context `{Rationals B (Q:=Q)} `{!SemiRing_Morphism Z Q (ZtoQ: Z ⇀ Q)}.
 
     Notation DtoQ' := (DtoQ ZtoQ).
     Notation DtoQ_slow' := (DtoQ_slow ZtoQ).
@@ -512,8 +553,8 @@ Section contents.
         now rewrite (Q $ E'), (Q $ mult_1_r _).
     Qed.
 
-    Global Instance: Ring_Morphism Dyadic Q DtoQ'.
-    Proof. rewrite DtoQ_correct. apply ring_morphism_alt; try apply _.
+    Global Instance: SemiRing_Morphism Dyadic Q DtoQ'.
+    Proof. rewrite DtoQ_correct. apply (ring_morphism_alt _); try apply _.
     + exact DtoQ_slow_preserves_plus.
     + exact DtoQ_slow_preserves_mult.
     + exact DtoQ_slow_preserves_1.
@@ -529,7 +570,7 @@ Section contents.
       now apply (DtoQ_slow_preserves_le _ _).
     Qed.
 
-    Lemma DtoQ_unique (f:Dyadic ⇀ Q) `{!Ring_Morphism Dyadic Q f} : f = DtoQ'.
+    Lemma DtoQ_unique (f:Dyadic ⇀ Q) `{!SemiRing_Morphism Dyadic Q f} : f = DtoQ'.
     Proof. intros x y [[elx ?]E]. red_sig.
       rewrite <- (Dyadic $ E). clear dependent y.
       rewrite (Dyadic $ dyadic_decompose x). destruct x as [xm xe], elx; simpl.
@@ -540,6 +581,10 @@ Section contents.
   End embed_rationals.
 
 End contents.
+
+Hint Extern 0 (Join   (DyadicT _)  ) => eapply @dy_max   : typeclass_instances.
+Hint Extern 0 (Meet   (DyadicT _)  ) => eapply @dy_min   : typeclass_instances.
+
 
 Hint Extern 2 (IntegralDomain (Dyadic _)) => eapply @dy_intdom : typeclass_instances.
 Hint Extern 2 (StrongRngOps (Dyadic _)) => class_apply @intdom_strong : typeclass_instances.

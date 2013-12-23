@@ -149,7 +149,7 @@ Section order_preserving_ops.
 
 End order_preserving_ops.
 
-Lemma projected_partial_order `{Equiv A} `{Le A} `{Equiv B} `{Le B} {P1:@Subset A} {P2:@Subset B}
+Lemma projected_partial_order `{Equiv A} `{Le A} `{Equiv B} `{Le B} {P1:@set A} {P2:@set B}
   `{!Setoid P1} (f:P1 ⇀ P2) `{!Injective P1 P2 f} `{!PartialOrder P2}
   : (∀ `{x ∊ P1} `{y ∊ P1}, x ≤ y ↔ f x ≤ f y) → PartialOrder P1.
 Proof.
@@ -161,12 +161,12 @@ Proof.
   + intros x ? y ? z ? E1 E2. apply (P _ _ _ _).
     subtransitivity (f y); now apply (P _ _ _ _).
   + intros x ? y ? E1 E2. apply (injective f _ _).
-    apply (subantisymmetry (≤) _ _); now apply (P _ _ _ _).
+    apply (antisymmetry (≤) _ _); now apply (P _ _ _ _).
 Qed.
 
 Local Existing Instance closed_range.
 
-Lemma projected_total_relation `{Equiv A} `{Le A} `{Equiv B} `{Le B} {S1:@Subset A} {S2:@Subset B}
+Lemma projected_total_relation `{Equiv A} `{Le A} `{Equiv B} `{Le B} {S1:@set A} {S2:@set B}
   (f:S1 ⇀ S2) `{!Closed (S1 ⇀ S2) f} `{!TotalRelation S2 (≤)}
   : (∀ `{x ∊ S1} `{y ∊ S1}, x ≤ y ↔ f x ≤ f y) → TotalRelation S1 (≤).
 Proof.
@@ -174,25 +174,25 @@ Proof.
   destruct (total (≤) (f x) (f y)); [left | right]; now apply P.
 Qed.
 
-Lemma projected_total_order `{Equiv A} `{Le A} `{Equiv B} `{Le B} {S1:@Subset A} {S2:@Subset B}
+Lemma projected_total_order `{Equiv A} `{Le A} `{Equiv B} `{Le B} {S1:@set A} {S2:@set B}
   `{!Setoid S1} (f:S1 ⇀ S2) `{!Injective S1 S2 f} `{!TotalOrder S2}
   : (∀ `{x ∊ S1} `{y ∊ S1}, x ≤ y ↔ f x ≤ f y) → TotalOrder S1.
 Proof. intro. split. now apply (projected_partial_order f).
   pose proof injective_mor f. now apply (projected_total_relation f).
 Qed.
 
-Lemma projected_strict_order `{Equiv A} `{Lt A} `{Equiv B} `{Lt B} {S1:@Subset A} {S2:@Subset B}
+Lemma projected_strict_order `{Equiv A} `{Lt A} `{Equiv B} `{Lt B} {S1:@set A} {S2:@set B}
   `{!Setoid S1} (f:S1 ⇀ S2) `{!Morphism (S1 ⇒ S2) f} `{!StrictSetoidOrder S2}
   : (∀ `{x ∊ S1} `{y ∊ S1}, x < y ↔ f x < f y) → StrictSetoidOrder S1.
 Proof. intros P. split. apply _.
   + intros ?? E1 ?? E2. unfold_sigs. rewrite 2!(P _ _ _ _).
     intro. now rewrite_on S1 <- E1, <- E2.
-  + intros x ? E. destruct (subirreflexivity (<) (f x)). now apply P.
+  + intros x ? E. destruct (irreflexivity (<) (f x)). now apply P.
   + intros x ? y ? z ? E1 E2. apply (P _ _ _ _).
     subtransitivity (f y); now apply P.
 Qed.
 
-Lemma projected_pseudo_order `{Equiv A} `{UnEq A} `{Lt A} `{Equiv B} `{UnEq B} `{Lt B} {S1:@Subset A} {S2:@Subset B}
+Lemma projected_pseudo_order `{Equiv A} `{UnEq A} `{Lt A} `{Equiv B} `{UnEq B} `{Lt B} {S1:@set A} {S2:@set B}
   `{!StrongSetoid S1} (f:S1 ⇀ S2) `{!StrongInjective S1 S2 f} `{!PseudoOrder S2}
   : (∀ `{x ∊ S1} `{y ∊ S1}, x < y ↔ f x < f y) → PseudoOrder S1.
 Proof.
@@ -200,7 +200,7 @@ Proof.
   intro P. split. apply _.
   + intros x ? y ? [??]. destruct (pseudo_order_antisym (f x) (f y)). split; now apply P.
   + intros x ? y ? E z ?. apply (P _ _ _ _) in E.
-    destruct (subcotransitivity E (f z)); [left | right]; now apply P.
+    destruct (cotransitivity E (f z)); [left | right]; now apply P.
   + intros x ? y ?. split; intro E.
     * apply (strong_injective f _ _) in E.
       apply (apart_iff_total_lt _ _) in E. destruct E; [left | right]; now apply P.
@@ -211,7 +211,7 @@ Qed.
 Lemma projected_full_pseudo_order 
   `{Equiv A} `{UnEq A} `{Le A} `{Lt A}
   `{Equiv B} `{UnEq B} `{Le B} `{Lt B}
-  {S1:@Subset A} {S2:@Subset B} `{!StrongSetoid S1}
+  {S1:@set A} {S2:@set B} `{!StrongSetoid S1}
   (f:S1 ⇀ S2) `{!StrongInjective S1 S2 f} `{!FullPseudoOrder S2}
   : (∀ `{x ∊ S1} `{y ∊ S1}, x ≤ y ↔ f x ≤ f y)
   → (∀ `{x ∊ S1} `{y ∊ S1}, x < y ↔ f x < f y)
@@ -225,16 +225,16 @@ Proof.
   apply P1; trivial. apply (not_lt_le_flip _ _). contradict E. now apply P2.
 Qed.
 
-Lemma id_order_embedding `{PartialOrder (P:=P2)} {P1} `{!SubsetOf P1 P2} : OrderEmbedding P1 P2 id.
-Proof. split; (split; [|easy]); split; try apply _; rewrite (_ : SubsetOf P1 P2); apply _. Qed.
+Lemma id_order_embedding `{PartialOrder (P:=P2)} {P1} `{!Subset P1 P2} : OrderEmbedding P1 P2 id.
+Proof. split; (split; [|easy]); split; try apply _; rewrite (_ : Subset P1 P2); apply _. Qed.
 Hint Extern 2 (OrderEmbedding _ _ id) => class_apply @id_order_embedding : typeclass_instances.
 
-Lemma id_strict_order_embedding `{StrictSetoidOrder (S:=S2)} {S1} `{!SubsetOf S1 S2} : StrictOrderEmbedding S1 S2 id.
-Proof. split; (split; [|easy]); split; try apply _; rewrite (_ : SubsetOf S1 S2); apply _. Qed.
+Lemma id_strict_order_embedding `{StrictSetoidOrder (S:=S2)} {S1} `{!Subset S1 S2} : StrictOrderEmbedding S1 S2 id.
+Proof. split; (split; [|easy]); split; try apply _; rewrite (_ : Subset S1 S2); apply _. Qed.
 Hint Extern 2 (StrictOrderEmbedding _ _ id) => class_apply @id_strict_order_embedding : typeclass_instances.
 
 Section composition.
-  Context `{Equiv A} `{Equiv B} `{Equiv C} `{Le A} `{Le B} `{Le C} `{X:@Subset A} `{Y:@Subset B} `{Z:@Subset C}.
+  Context `{Equiv A} `{Equiv B} `{Equiv C} `{Le A} `{Le B} `{Le C} `{X:@set A} `{Y:@set B} `{Z:@set C}.
   Context (f : X ⇀ Y) (g : Y ⇀ Z).
 
   Instance compose_order_morphism:
@@ -267,7 +267,7 @@ Hint Extern 4 (OrderReflecting _ _ (_ ∘ _)) => class_apply @compose_order_refl
 Hint Extern 4 (OrderEmbedding  _ _ (_ ∘ _)) => class_apply @compose_order_embedding  : typeclass_instances.
 
 Section composition_strict.
-  Context `{Equiv A} `{Equiv B} `{Equiv C} `{Lt A} `{Lt B} `{Lt C} `{X:@Subset A} `{Y:@Subset B} `{Z:@Subset C}.
+  Context `{Equiv A} `{Equiv B} `{Equiv C} `{Lt A} `{Lt B} `{Lt C} `{X:@set A} `{Y:@set B} `{Z:@set C}.
   Context (f : X ⇀ Y) (g : Y ⇀ Z).
 
   Instance compose_strict_order_morphism:
@@ -335,4 +335,40 @@ Lemma order_embedding_proper: Find_Proper_Signature (@OrderEmbedding) 0
 Proof. red; intros. intros f g E ?. split; rewrite <- E; apply _. Qed.
 Hint Extern 0 (Find_Proper_Signature (@OrderEmbedding) 0 _) => eexact order_embedding_proper : typeclass_instances.
 
+
+Lemma strict_order_morphism_proper: Find_Proper_Signature (@StrictOrder_Morphism) 0
+  (∀ A B Ae Ale Be Ble S T, Proper ((@equiv (S ⇀ T) _) ==> impl)
+   (@StrictOrder_Morphism A B Ae Ale Be Ble S T)).
+Proof. red; intros. intros f g E ?. split; try apply _; rewrite <- E; apply _. Qed.
+Hint Extern 0 (Find_Proper_Signature (@StrictOrder_Morphism) 0 _) => eexact strict_order_morphism_proper : typeclass_instances.
+
+Lemma strictly_order_preserving_proper: Find_Proper_Signature (@StrictlyOrderPreserving) 0
+  (∀ A B Ae Ale Be Ble S T, Proper ((@equiv (S ⇀ T) _) ==> impl)
+   (@StrictlyOrderPreserving A B Ae Ale Be Ble S T)).
+Proof. red; intros. intros f g E ?. split; try apply _. rewrite <- E; apply _.
+  assert (Morphism (S ⇒ T) g) by (rewrite <-E; apply _).
+  intros x ? y ? ?. 
+  rewrite <-(E _ _ (_ : Proper (S,=) x)).
+  rewrite <-(E _ _ (_ : Proper (S,=) y)).
+  now apply (strictly_order_preserving f _ _).
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@StrictlyOrderPreserving) 0 _) => eexact strictly_order_preserving_proper : typeclass_instances.
+
+Lemma strictly_order_reflecting_proper: Find_Proper_Signature (@StrictlyOrderReflecting) 0
+  (∀ A B Ae Ale Be Ble S T, Proper ((@equiv (S ⇀ T) _) ==> impl)
+   (@StrictlyOrderReflecting A B Ae Ale Be Ble S T)).
+Proof. red; intros. intros f g E ?. split; try apply _. rewrite <- E; apply _.
+  assert (Morphism (S ⇒ T) g) by (rewrite <-E; apply _).
+  intros x ? y ? E2. 
+  rewrite <-(E _ _ (_ : Proper (S,=) x)) in E2.
+  rewrite <-(E _ _ (_ : Proper (S,=) y)) in E2.
+  now apply (strictly_order_reflecting f _ _).
+Qed.
+Hint Extern 0 (Find_Proper_Signature (@StrictlyOrderReflecting) 0 _) => eexact strictly_order_reflecting_proper : typeclass_instances.
+
+Lemma strict_order_embedding_proper: Find_Proper_Signature (@StrictOrderEmbedding) 0
+  (∀ A B Ae Ale Be Ble S T, Proper ((@equiv (S ⇀ T) _) ==> impl)
+   (@StrictOrderEmbedding A B Ae Ale Be Ble S T)).
+Proof. red; intros. intros f g E ?. split; rewrite <- E; apply _. Qed.
+Hint Extern 0 (Find_Proper_Signature (@StrictOrderEmbedding) 0 _) => eexact strict_order_embedding_proper : typeclass_instances.
 

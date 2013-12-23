@@ -16,7 +16,7 @@ Instance: Inverse of_nat := int_abs Z N.
 
 Instance: Morphism (N ⇒ Z⁺) of_nat. Proof. unfold of_nat. exact _. Qed.
 Instance: Morphism (N ⇒ Z) of_nat.
-Proof. rewrite <-(_:SubsetOf (N ⇒ Z⁺) (N ⇒ Z)). exact _. Qed.
+Proof. rewrite <-(_:Subset (N ⇒ Z⁺) (N ⇒ Z)). exact _. Qed.
 
 Instance: SemiRing_Morphism N Z⁺ of_nat. Proof. unfold of_nat. exact _. Qed.
 Instance: SemiRing_Morphism N Z of_nat.
@@ -24,7 +24,7 @@ Proof. rewrite <- ( SemiRing $ (_ : Z⁺ ⊆ Z) ). apply _. Qed.
 
 Instance: Morphism (Z⁺ ⇒ N) of_nat⁻¹.
 Proof. change (Morphism (Z⁺ ⇒ N) (int_abs Z N)).
-  rewrite <-(_:SubsetOf (Z ⇒ N) (Z⁺ ⇒ N)). apply _.
+  rewrite <-(_:Subset (Z ⇒ N) (Z⁺ ⇒ N)). apply _.
 Qed.
 
 Instance: SemiRing_Morphism Z⁺ N of_nat⁻¹.
@@ -69,7 +69,7 @@ Instance ZPos_cut_minus_spec: CutMinusSpec Z⁺ _.
 Proof. split; unfold cut_minus, ZPos_cut_minus.
 + apply binary_morphism_proper_back.
   intros ?? E1 ?? E2. unfold_sigs. red_sig. rewrite_on Z -> E1, E2.
-  exact (subreflexivity (S:=Z⁺) _).
+  exact (reflexivity (S:=Z⁺) _).
 + intros x ? y ? E. pose proof minus_nonneg _ _ E.
   rewrite (Z⁺ $ ZPos_int_to_nat_nonneg (x-y)).
   exact (plus_plus_negate_l _ _).
@@ -79,9 +79,6 @@ Qed.
 
 Section another_semiring.
   Context `{FullPseudoSemiRingOrder (R:=R)} (f:Z ⇀ R) `{!SemiRing_Morphism Z R f}.
-
-  Existing Instance pseudo_srorder_semiring.
-  Instance: SemiRing_Morphism Z⁺ R f := semiring_mor_nonneg_mor f.
 
   Instance Zpos_semiring_mor_nonneg : SemiRing_Morphism Z⁺ R⁺ f.
   Proof to_semiring_nonneg_mor (N:=Z⁺) (f:=f).

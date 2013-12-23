@@ -33,12 +33,14 @@ Proof. intros.
 Qed.
 
 Hint Extern 4 (_ ^ _ ∊ _ ₀) => eapply @int_pow_nonzero : typeclass_instances.
+Local Hint Extern 6 (_ ^ _ ∊ ?F) =>
+  match F with _ ₀ => fail 1 | _ => apply (_ : Subset (F ₀) F) end : typeclass_instances.
 
 Lemma int_pow_nonzero2: Closed (F ₀ ⇀ Z ⇀ F) (^).
 Proof. intros ????. apply NonZero_subset. apply _. Qed.
 
 Lemma int_pow_neg_alt x `{x ∊ F ₀} n `{n ∊ Z₋} : x ^ n = (x ^ (-n))⁻¹.
-Proof. apply (right_cancellation (.*.) (x ^ (-n)) (F ₀) (x^n) _).
+Proof. apply (right_cancellation (.*.) (x ^ (-n)) F (x^n) _).
   now rewrite_on (F ₀) -> (int_pow_neg x n), (field_inv_l (x ^ (- n))).
 Qed.
 
@@ -61,6 +63,9 @@ Proof.
         now apply (strong_extensionality (X:=F ₀) (Y:=F ₀) (⁻¹)).
     * now rewrite (denial_inequality n m).
 Qed.
+
+Instance int_pow_exp_proper x `{x ∊ F ₀} : Proper ((Z,=)==>(F,=)) (x^).
+Proof. intros ?? E. unfold_sigs. red_sig. now rewrite (_ $ E). Qed.
 
 Lemma int_pow_0 x `{x ∊ F} : x^0 = 1. Proof nat_pow_0 (N:=Z⁺) x.
 Instance int_pow_1 : RightIdentity (^) 1 F := nat_pow_1 (N:=Z⁺).
@@ -126,8 +131,8 @@ Qed.
 Lemma int_pow_S x `{x ∊ F ₀} n `{n ∊ Z} : x ^ (1 + n) = x * x ^ n.
 Proof. destruct (nonneg_or_neg n).
 + exact (nat_pow_S (R:=F) (N:=Z⁺) _ _).
-+ mc_replace n with (-(1+(-n-1))) on Z by subring Z.
-  mc_replace (1-(1+(-n-1))) with (-(-n-1)) on Z by subring Z.
++ mc_replace n with (-(1+(-n-1))) on Z by setring Z.
+  mc_replace (1-(1+(-n-1))) with (-(-n-1)) on Z by setring Z.
   generalize (int_pos_minus_1_nonneg (-n)). generalize (-n-1).
   clear dependent n. intros n ?.
   rewrite_on (F ₀) -> (int_pow_negate x n), (int_pow_negate x (1+n)).
@@ -142,7 +147,7 @@ Proof. pose proof _:(x^m)∊ F ₀. biinduction n.
 + rewrite (F ₀ $ int_pow_0 x). pose proof _:(x^m)∊ F ₀. now rewrite (F ₀ $ mult_1_l _), (Z $ plus_0_l _).
 + pose proof _:(x^n)∊ F ₀.
   rewrite <- (Z $ associativity (+) _ _ _), 2!(F ₀ $ int_pow_S _ _).
-  split; intro E; [| apply (left_cancellation (.*.) x (F ₀) _ _)];
+  split; intro E; [| apply (left_cancellation (.*.) x F _ _)];
   rewrite_on (F ₀) -> E; [| subsymmetry]; exact (associativity (.*.) _ _ _).
 Qed.
 
@@ -153,8 +158,8 @@ Proof. pose proof _:(x^n)∊ F ₀. biinduction m.
 + rewrite (F ₀ $ int_pow_S _ _).
   rewrite (Z $ plus_mult_distr_l _ _ _), (Z $ mult_1_r _).
   rewrite (F ₀ $ int_pow_exp_plus _ _ _).
-  split; intro E; [| apply (left_cancellation (.*.) (x^n) (F ₀) _ _)];
-  rewrite_on (F ₀) -> E; exact (subreflexivity (S:=F ₀) _).
+  split; intro E; [| apply (left_cancellation (.*.) (x^n) F _ _)];
+  rewrite_on (F ₀) -> E; exact (reflexivity (S:=F ₀) _).
 Qed.
 
 Context `{Le _} `{Lt _} `{!FullPseudoSemiRingOrder F}.
@@ -204,13 +209,17 @@ Proof.
 Qed.
 
 
+Instance: forall `{x ∊ F}, PropHolds (1 ≤ x) → x ∊ F₊.
+Proof. split. apply _. apply (lt_le_trans _ 1 _); trivial; exact lt_0_1. Qed.
+
+Instance: forall `{x ∊ F}, PropHolds (1 < x) → x ∊ F₊.
+Proof. intros. cut (PropHolds (1 ≤ x)). apply _. now apply (lt_le _ _). Qed.
+
 (* Making these instances Global is not useful, we don't have PropHolds (1 ≤ x)
   instances and it will only slow down instance resolution (it increases the
   compilation time of dyadics from 1:35 to 2:28). *)
-Instance int_pow_exp_le x `{x ∊ F} :
-  PropHolds (1 ≤ x) → OrderPreserving Z F (x^).
-Proof. intro. assert (x ∊ F₊). split. apply _.
-    apply (lt_le_trans _ 1 _); solve_propholds.
+Instance int_pow_exp_le x `{x ∊ F} : PropHolds (1 ≤ x) → OrderPreserving Z F (x^).
+Proof. intro. pose proof _ : x ∊ F₊ .
   split. split; try apply _. (* rewrite (_:F₊ ⊆ F). apply _. *)
   intros n ? m ? E. pose proof int_pow_pos x _ n _.
   destruct (decompose_le E) as [z [? Eb]].
@@ -222,9 +231,8 @@ Proof. intro. assert (x ∊ F₊). split. apply _.
   now apply (int_pow_ge_1 x z).
 Qed.
 
-Instance int_pow_exp_lt x `{x ∊ F} :
-  PropHolds (1 < x) → StrictlyOrderPreserving Z F (x^).
-Proof. intro. assert (x ∊ F₊). split. apply _. apply (subtransitivity _ 1 _); solve_propholds.
+Instance int_pow_exp_lt x `{x ∊ F} : PropHolds (1 < x) → StrictlyOrderPreserving Z F (x^).
+Proof. intro. pose proof _ : x ∊ F₊ .
   split. split; try apply _. (* rewrite (_:F₊ ⊆ F). apply _. *)
   intros n ? m ? E. pose proof int_pow_pos x _ n _.
   destruct (decompose_lt E) as [z [? Eb]].
@@ -235,9 +243,8 @@ Proof. intro. assert (x ∊ F₊). split. apply _. apply (subtransitivity _ 1 _)
   now apply (int_pow_gt_1 x z).
 Qed.
 
-Instance int_pow_exp_le_back x `{x ∊ F} :
-  PropHolds (1 < x) → OrderReflecting Z F (x^).
-Proof. intro. assert (x ∊ F₊). split. apply _. apply (subtransitivity _ 1 _); solve_propholds.
+Instance int_pow_exp_le_back x `{x ∊ F} : PropHolds (1 < x) → OrderReflecting Z F (x^).
+Proof. intro. pose proof _ : x ∊ F₊ .
   split. split; try apply _.
   intros n ? m ? E.
   destruct (total (≤) n m) as [E2|E2]; trivial.
@@ -251,22 +258,19 @@ Proof. intro. assert (x ∊ F₊). split. apply _. apply (subtransitivity _ 1 _)
   exact (strictly_order_preserving (x^) _ _ E3).
 Qed.
 
-Instance int_pow_exp_lt_back x `{x ∊ F} :
-  PropHolds (1 < x) → StrictlyOrderReflecting Z F (x^).
-Proof. intros E1. 
-  assert (x ∊ F₊). split. apply _. apply (subtransitivity _ 1 _); solve_propholds.
+Instance int_pow_exp_lt_back x `{x ∊ F} : PropHolds (1 < x) → StrictlyOrderReflecting Z F (x^).
+Proof. intros E1. pose proof _ :  x ∊ F₊ .
   assert (Strong_Morphism Z F (x^)).
     split. apply _.
     intros ?? ??. now apply (strong_extensionality (Y:=F ₀) (x^)).
-  pose proof int_pow_exp_le_back x _.
   apply _.
 Qed.
 
 Instance int_pow_inj x `{x ∊ F} : PropHolds (1 < x) → Injective Z F (x^).
-Proof. intro. assert (x ∊ F₊). split. apply _. apply (subtransitivity _ 1 _); solve_propholds.
-  split; try apply _. intros n ? m ? E. pose proof int_pow_exp_le_back x _.
+Proof. intro. pose proof _ : x ∊ F₊ .
+  split; try apply _. intros n ? m ? E.
   pose proof _ : x^m ∊ F ₀. pose proof _ : x^n ∊ F ₀.
-  apply (subantisymmetry (≤) n m); apply (order_reflecting (x^) _ _); now rewrite (F $ E).
+  apply (antisymmetry (≤) n m); apply (order_reflecting (x^) _ _); now rewrite (F $ E).
 Qed.
 End int_pow_properties.
 
@@ -283,13 +287,15 @@ Hint Extern 4 (_ ^ _ ∊ _⁺) => eapply @int_pow_nonneg : typeclass_instances.
 Hint Extern 3 (_ ^ _ ∊ _⁺) => eapply @int_pow_nonneg_2 : typeclass_instances.
 Hint Extern 4 (_ ^ _ ∊ _₊) => eapply @int_pow_pos : typeclass_instances.
 
+Hint Extern 2 (Proper _ (pow _)) => eapply @int_pow_exp_proper : typeclass_instances.
+
 Section preservation.
   Context
     `{Integers (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z} `{!FullPseudoSemiRingOrder Z}.
   Context
     `{Field (F:=F1)} `{!IntPowSpec F1 Z ip1}
     `{Field (F:=F2)} `{!IntPowSpec F2 Z ip2}
-    {f : F1 ⇀ F2} `{!Strong_Morphism F1 F2 f} `{!Ring_Morphism F1 F2 f}.
+    {f : F1 ⇀ F2} `{!Strong_Morphism F1 F2 f} `{!SemiRing_Morphism F1 F2 f}.
 
   Existing Instance field_mor_nonzero.
 
@@ -308,10 +314,8 @@ End preservation.
 Section exp_preservation.
   Context `{Integers (Z:=Z1)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z1} `{!FullPseudoSemiRingOrder Z1}.
   Context `{Integers (Z:=Z2)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z2} `{!FullPseudoSemiRingOrder Z2}.
-  Context `{Field (F:=F)} {f : Z1 ⇀ Z2} `{!Ring_Morphism Z1 Z2 f}.
+  Context `{Field (F:=F)} {f : Z1 ⇀ Z2} `{!SemiRing_Morphism Z1 Z2 f}.
   Context `{!IntPowSpec F Z1 ip1} `{!IntPowSpec F Z2 ip2}.
-
-  Existing Instance Zpos_semiring_mor_nonneg.
 
   Lemma preserves_int_pow_exp x `{x ∊ F ₀} n `{n ∊ Z1} :  x ^ (f n) = x ^ n.
   Proof. destruct (nonneg_or_neg n).
@@ -402,7 +406,7 @@ Section int_pow_default.
     clear E1 E2. pattern n'. apply naturals.induction; try apply _. solve_proper.
     * rewrite ?(F $ nat_pow_0 (N:=nat) _). exact (mult_1_r 1).
     * intros i _ IH. rewrite ?(F $ nat_pow_S (N:=nat) _ _).
-      subtransitivity (  (x⁻¹ ^ i * x ^ i) * (x / x) ). subring F.
+      subtransitivity (  (x⁻¹ ^ i * x ^ i) * (x / x) ). setring F.
       rewrite (F $ IH), (F $ mult_1_l _). exact (field_inv_r x).
   Qed.
 End int_pow_default.

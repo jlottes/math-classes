@@ -1,13 +1,13 @@
 Require Import
-  abstract_algebra interfaces.orders interfaces.archimedean_ordered_field interfaces.metric_spaces
+  abstract_algebra interfaces.orders interfaces.archimedean_fields interfaces.metric_spaces
   interfaces.rationals the_ae_rationals
   metric.complete metric.continuity.
 
 Local Open Scope grp_scope.
 
 Section contents.
-  Context `{ArchimedeanOrderedField (F:=F)} `{Ball F} `{!ArchimedeanOrderedField_Metric F}.
-  Context `{R:Subset} {Re:Equiv R} {Rue:UnEq R} {Rball:Ball R} {Rlimit:Limit R}.
+  Context `{ArchimedeanField (F:=F)} `{Ball F} `{!ArchimedeanField_Metric F}.
+  Context `{R:set} {Re:Equiv R} {Rue:UnEq R} {Rball:Ball R} {Rlimit:Limit R}.
   Context `{!ToCompletion F R} `{!Completion F R} `{!MetricInequality R}.
 
   Hint Extern 0 AmbientSpace => eexact F : typeclass_instances.
@@ -20,7 +20,7 @@ Section contents.
   Instance Creals_one    : One    R := # 1.
   Instance Creals_negate : Negate R := ufm_completion_map (-).
   Instance Creals_plus   : Plus   R := curry (ufm_completion_map (uncurry (+))).
-  Instance Creals_mult   : Mult   R := curry (continuous_extension (to_completion (F*F) (R*R)) # (F*F) F (uncurry (.*.))).
+  Instance Creals_mult   : Mult   R := curry (continuous_extension (to_completion (F*F) (R*R)) # (F*F) F (uncurry (.*.)):R*R ⇀ R).
   Instance Creals_inv    : Inv    R := continuous_extension # # (F ₀) (F ₀) (⁻¹).
 
   Notation Q := the_ae_rationals.

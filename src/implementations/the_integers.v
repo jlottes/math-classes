@@ -1,11 +1,13 @@
 Require Import
   abstract_algebra interfaces.integers interfaces.orders
-  theory.integers orders.integers
-  the_naturals natpair_integers.
+  theory.rings theory.integers orders.integers
+  orders.lattices orders.minmax lattice_ordered_rings
+  the_naturals natpair_integers
+  stdlib_ring.
 
 Module Type TheIntegersSig.
   Parameter A : Type.
-  Parameter Z : @Subset A.
+  Parameter Z : @set A.
   Parameter plus : Plus A.
   Parameter mult : Mult A.
   Parameter zero : Zero A.
@@ -27,7 +29,7 @@ Local Notation X := (SRpair N).
 
 Module TheIntegers : TheIntegersSig.
   Definition A : Type := T.
-  Definition Z : @Subset A := X.
+  Definition Z : @set A := X.
   Definition plus  := _ : Plus T.
   Definition mult  := _ : Mult T.
   Definition zero  := _ : Zero T.
@@ -40,10 +42,16 @@ Module TheIntegers : TheIntegersSig.
   Definition denial_inequality := _ : DenialInequality X.
   Definition le := _ : Le X.
   Definition lt := _ : Lt X.
-  Definition order : FullPseudoSemiRingOrder Z := _ : FullPseudoSemiRingOrder X.
+  Definition order : @FullPseudoSemiRingOrder A equiv uneq plus mult zero one le lt Z
+    := _ : FullPseudoSemiRingOrder X.
 End TheIntegers.
 
 Notation the_integers := TheIntegers.Z.
 
 Instance: StrongSetoid the_integers := strong_setoids.dec_strong_setoid.
+Instance: FullLatticeOrder the_integers := dec_full_lattice_order.
+Instance: SemiRingLatticeOrder the_integers := dec_semiring_lattice_order.
 
+Add Ring the_integers : (stdlib_ring_theory the_integers).
+
+Hint Extern 5 (?x * ?y ∊ the_integers ₀) => eapply @dec_mult_nonzero: typeclass_instances.

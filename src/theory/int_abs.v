@@ -34,7 +34,7 @@ End proper.
 Hint Extern 0 (Morphism _ (int_abs _ _)) => eapply @int_abs_proper : typeclass_instances.
 
 Section contents.
-Context `{Z:Subset} `{N:Subset} {f : N ⇀ Z}.
+Context `{Z:set} `{N:set} {f : N ⇀ Z}.
 Context `{Integers _ (Z:=Z)} `{UnEq _} `{Le _} `{Lt _} `{!DenialInequality Z} `{!FullPseudoSemiRingOrder Z}.
 Context `{Naturals _ (N:=N)} `{!SemiRing_Morphism N Z f} `{!IntAbs Z N}.
 
@@ -94,7 +94,7 @@ Lemma int_abs_nonneg x `{x ∊ Z⁺} :
   f (int_abs Z N x) = x.
 Proof.
   destruct (int_abs_spec x); intuition.
-  rewrite_on Z -> (nonneg_nonpos_zero x).
+  rewrite_on Z -> (nonneg_nonpos_0 x).
   rewrite_on N -> int_abs_0.
   exact preserves_0.
 Qed.

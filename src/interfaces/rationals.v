@@ -1,20 +1,20 @@
 Require Import
   abstract_algebra interfaces.integers.
 
-Class RationalsToField `(Q:Subset)
-  := rationals_to_field: ∀ `(F:@Subset B) `{Mult B} `{Plus B} `{One B} `{Zero B} `{Negate B} `{Inv B}, Q ⇀ F.
-Arguments rationals_to_field {_} Q {RationalsToField B} F {_ _ _ _ _ _} _.
+Class RationalsToField `(Q:set)
+  := rationals_to_field: ∀ `(F:set) `{Mult F} `{Plus F} `{One F} `{Zero F} `{Negate F} `{Inv F}, Q ⇀ F.
+Arguments rationals_to_field {_} Q {RationalsToField _} F {_ _ _ _ _ _} _.
 Instance: Params (@rationals_to_field) 11.
 
 Section definition.
-  Context `(Q:Subset) `{Field _ (F:=Q)}.
+  Context `(Q:set) `{Field _ (F:=Q)}.
 
   Section spec.
     Context `{Field (F:=F)}.
 
     Class RationalsToFieldSpec (f:Q ⇀ F) : Prop :=
-    { rationals_to_field_mor    : Ring_Morphism Q F f
-    ; rationals_to_field_unique (g:Q ⇀ F) `{!Ring_Morphism Q F g} : g = f
+    { rationals_to_field_mor    : SemiRing_Morphism Q F f
+    ; rationals_to_field_unique (g:Q ⇀ F) `{!SemiRing_Morphism Q F g} : g = f
     }.
   End spec.
 
@@ -28,5 +28,5 @@ Section definition.
   }.
 End definition.
 
-Hint Extern 2 (Ring_Morphism _ _ (rationals_to_field _ _)) => eapply @rationals_to_field_mor : typeclass_instances.
+Hint Extern 2 (SemiRing_Morphism _ _ (rationals_to_field _ _)) => eapply @rationals_to_field_mor : typeclass_instances.
 

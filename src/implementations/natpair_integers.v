@@ -34,7 +34,7 @@ Section for_another_ring.
   Proof. intros [xp xn][yp yn] [[[??][??]]E]. change (xp + yn = yp + xn) in E.
     unfold integers_to_ring, SRpair_to_ring. split. split; apply _.
     apply (equal_by_zero_sum _ _).
-    subtransitivity (n_to_sr xp + n_to_sr yn - (n_to_sr xn + n_to_sr yp)). subring R.
+    subtransitivity (n_to_sr xp + n_to_sr yn - (n_to_sr xn + n_to_sr yp)). setring R.
     rewrite <- !(R $ preserves_plus (f:=n_to_sr) _ _), (N $ E), (N $ commutativity (+) xn yp).
     exact (plus_negate_r _).
   Qed.
@@ -42,7 +42,7 @@ Section for_another_ring.
   Ltac derive_preservation :=
     repeat match goal with H : ?x ∊ Z |- _ => destruct x as [??], H as [??] end;
     unfold integers_to_ring, SRpair_to_ring; simpl;
-    preserves_simplify (naturals_to_semiring N R); subring R.
+    preserves_simplify (naturals_to_semiring N R); setring R.
 
   Let preserves_plus x `{x ∊ Z} y `{y ∊ Z}: z_to_r (x + y) = z_to_r x + z_to_r y.
   Proof. derive_preservation. Qed.
@@ -53,16 +53,15 @@ Section for_another_ring.
   Let preserves_1: z_to_r 1 = 1.
   Proof. derive_preservation. Qed.
 
-  Global Instance: Ring_Morphism Z R z_to_r.
-  Proof.
-    repeat (split; try apply _).
+  Global Instance: SemiRing_Morphism Z R z_to_r.
+  Proof. apply (ring_morphism_alt z_to_r). apply _.
     exact preserves_plus.
     exact preserves_mult.
-    exists_sub (1:SRpairT N). exact preserves_1.
+    exact preserves_1.
   Qed.
 
   Section for_another_morphism.
-    Context (f : Z ⇀ R) `{!Ring_Morphism Z R f}.
+    Context (f : Z ⇀ R) `{!SemiRing_Morphism Z R f}.
 
     Definition g : N ⇀ R := f ∘ cast N Z.
 

@@ -43,9 +43,12 @@ Proof. repeat (split; try apply _). Qed.
 (** Structure predicates are proper in their subset argument *)
 
 Ltac structure_proper :=
-  red; intros; intros ?? E P; destruct P; split; try apply _; 
+  red; intros; intros X Y E P;
+  assert (Subset X Y) by (rewrite <-E; apply _);
+  assert (Subset Y X) by (rewrite <-E; apply _);
+  destruct P; split; try apply _; 
   try (rewrite <- E; apply _);
-  repeat match goal with H : Morphism ?S ?f |- Morphism ?T ?f => rewrite <-(_:SubsetOf S T); apply _ end.
+  repeat match goal with H : Morphism ?S ?f |- Morphism ?T ?f => rewrite <-(_:Subset S T); apply _ end.
 
 Lemma semigroup_proper: Find_Proper_Signature (@SemiGroup) 0
   (∀ A op Ae, Proper ((=)==>impl) (@SemiGroup A op Ae)).
@@ -93,27 +96,27 @@ End monoid_props.
 Section group_props.
 Context `{Group (G:=G)}.
 
-Global Instance inverse_involutive: Involutive (⁻¹) G.
+Instance inverse_involutive: Involutive (⁻¹) G.
 Proof.
   intros x ?.
   rewrite_on G <-(left_identity (&) x) at 2.
-  rewrite_on G <-(left_inverse (&) x⁻¹). 
+  rewrite_on G <-(left_inverse (&) x⁻¹).
   rewrite <- (G $ associativity (&) _ _ _).
   rewrite_on G ->(left_inverse (&) x).
   now rewrite -> (G $ right_identity (&) _).
 Qed.
 
-Global Instance: Injective G G (⁻¹).
+Instance inverse_injective: Injective G G (⁻¹).
 Proof.
   split; try apply _.
   intros x ? y ? E.
-  now rewrite_on G <-(involutive x), <-(involutive y), E.
+  now rewrite_on G <-(involutive (⁻¹) x), <-(involutive (⁻¹) y), E.
 Qed.
 
 Lemma inv_mon_unit : e⁻¹ = e.
 Proof. rewrite_on G <-(left_inverse (&) e) at 2. now rewrite_on G -> (right_identity (&) e⁻¹). Qed.
 
-Global Instance group_left_cancellation z `{z ∊ G} : LeftCancellation (&) z G.
+Instance group_left_cancellation z `{z ∊ G} : LeftCancellation (&) z G.
 Proof.
   intros x ? y ? E.
   rewrite_on G <-(left_identity (&) x).
@@ -125,7 +128,7 @@ Proof.
   now rewrite_on G -> (left_identity (&) y).
 Qed.
 
-Global Instance group_right_cancellation z `{z ∊ G} : RightCancellation (&) z G.
+Instance group_right_cancellation z `{z ∊ G} : RightCancellation (&) z G.
 Proof.
   intros x ? y ? E.
   rewrite_on G <-(right_identity (&) x).
@@ -150,19 +153,26 @@ Qed.
 
 End group_props.
 
+Arguments inverse_involutive {_ _ _ _ _ G _} _ {_}.
+
+Hint Extern 5 (Involutive (⁻¹) _) => eapply @inverse_involutive : typeclass_instances.
+Hint Extern 5 (Injective _ _ (⁻¹)) => eapply @inverse_injective : typeclass_instances.
+Hint Extern 2 (LeftCancellation (&) _ _) => eapply @group_left_cancellation : typeclass_instances.
+Hint Extern 2 (RightCancellation (&) _ _) => eapply @group_right_cancellation : typeclass_instances.
+
 Lemma abgroup_inv_distr `{AbGroup (G:=G)} x `{x ∊ G} y `{y ∊ G}: (x & y)⁻¹ = x⁻¹ & y⁻¹.
 Proof. rewrite_on G -> (inv_sg_op_distr x y). exact (commutativity (&) _ _). Qed.
 
 (* The identity morphism; covers also the injection from a sub semigroup *)
-Lemma id_semigroup_mor `(S:Subset) T `{!SubsetOf S T} `{SemiGroup _ (S:=S)} `{!SemiGroup T} : SemiGroup_Morphism S T id.
+Lemma id_semigroup_mor `(S:set) T `{!Subset S T} `{SemiGroup _ (S:=S)} `{!SemiGroup T} : SemiGroup_Morphism S T id.
 Proof. split; try apply _. now intros. Qed.
 Hint Extern 2 (SemiGroup_Morphism _ _ id) => eapply @id_semigroup_mor : typeclass_instances.
 
-Lemma id_monoid_mor `(M:Subset) N `{!SubsetOf M N} `{Monoid _ (M:=M)} `{!Monoid N} : Monoid_Morphism M N id.
+Lemma id_monoid_mor `(M:set) N `{!Subset M N} `{Monoid _ (M:=M)} `{!Monoid N} : Monoid_Morphism M N id.
 Proof. split; try apply _. subreflexivity. Qed.
 Hint Extern 2 (Monoid_Morphism _ _ id) => eapply @id_monoid_mor : typeclass_instances.
 
-Lemma compose_semigroup_morphism `(S:Subset) `{SemiGroup _ (S:=S)} `{SemiGroup (S:=T)} `{SemiGroup (S:=U)}
+Lemma compose_semigroup_morphism `(S:set) `{SemiGroup _ (S:=S)} `{SemiGroup (S:=T)} `{SemiGroup (S:=U)}
   (f:S ⇀ T) (g:T ⇀ U) `{!SemiGroup_Morphism S T f} `{!SemiGroup_Morphism T U g}: SemiGroup_Morphism S U (g ∘ f).
 Proof. split; try apply _.
   intros x ? y ?. unfold compose.
@@ -179,7 +189,7 @@ Proof. split; try apply _.
 Qed.
 Hint Extern 4 (Monoid_Morphism _ _ (_ ∘ _)) => class_apply @compose_monoid_morphism : typeclass_instances.
 
-Lemma invert_semigroup_morphism `{S:Subset} `{T:Subset}
+Lemma invert_semigroup_morphism `{S:set} `{T:set}
  (f:S ⇀ T) `{SemiGroup_Morphism _ _ (S:=S) (T:=T) (f:=f)} `{!Inverse f} `{!Bijective S T f} :
   SemiGroup_Morphism T S (inverse f).
 Proof. pose proof sgmor_a. pose proof sgmor_b. split; try apply _.
@@ -188,7 +198,7 @@ Proof. pose proof sgmor_a. pose proof sgmor_b. split; try apply _.
 Qed.
 Hint Extern 4 (SemiGroup_Morphism _ _ (inverse _)) => eapply @invert_semigroup_morphism : typeclass_instances.
 
-Lemma invert_monoid_morphism `{M:Subset} `{N:Subset}
+Lemma invert_monoid_morphism `{M:set} `{N:set}
  (f:M ⇀ N) `{Monoid_Morphism _ _ (M:=M) (N:=N) (f:=f)} `{!Inverse f} `{!Bijective M N f} :
   Monoid_Morphism N M (inverse f).
 Proof. pose proof monmor_a. pose proof monmor_b. split; try apply _.
@@ -216,7 +226,7 @@ Section groupmor_props.
   Qed.
 End groupmor_props.
 
-Lemma monoid_morphism_alt `{M1:Subset} `{M2:Subset}
+Lemma monoid_morphism_alt `{M1:set} `{M2:set}
   (f:M1 ⇀ M2) `{Monoid _ (M:=M1)} `{Monoid _ (M:=M2)} :
   Morphism (M1 ⇒ M2) f
   → (∀ `{x ∊ M1} `{y ∊ M1}, f (x & y) = f x & f y)
@@ -252,12 +262,17 @@ Hint Extern 0 (Find_Proper_Signature (@Monoid_Morphism) 0 _) => eexact monoid_mo
 
 
 Ltac structure_mor_proper :=
-  red; intros; intros S1 S2 ES T1 T2 ET f g Ef; destruct 1; rewrite <- Ef;
+  red; intros; intros S1 S2 ES T1 T2 ET f g Ef; 
+  assert (Subset S1 S2) by (rewrite ES; apply _);
+  assert (Subset S2 S1) by (rewrite ES; apply _);
+  assert (Subset T1 T2) by (rewrite ET; apply _);
+  assert (Subset T2 T1) by (rewrite ET; apply _);
+  destruct 1; rewrite <- Ef;
   split; [ rewrite <-ES | rewrite <-ET | try rewrite <-ES, <-ET |..]; try apply _.
 
 Lemma semigroup_morphism_proper2: Find_Proper_Signature (@SemiGroup_Morphism) 1
   (∀ A Ae B Be Sop Top, Proper ((=) ==> (=) ==> eq ==> impl) (@SemiGroup_Morphism A Ae B Be Sop Top)).
-Proof. structure_mor_proper. now rewrite <- (_:SubsetOf (S1 ⇒ T1) (S2 ⇒ T2)).
+Proof. structure_mor_proper. now rewrite <-(_:Subset (S1 ⇒ T1) (S2 ⇒ T2)).
   intros x Hx y Hy. rewrite <-ES in Hx, Hy. eauto.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@SemiGroup_Morphism) 1 _) => eexact semigroup_morphism_proper2 : typeclass_instances.
@@ -268,8 +283,8 @@ Lemma monoid_morphism_proper2: Find_Proper_Signature (@Monoid_Morphism) 1
 Proof. now structure_mor_proper. Qed.
 Hint Extern 0 (Find_Proper_Signature (@Monoid_Morphism) 1 _) => eexact monoid_morphism_proper2 : typeclass_instances. 
 
-Hint Extern 0 (?S ∊ SemiGroup) => red; apply _ : typeclass_instances.
-Hint Extern 0 (?S ∊ Monoid)    => red; apply _ : typeclass_instances.
+Hint Extern 0 (?S ∊ SemiGroup) => red : typeclass_instances.
+Hint Extern 0 (?S ∊ Monoid)    => red : typeclass_instances.
 
 Ltac structure_mor_proper3 EX EY :=
   red; intros; unfold flip; intros X X' EX Y Y' EY f ? Ef ?; rewrite <-Ef; unfold_sigs;
@@ -279,7 +294,7 @@ Ltac structure_mor_proper3 EX EY :=
 Lemma semigroup_morphism_proper3: Find_Proper_Signature (@SemiGroup_Morphism) 2
   (∀ A Ae B Be Sop Top, Proper ((SemiGroup,⊆) --> (SemiGroup,⊆) ++> eq ==> impl) (@SemiGroup_Morphism A Ae B Be Sop Top)).
 Proof. structure_mor_proper3 EX EY.
-  rewrite <- (_ : SubsetOf (X ⇒ Y) (X' ⇒ Y')). apply _.
+  rewrite <- (_ : Subset (X ⇒ Y) (X' ⇒ Y')). apply _.
   intros ?? ??. apply preserves_sg_op; now apply EX.
 Qed.
 Hint Extern 0 (Find_Proper_Signature (@SemiGroup_Morphism) 2 _) => eexact semigroup_morphism_proper3 : typeclass_instances. 

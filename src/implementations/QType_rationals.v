@@ -4,7 +4,8 @@ Require Import
   QArith QSig
   abstract_algebra interfaces.orders
   interfaces.integers interfaces.rationals interfaces.additional_operations
-  theory.strong_setoids theory.rings theory.rationals.
+  theory.strong_setoids theory.rings theory.rationals
+  orders.lattices orders.minmax lattice_ordered_rings.
 
 Module QType_Rationals (Import anyQ: QType).
 
@@ -18,7 +19,7 @@ Instance QType_mult: Mult t := mul.
 Instance QType_negate: Negate t := opp.
 Instance QType_inv: Inv t := inv.
 
-Hint Extern 10 (@Subset t) => eexact (every t) : typeclass_instances.
+Hint Extern 10 (@set t) => eexact (every t) : typeclass_instances.
 
 Local Notation T := (every t).
 Local Notation Q := (every Q).
@@ -80,15 +81,15 @@ Instance inject_QType_Q: Cast T Q := to_Q.
 Instance: Morphism (T ⇒ Q) (').
 Proof. intros x y [_ E]. red_sig. auto. Qed.
 
-Instance: Ring_Morphism T Q to_Q.
-Proof. apply ring_morphism_alt; try apply _; intros; qify; reflexivity. Qed.
+Instance: SemiRing_Morphism T Q to_Q.
+Proof. apply (ring_morphism_alt to_Q); try apply _; intros; qify; reflexivity. Qed.
 
 Instance inject_Q_QType: Cast Q T := of_Q.
 Instance: Inverse (cast T Q) := cast Q T.
 
 Instance: Surjective T Q (').
-Proof. split; try apply _. intros x y [_ E]. red_sig. rewrite <- E. apply spec_of_Q.
-  intros ??. apply _.
+Proof. split. intros x y [_ E]. red_sig. rewrite <- E. apply spec_of_Q.
+  apply _. intros ??. apply _.
 Qed.
 
 Instance: Injective T Q (').
@@ -102,7 +103,7 @@ Instance: Inverse (cast Q T) := (cast T Q).
 
 Instance: Bijective Q T (') := jections.flip_bijection _.
 
-Instance: Ring_Morphism Q T of_Q := _ : Ring_Morphism Q T (')⁻¹.
+Instance: SemiRing_Morphism Q T of_Q := _ : SemiRing_Morphism Q T (')⁻¹.
 
 Instance: RationalsToField T := iso_to_field (cast Q T).
 Instance: Rationals T := iso_is_rationals (cast Q T).
@@ -153,6 +154,12 @@ Next Obligation.
    now apply Zeq_le.
   now apply orders.lt_le.
 Qed.
+
+Instance QType_max : Join t := minmax.max.
+Instance QType_min : Meet t := minmax.min.
+Instance: LatticeOrder T := minmax_lattice.
+Instance: FullLatticeOrder T := dec_full_lattice_order.
+Instance: SemiRingLatticeOrder T := dec_semiring_lattice_order.
 
 (* Efficient [int_pow] *)
 Instance QType_Zpow: Pow t Z := power.

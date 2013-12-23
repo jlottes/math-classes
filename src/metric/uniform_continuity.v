@@ -1,7 +1,7 @@
 Require Import
   abstract_algebra interfaces.orders interfaces.rationals interfaces.metric_spaces
   theory.setoids theory.jections theory.fields theory.rationals
-  orders.affinely_extended_field stdlib_field
+  orders.affinely_extended_field stdlib_field_dec
   orders.minmax orders.lattices
   metric.metric_spaces metric.maps prelength cauchy_completion
   theory.products metric.products.
@@ -15,21 +15,21 @@ Local Notation Qfull := (aff_ext_full Q).
 
 
 Local Hint Extern 5 (?x ∊ ?X) => match goal with
-  H : x ∊ ?S ?q |- _ => eapply (_: SubsetOf (S q) X)
+  H : x ∊ ?S ?q |- _ => eapply (_: Subset (S q) X)
 end : typeclass_instances.
 
 Local Hint Extern 5 (Cauchy ?S) => eexact (_ : S ∊ (CauchyFamilies _)) : typeclass_instances.
 
 Local Hint Extern 2 (_ ∊ (⊆ _)) => red : typeclass_instances.
 
-Lemma uniform_continuity_half `{X:Subset} `{Y:Subset} (f:X ⇀ Y)
+Lemma uniform_continuity_half `{X:set} `{Y:set} (f:X ⇀ Y)
   `{MetricSpace _ (X:=X)} `{MetricSpace _ (X:=Y)}
   q `{q ∊ Q∞₊} δ `{δ ∊ Q∞₊} :
   (∀ `{x₁ ∊ X} `{x₂ ∊ X}, ball δ x₁ x₂ → ball q (f x₁) (f x₂))
 → (∀ `{x₁ ∊ X} `{x₂ ∊ X}, ball (δ/2 + δ/2) x₁ x₂ → ball q (f x₁) (f x₂)).
 Proof. intro P. intros ???? B. rewrite (_ $ ae_in_halves _) in B. now apply P. Qed.
 
-Lemma uniform_continuity_alt `{X:Subset} `{Y:Subset} (f:X ⇀ Y)
+Lemma uniform_continuity_alt `{X:set} `{Y:set} (f:X ⇀ Y)
   `{Equiv X} `{Ball X} `{Equiv Y} `{Ball Y} `{!UniformlyContinuous X Y f}
   q `{q ∊ Q∞₊} :  ∃ `{p ∊ Q∞₊} `{ε ∊ Q∞₊},
   (∀ `{x₁ ∊ X} `{x₂ ∊ X}, ball (p + ε) x₁ x₂ → ball q (f x₁) (f x₂)).
@@ -49,13 +49,15 @@ Section ufm_continuous_extension.
   Hint Extern 0 AmbientSpace => eexact X₂ : typeclass_instances.
   Hint Extern 0 AmbientSpace => eexact M  : typeclass_instances.
 
+  Hint Extern 5 (Morphism _ m) => eapply @isometry_mor : typeclass_instances.
+
   Section def.
 
     Context f `{f ∊ M}.
 
     Notation C := (CauchyFamilies Y₁).
 
-    Let proj_ball q x : Subset := X₁ ⊓ (λ x', ball q x (g x')).
+    Let proj_ball q x : set := X₁ ⊓ (λ x', ball q x (g x')).
 
     Definition ufm_cont_ext_family : X₂ ⇀ C := λ x, family (λ q y,
       ∃ `{a ∊ Q∞⁺} `{b ∊ Q∞⁺}, a + b ≤ q 
@@ -106,7 +108,7 @@ Section ufm_continuous_extension.
       destruct (dense_image g X₁ x₁ ε) as [x [? B1]].
       assert (ball ε x₂ (g x)) as B2 by now rewrite <-(X₂ $ E).
       assert (b₁ + (a₁ + a₂) + b₂ ≤ q₁ + q₂) as Er.
-        subtransitivity ((a₁+b₁) + (a₂+b₂)). apply (eq_le _ _). subring Q.
+        subtransitivity ((a₁+b₁) + (a₂+b₂)). apply (eq_le _ _). setring Q.
         now apply (plus_le_compat _ _ _ _).
       rewrite <-(Qfull $ Er).
       apply (ball_triangle _ _ _ (f₂ x) _).
@@ -160,7 +162,7 @@ Section ufm_continuous_extension.
    → ∀ ε `{ε ∊ Q₊},
     ( ∀ `{y₁ ∊ X₂} `{y₂ ∊ X₂}, ball (p-ε) y₁ y₂ → ball (a+b+a) (cf y₁) (cf y₂) ).
   Proof. intros Bf Cb. intros. apply (ball_closed _ _ _). intros.
-    mc_replace (a+b+a + δ) with ((a+δ/2) +b+ (a+δ/2)) on Q by subfield Q.
+    mc_replace (a+b+a + δ) with ((a+δ/2) +b+ (a+δ/2)) on Q by decfield Q.
     unfold ufm_cont_extension, compose. red in Cf.
     destruct (uniform_continuity f' (δ/2)) as [c[? Cδ]].
     pose proof _ : c/2 ∊ Q∞₊ . pose proof _ : ε/2 ∊ Q₊ .
@@ -188,7 +190,7 @@ Section ufm_continuous_extension.
         rewrite (_ $ E'). rewrite (_ $ ae_inf_plus_fin _).
         pose proof _ : θ + ∞ + θ ∊ Q∞₊. exact (ae_inf_ub _).
       rewrite <-(mult_inv_le_cancel_r _ _ _) in E.
-      mc_replace (θ + (p - ε) + θ) with (p + θ*2 - ε) on Q by subring Q.
+      mc_replace (θ + (p - ε) + θ) with (p + θ*2 - ε) on Q by setring Q.
       rewrite (flip_le_minus_l _ _ _). now apply (order_preserving (p+) _ _).
     apply (ball_weaken_le (θ + (p-ε) + θ) _ _); trivial; try apply _.
     rewrite (isometric g _ _ _).
@@ -201,7 +203,7 @@ Section ufm_continuous_extension.
     destruct (dense_image m (X₁ ==> Y₁) f (q/3)) as [f'[Cf Bf]].
     subsymmetry in Bf. red in Cf.
     destruct (uniform_continuity f' (q/3)) as [p[el Pc]].
-    assert (q = q/3+q/3+q/3) as Eq by subfield Q.
+    assert (q = q/3+q/3+q/3) as Eq by decfield Q.
     destruct (ae_decompose_pos p) as [E|?].
       exists_sub ∞. intros y1 ? y2 ? ?. rewrite (_ $ Eq).
       apply (ufm_cont_ext_cont_nearly _ _ ∞ f' Bf) with 1; trivial; try apply _.
@@ -209,7 +211,7 @@ Section ufm_continuous_extension.
       now rewrite (_ $ ae_inf_plus_fin _).
     exists_sub (p/2). intros. rewrite (_ $ Eq).
     apply (ufm_cont_ext_cont_nearly _ _ p f' Bf) with (p/2); trivial; try apply _.
-    now mc_replace (p-p/2) with (p/2) on Q by subfield Q.
+    now mc_replace (p-p/2) with (p/2) on Q by decfield Q.
   Qed.
 
   End continuity.
@@ -231,7 +233,7 @@ Section ufm_continuous_extension.
     unfold ufm_cont_extension. apply (map_limit_spec _ _ _ _).
   + intros [_ P]. unfold compose in P. apply (ball_closed _ _ _). intros ε ?.
     destruct (dense_image m (X₁ ==> Y₁) f (ε/3)) as [f₂[Cf Bf]]. red in Cf.
-    mc_replace (q + ε) with (q + (ε/3+ε/3) + ε/3) on Q by subfield Q.
+    mc_replace (q + ε) with (q + (ε/3+ε/3) + ε/3) on Q by decfield Q.
     apply (ball_triangle _ _ _ (m f₂) _); try solve [ subsymmetry ].
     rewrite <-(isometric m _ _ _).
     pose proof _ : ε/3 ∊ Q₊ . pose proof _ : q + (ε/3+ε/3) ∊ Q₊ .
@@ -249,55 +251,13 @@ Section ufm_continuous_extension.
     subsymmetry. now rewrite <-(ufm_cont_ext_extends _ _ _).
   Qed.
 
-  Lemma ufm_cont_ext_strong q `{q ∊ Q⁺} f `{f ∊ M} f' `{!StronglyUniformlyContinuous X₁ Y₁ f'} :
-    ball q (m f') f → StronglyUniformlyContinuous X₂ Y₂ (ufm_cont_extension f).
-  Proof. intro.
-    assert (ball q (h ∘ f') (ufm_cont_extension f ∘ g)) as Bf'.
-      apply ufm_cont_ext_extends; trivial; apply _.
-    destruct Bf' as [? Bf']. unfold compose in Bf'.
-    pose proof (ufm_cont_ext_cont f). split; trivial.
-    intros U ??. pose proof _ : U ⊆ X₂ . split; try apply _.
-    destruct (bounded U) as [d[eld BU]].
-    destruct (inhabited U) as [u ?].
-    destruct (dense_image g X₁ u 1) as [x[? Bx]].
-    destruct (uniform_continuity (ufm_cont_extension f) 1) as [δ'[elδ Cf']].
-    ae_rat_set_min δ δ' 1 Eδ1 Eδ2. pose proof (ae_pos_finite_bound δ _ Eδ2).
-    assert (∀ `{x ∊ X₂} `{y ∊ X₂}, ball δ x y
-          → ball 1 (ufm_cont_extension f x) (ufm_cont_extension f y)) as Cf.
-      intros. apply (Cf' _ _ _ _). now rewrite <-(Qfull $ Eδ1).
-    clear Cf' Eδ1 Eδ2.
-    pose proof (strongly_ufm_cont X₁ Y₁ (B (X:=X₁) (1+d+δ) x)).
-    destruct (bounded (X:=Y₁) f'⁺¹(B (X:=X₁) (1+d+δ) x)) as [s[? Bs]].
-    exists_sub (1+q+s+q+1).
-    intros ? [?[u1 [? E1]]] ? [?[u2 [? E2]]].
-    destruct (dense_image g X₁ u1 δ) as [u1'[? Bu1]].
-    destruct (dense_image g X₁ u2 δ) as [u2'[? Bu2]].
-    assert (u1' ∊ B (X:=X₁) (1+d+δ) x).
-      split; [|apply _]. red. rewrite (isometric g _ _ _).
-      apply (ball_triangle _ _ _ u1 _); trivial.
-      apply (ball_triangle _ _ _ u _). subsymmetry. now apply BU.
-    assert (u2' ∊ B (X:=X₁) (1+d+δ) x).
-      split; [|apply _]. red. rewrite (isometric g _ _ _).
-      apply (ball_triangle _ _ _ u2 _); trivial.
-      apply (ball_triangle _ _ _ u _). subsymmetry. now apply BU.
-    apply (ball_triangle _ _ _ (ufm_cont_extension f (g u2')) _).
-    apply (ball_triangle _ _ _ (h (f' u2')) _ ).
-    apply (ball_triangle _ _ _ (h (f' u1')) _ ).
-    apply (ball_triangle _ _ _ (ufm_cont_extension f (g u1')) _).
-    rewrite <-(_ $ E1). now apply (Cf _ _ _ _).
-    subsymmetry. apply Bf'. apply _.
-    rewrite <-(isometric h _ _ _). apply Bs; apply _.
-    apply Bf'. apply _.
-    rewrite <-(_ $ E2). subsymmetry. now apply (Cf _ _ _ _).
-  Qed.
-
 End ufm_continuous_extension.
 
 Hint Extern 2 (Morphism _ (ufm_cont_extension _ _ _ _)) => eapply @ufm_cont_ext_mor : typeclass_instances.
 Hint Extern 2 (UniformlyContinuous _ _ (ufm_cont_extension _ _ _ _)) => eapply @ufm_cont_ext_cont : typeclass_instances.
 
 Section ufm_continuous_equal_on_dense.
-  Context `{Y:@Subset A} `{Z:Subset} (f:Y ⇀ Z) (g:Y ⇀ Z) (X:@Subset A).
+  Context `{Y:@set A} `{Z:set} (f:Y ⇀ Z) (g:Y ⇀ Z) (X:@set A).
   Context `{MetricSpace _ (X:=Y)}.
   Context `{MetricSpace _ (X:=Z)}.
   Hint Extern 0 AmbientSpace => eexact Y : typeclass_instances.
@@ -322,7 +282,7 @@ Section ufm_continuous_equal_on_dense.
     destruct (uniform_continuity g (ε/2)) as [b[el'' Cg]].
     ae_rat_set_min δ a b Ea Eb.
     destruct (dense X y δ) as [x[??]].
-    mc_replace (q + ε) with (ε/2 + q + ε/2) on Q by subfield Q.
+    mc_replace (q + ε) with (ε/2 + q + ε/2) on Q by decfield Q.
     apply (ball_triangle _ _ _ (g x) _).
     apply (ball_triangle _ _ _ (f x) _).
     apply_cont Cf δ. now apply P. apply_cont Cg δ.
@@ -348,8 +308,8 @@ Section ufm_continuous_equal_on_dense.
     destruct (uniform_continuity f ε) as [b [el Cf]].
     ae_rat_set_min δ ε b Ea Eb; pose proof (ae_pos_finite_bound δ _ Ea).
     assert (ε + (δ + q + δ) + ε ≤ q+a) as Er.
-      subtransitivity (q + 2*ε + 2*δ). apply (eq_le _ _). subring Q.
-      subtransitivity (q + 2*ε + 2*ε); [| apply (eq_le _ _); subst ε; subfield Q].
+      subtransitivity (q + 2*ε + 2*δ). apply (eq_le _ _). setring Q.
+      subtransitivity (q + 2*ε + 2*ε); [| apply (eq_le _ _); subst ε; decfield Q].
       apply (order_preserving (_ +) _ _).
       now apply (order_preserving (2 *.) _ _).
     rewrite <-(Qfull $ Er).
@@ -365,8 +325,8 @@ Section ufm_continuous_equal_on_dense.
     destruct (uniform_continuity f ε) as [b [el Cf]].
     ae_rat_set_min δ ε b Ea Eb; pose proof (ae_pos_finite_bound δ _ Ea).
     assert (δ + (ε + q + ε) + δ ≤ q+a) as Er.
-      subtransitivity (q + 2*ε + 2*δ). apply (eq_le _ _). subring Q.
-      subtransitivity (q + 2*ε + 2*ε); [| apply (eq_le _ _); subst ε; subfield Q].
+      subtransitivity (q + 2*ε + 2*δ). apply (eq_le _ _). setring Q.
+      subtransitivity (q + 2*ε + 2*ε); [| apply (eq_le _ _); subst ε; decfield Q].
       apply (order_preserving (_ +) _ _).
       now apply (order_preserving (2 *.) _ _).
     apply (ball_weaken_le (δ + (ε + q + ε) + δ) _ _); [| apply _ | trivial ] .
@@ -391,8 +351,8 @@ Section ufm_continuous_equal_on_dense.
     destruct (dense X y₂ δ) as [x₂[el'' ?]].
     assert (δ ≤ b). destruct (ae_decompose_pos b) as [E|?]. rewrite (_ $ E). exact (ae_inf_ub _).
       subtransitivity (b/3). rewrite <-(mult_inv_le_cancel_l _ _ _).
-      apply (flip_nonneg_minus _ _). mc_replace (b*3-b) with (2*b) on Q by subring Q. apply _.
-    mc_replace (q+a) with (ε+(q+ε)+ε) on Q by (subst ε; subfield Q).
+      apply (flip_nonneg_minus _ _). mc_replace (b*3-b) with (2*b) on Q by setring Q. apply _.
+    mc_replace (q+a) with (ε+(q+ε)+ε) on Q by (subst ε; decfield Q).
     apply (ball_triangle _ _ _ (f x₂) _); [| apply_cont Cf' δ ].
     apply (ball_triangle _ _ _ (f x₁) _). apply_cont Cf' δ.
     destruct (ae_decompose_pos p) as [Ep|?].
@@ -404,7 +364,7 @@ Section ufm_continuous_equal_on_dense.
       rewrite (_ $ commutativity (+) _ p), <-(_ $ associativity (+) _ _ _).
       apply (strictly_order_preserving (p+) _ _).
       apply (lt_le_trans _ (δ+δ+δ) _). exact (pos_plus_lt_compat_r _ _).
-      subtransitivity (δ*3). apply (eq_le _ _). subring Q.
+      subtransitivity (δ*3). apply (eq_le _ _). setring Q.
       now rewrite (mult_inv_le_cancel_r _ _ _).
     + apply (ball_triangle _ _ _ y₂ _); trivial.
       apply (ball_triangle _ _ _ y₁ _); trivial. subsymmetry.
@@ -455,6 +415,8 @@ Section ufm_cont_ext_unique.
   Hint Extern 0 AmbientSpace => eexact X₂ : typeclass_instances.
   Hint Extern 0 AmbientSpace => eexact M  : typeclass_instances.
 
+  Hint Extern 5 (Morphism _ m) => eapply @isometry_mor : typeclass_instances.
+
   Notation "#" := (ufm_cont_extension g h m).
 
   Lemma ufm_cont_ext_unique f `{f ∊ M} (cf:X₂ ⇀ Y₂) `{!UniformlyContinuous X₂ Y₂ cf}
@@ -465,7 +427,7 @@ Section ufm_cont_ext_unique.
     apply (equal_by_ball_closed (X:=X₁ ⇒ Y₂)  _ _). intros q ?.
     destruct (dense_image m (X₁ ==> Y₁) f (q/2)) as [f'[Cf Bf]].
     red in Cf. subsymmetry in Bf.
-    mc_replace q with (q/2+q/2) on Q by subfield Q.
+    mc_replace q with (q/2+q/2) on Q by decfield Q.
     pose proof _ : q/2 ∊ Q₊ .
     apply (ball_triangle (X:=X₁ ⇒ Y₂) _ _ _ (h ∘ f') _).
     subsymmetry. now rewrite <-(P (q/2) _ f' _).
@@ -497,12 +459,11 @@ Section ufm_cont_ext_unique.
         destruct (dense_image m (X₁ ==> Y₁) f₁ a) as [f₁' [Cf1 Bf1]].
         destruct (dense_image m (X₁ ==> Y₁) f₂ a) as [f₂' [Cf2 Bf2]].
         red in Cf1,Cf2. subsymmetry in Bf1. subsymmetry in Bf2.
-        mc_replace (q+b) with (a+(a+q+a)+a) on Q by (subst a; subfield Q).
+        mc_replace (q+b) with (a+(a+q+a)+a) on Q by (subst a; decfield Q).
         apply (ball_triangle (X:=X₁ ⇒ Y₂) _ _ _ (h ∘ f₂') _).
         apply (ball_triangle (X:=X₁ ⇒ Y₂) _ _ _ (h ∘ f₁') _).
         subsymmetry. now rewrite <-(ufm_cont_ext_extends g h m a f₁ f₁').
-        pose proof (isometric (X:=X₁ ==> Y₁) (h ∘) (a+q+a) f₁' f₂') as P.
-          rewrite <-P. clear P.
+        rewrite <-(isometric (X:=X₁ ==> Y₁) (Y:=X₁ ==> Y₂) (h ∘) (a+q+a) f₁' f₂').
         rewrite (isometric m _ _ _).
         apply (ball_triangle _ _ _ f₂ _); [|subsymmetry].
         now apply (ball_triangle _ _ _ f₁ _).
@@ -512,12 +473,11 @@ Section ufm_cont_ext_unique.
         destruct (dense_image m (X₁ ==> Y₁) f₁ a) as [f₁' [Cf1 Bf1]].
         destruct (dense_image m (X₁ ==> Y₁) f₂ a) as [f₂' [Cf2 Bf2]].
         red in Cf1,Cf2. subsymmetry in Bf1. subsymmetry in Bf2.
-        mc_replace (q+b) with (a+(a+q+a)+a) on Q by (subst a; subfield Q).
+        mc_replace (q+b) with (a+(a+q+a)+a) on Q by (subst a; decfield Q).
         apply (ball_triangle _ _ _ (m f₂') _); trivial.
         apply (ball_triangle _ _ _ (m f₁') _). subsymmetry.
         rewrite <-(isometric m _ _ _).
-        pose proof (isometric (X:=X₁ ==> Y₁) (h ∘) (a+q+a) f₁' f₂') as P.
-          rewrite P. clear P.
+        rewrite ->(isometric (X:=X₁ ==> Y₁) (Y:=X₁ ==> Y₂) (h ∘) (a+q+a) f₁' f₂').
         apply (ball_triangle (X:=X₁ ⇒ Y₂) _ _ _ (#f₂ ∘ g) _).
         apply (ball_triangle (X:=X₁ ⇒ Y₂) _ _ _ (#f₁ ∘ g) _); trivial.
         now rewrite <-(ufm_cont_ext_extends g h m a f₁ f₁').

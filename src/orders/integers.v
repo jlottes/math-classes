@@ -70,7 +70,7 @@ Next Obligation. now apply (order_reflecting (Z_to_natp)). Qed.
 
   Section another_ring.
     Context `{FullPseudoSemiRingOrder (R:=R)} `{Negate _} `{!CommutativeRing R} `{1 ∊ R ₀}.
-    Context (f : Z ⇀ R) `{!Ring_Morphism Z R f}.
+    Context (f : Z ⇀ R) `{!SemiRing_Morphism Z R f}.
 
     Instance from_integers_injective : StrongInjective Z R f := pseudo_order_dec_preserving_inj.
   End another_ring.
@@ -129,7 +129,7 @@ Proof. intro E. destruct (decompose_le E) as [a [[? Ea] Eb]].
   rewrite (SRpair nat $ naturals.to_semiring_twice _ _ (SRpair_inject) _).
   assert (SRpair_inject (pos a ∸ neg a) = a) as F.
     destruct a as [a b]. unfold equiv, SRpair_equiv. simpl. rewrite (plus_0_r a).
-    unfold le, SRpair_le in Ea. simpl in Ea. rewrite (plus_0_r a), (plus_0_l b) in Ea.
+    unfold le, SRpair_le in Ea. red in Ea. simpl in Ea. rewrite (plus_0_r a), (plus_0_l b) in Ea.
     now apply cut_minus_le.
   now rewrite_on (SRpair nat) -> F.
 Qed.

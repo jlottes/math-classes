@@ -1,25 +1,26 @@
 Require Import
   abstract_algebra interfaces.orders interfaces.rationals interfaces.metric_spaces
   theory.setoids theory.jections theory.fields theory.rationals
-  orders.affinely_extended_field stdlib_field metric.metric_spaces metric.maps.
+  orders.affinely_extended_field stdlib_field_dec
+  metric.metric_spaces metric.maps.
 
 Local Notation AQ := TheAERationals.A.
 Local Notation Q := the_ae_rationals.
 Local Notation "Q∞" := (aff_ext Q).
 Local Notation Qfull := (aff_ext_full Q).
 
-Lemma family_subsetoid `{X:Subset} `{Equiv X} `{Ball X} S `{el: S ∊ CauchyFamilies X} q `{q ∊ Q∞₊}
+Lemma family_subsetoid `{X:set} `{Equiv X} `{Ball X} S `{el: S ∊ CauchyFamilies X} q `{q ∊ Q∞₊}
   : S q ⊆ X.
 Proof. destruct el. change ((S q) ∊ (⊆ X)). now apply (morphism_closed (X:=Q∞₊)). Qed.
 Hint Extern 2 (family_to_fun _ _ ⊆ _) => eapply @family_subsetoid : typeclass_instances.
 
-Lemma family_setoid `{X:Subset} `{Equiv X} `{Ball X} S `{el: S ∊ CauchyFamilies X} q `{q ∊ Q∞₊}
+Lemma family_setoid `{X:set} `{Equiv X} `{Ball X} S `{el: S ∊ CauchyFamilies X} q `{q ∊ Q∞₊}
   : Setoid (S q).
 Proof subsetoid_a.
 Hint Extern 2 (Setoid (family_to_fun _ _)) => eapply @family_setoid : typeclass_instances.
 
 Local Hint Extern 5 (?x ∊ ?X) => match goal with
-  H : x ∊ ?S ?q |- _ => eapply (_: SubsetOf (S q) X)
+  H : x ∊ ?S ?q |- _ => eapply (_: Subset (S q) X)
 end : typeclass_instances.
 
 Local Hint Extern 5 (Cauchy ?S) => eexact (_ : S ∊ (CauchyFamilies _)) : typeclass_instances.
@@ -44,7 +45,7 @@ Section cauchy_msp.
     assert ((p + a) + c + (q + b) < p + q + ε) as Er.
       rewrite (_ $ plus_0_l _) in E.
       apply (strictly_order_preserving ((p+q)+) _ _) in E.
-      now mc_replace (p + a + c + (q + b)) with (p + q + (a + b + c)) on Q by subring Q.
+      now mc_replace (p + a + c + (q + b)) with (p + q + (a + b + c)) on Q by setring Q.
     rewrite <- (Qfull $ Er). clear Er.
     apply (ball_triangle _ _ _ t _).
     apply (ball_triangle _ _ _ s _).
@@ -55,18 +56,18 @@ Section cauchy_msp.
     destruct (cauchy_family_inhabited (S:=T) a) as [t ?].
     pose proof (E a _ a _ s _ t _) as B.
     exists_sub a a (a+a) s t. split;trivial. rewrite (_ $ plus_0_l _).
-    mc_replace (a + a + (a+a)) with (4*a) on Q by subring Q. apply (flip_pos_minus _ _).
-    subst a. mc_replace ((ε - 4 * (ε / (2 * 3)))) with (ε/3) on Q by subfield Q. apply _.
+    mc_replace (a + a + (a+a)) with (4*a) on Q by setring Q. apply (flip_pos_minus _ _).
+    subst a. mc_replace ((ε - 4 * (ε / (2 * 3)))) with (ε/3) on Q by decfield Q. apply _.
   Qed.
 
-  Instance: ∀ `{ε ∊ Q⁺}, SubReflexive C (cauchy_ball ε).
+  Instance: ∀ `{ε ∊ Q⁺}, Reflexive C (cauchy_ball ε).
   Proof. intros q ? S ?. assert (cauchy_ball 0 S S) as B.
     rewrite (cauchy_ball_sep _ _). exact cauchy_family_def. revert B.
     intros P ε ?. destruct (P (q+ε) _) as [a[?[b[?[c[?[s[?[t[?[E B]]]]]]]]]]].
     exists_sub a b c s t. rewrite (_ $ plus_0_l _) in E. intuition.
   Qed.
 
-  Instance: ∀ `{ε ∊ Q⁺}, SubSymmetric C (cauchy_ball ε).
+  Instance: ∀ `{ε ∊ Q⁺}, Symmetric C (cauchy_ball ε).
   Proof. intros q ? S ? T ? P. intros ε ?.
     destruct (P ε _) as [a[?[b[?[c[?[s[?[t[?[E B]]]]]]]]]]].
     exists_sub b a c t s. split. now rewrite (_ $ commutativity (+) b _). subsymmetry.
@@ -79,11 +80,11 @@ Section cauchy_msp.
     destruct (E1 (ε/2) _) as [a [?[b [?[c [?[s [?[t [?[E1' B1]]]]]]]]]]].
     destruct (E2 (ε/2) _) as [a'[?[b'[?[c'[?[t'[?[u [?[E2' B2]]]]]]]]]]].
     exists_sub a b' (b+c+a'+c') s u. split.
-    + mc_replace (a + b' + (b + c + a' + c')) with ((a+b+c) + (a'+b'+c')) on Q by subring Q.
-      mc_replace (p + q + ε) with ((p + ε/2) + (q + ε/2)) on Q by subfield Q.
+    + mc_replace (a + b' + (b + c + a' + c')) with ((a+b+c) + (a'+b'+c')) on Q by setring Q.
+      mc_replace (p + q + ε) with ((p + ε/2) + (q + ε/2)) on Q by decfield Q.
       now apply (plus_lt_compat _ _ _ _).
     + apply (ball_triangle _ _ _ t' _); trivial.
-      mc_replace (b + c + a') with (c+(b+a')) on Q by subring Q.
+      mc_replace (b + c + a') with (c+(b+a')) on Q by setring Q.
       apply (ball_triangle _ _ _ t _); trivial. now apply (cauchy_family T _ _).
   Qed.
 
@@ -121,7 +122,7 @@ Section cauchy_msp.
     rewrite <-(cauchy_ball_sep _ _) in Ex.
     rewrite <-(cauchy_ball_sep _ _) in Ey.
     apply (cauchy_ball_proper_1 _ _ (0+e1+0) _).
-    subtransitivity e1. subring Q.
+    subtransitivity e1. setring Q.
     apply (cauchy_ball_tri _ _ _ y1 _); trivial.
     apply (cauchy_ball_tri _ _ _ x1 _); trivial. subsymmetry.
   + intros. now apply cauchy_ball_sep.
@@ -129,7 +130,7 @@ Section cauchy_msp.
   + intros q ? S ? T ? P ε ?.
     destruct (P (ε/2) _ (ε/2) _) as [a [?[b [?[c [?[s [?[t [?[E B]]]]]]]]]]].
     exists_sub a b c s t. intuition.
-    now mc_replace (q + ε) with (q + ε/2 + ε/2) on Q by subfield Q.
+    now mc_replace (q + ε) with (q + ε/2 + ε/2) on Q by decfield Q.
   Qed.
 End cauchy_msp.
 
@@ -145,7 +146,7 @@ Section cauchy_completion.
   Instance family_family_limit : Limit C := λ SS, family ( λ q x,
     ∃ `{a ∊ Q∞₊} `{b ∊ Q∞₊}, a + b ≤ q ∧ ∃ `{T ∊ SS a}, x ∊ T b ).
 
-  Local Hint Extern 3 (SubsetOf _ _) => eapply @subsetoid_subset : typeclass_instances.
+  Local Hint Extern 3 (Subset _ _) => eapply @subsetoid_subset : typeclass_instances.
 
   Instance: ∀ `{SS ∊ CauchyFamilies C} `{q ∊ Q∞⁺}, limit SS q ⊆ X.
   Proof.
@@ -176,8 +177,8 @@ Section cauchy_completion.
     destruct (B ε _) as [α[?[β[?[γ[?[s[?[t[?[E B']]]]]]]]]]].
     assert (b+α + γ + (β+b') < p+q+ε) as Er.
       apply (lt_le_trans _ ((a+b)+(a'+b')+ε) _).
-      mc_replace (b + α + γ + (β + b')) with ((b+b') + (α + β + γ)) on Q by subring Q.
-      mc_replace (a + b + (a'+b') + ε) with ((b+b') + (a + a' + ε)) on Q by subring Q.
+      mc_replace (b + α + γ + (β + b')) with ((b+b') + (α + β + γ)) on Q by setring Q.
+      mc_replace (a + b + (a'+b') + ε) with ((b+b') + (a + a' + ε)) on Q by setring Q.
       now apply (strictly_order_preserving ((b+b')+) _ _).
       apply (order_preserving (+ ε) _ _). now apply (plus_le_compat _ _ _ _).
     rewrite <-(Qfull $ Er). clear Er.
@@ -192,19 +193,19 @@ Section cauchy_completion.
     destruct (cauchy_family_inhabited (S:=S) a) as [s ?].
     destruct (cauchy_family_inhabited (S:=limit SS) a) as [t Pt].
     exists_sub a a (p+a+a) s t. split. apply (flip_pos_minus _ _).
-      mc_replace (p + ε - (a + a + (p + a + a))) with (ε-4*a) on Q by subring Q.
-      subst a. mc_replace (ε - 4*(ε/(2*3))) with (ε/3) on Q by subfield Q. apply _.
+      mc_replace (p + ε - (a + a + (p + a + a))) with (ε-4*a) on Q by setring Q.
+      subst a. mc_replace (ε - 4*(ε/(2*3))) with (ε/3) on Q by decfield Q. apply _.
     apply (ball_closed _ _ _). intros.
     destruct Pt as [q[?[b'[?[E[T[??]]]]]]].
     destruct (ae_pos_sum_finite_bound _ _ _ E).
     pose proof cauchy_family SS p q S T as B. rewrite (family_ball_def _ _ _) in B.
     destruct (B δ _) as [α[?[β[?[γ[?[s'[?[t'[?[E' B']]]]]]]]]]].
     assert (a+α + γ + (β+b') < p+a+a+δ) as Er.
-      mc_replace (a+α + γ + (β+b')) with (α+β+γ + b' + a) on Q by subring Q.
-      mc_replace (p + a + a + δ) with (p + a + δ + a) on Q by subring Q.
+      mc_replace (a+α + γ + (β+b')) with (α+β+γ + b' + a) on Q by setring Q.
+      mc_replace (p + a + a + δ) with (p + a + δ + a) on Q by setring Q.
       apply (strictly_order_preserving (+a) _ _). apply (lt_le_trans _ (p + q + δ + b') _).
       now apply (strictly_order_preserving (+b') _ _).
-      mc_replace (p + q + δ + b') with (q + b' + p + δ) on Q by subring Q.
+      mc_replace (p + q + δ + b') with (q + b' + p + δ) on Q by setring Q.
       rewrite (_ $ commutativity (+) p a).
       apply (order_preserving (+δ) _ _). now apply (order_preserving (+p) _ _).
     rewrite <-(Qfull $ Er). clear Er.
@@ -220,7 +221,7 @@ Section cauchy_completion.
     set (a:=ε/(2*2)). assert (a ∊ Q₊). subst a. apply _.
     destruct (cauchy_family_inhabited (S:=SS) a) as [s ?].
     destruct (cauchy_family_inhabited (S:=TT) a) as [t ?].
-    assert (a + (a + a) + a = 0 + ε) as E' by (subst a; subfield Q).
+    assert (a + (a + a) + a = 0 + ε) as E' by (subst a; decfield Q).
     apply ball_weaken_le with (a+(a+a)+a); try apply _; [| now apply (eq_le _ _)].
     apply (ball_triangle _ _ _ t _); [| now apply family_family_limit_correct ].
     apply (ball_triangle _ _ _ s _). subsymmetry. now apply family_family_limit_correct.
@@ -257,9 +258,9 @@ Section cauchy_completion.
     destruct (cauchy_family_inhabited (S:=S) a) as [s' ?].
     exists_sub a a (q + a) s' s. split.
     + apply (flip_pos_minus _ _).
-      mc_replace (q+ε - (a + a +(q+a))) with (ε-3*a) on Q by subring Q. subst a.
+      mc_replace (q+ε - (a + a +(q+a))) with (ε-3*a) on Q by setring Q. subst a.
       rewrite <-(_ $ mult_1_r ε) at 1. rewrite <-(Q $ field_inv_r 4).
-      mc_replace (ε * (4 / 4) - 3 * (ε / 4)) with (ε / 4) on Q by subring Q. apply _.
+      mc_replace (ε * (4 / 4) - 3 * (ε / 4)) with (ε / 4) on Q by setring Q. apply _.
     + subsymmetry. now apply (cauchy_family S _ _).
   Qed.
 
@@ -276,7 +277,7 @@ Section cauchy_completion.
     unfold cast, family_const. split.
   + intros ? ε ?. exists_sub (ε/3) (ε/3) q x y. split; trivial.
     apply (flip_pos_minus _ _).
-    mc_replace (q + ε - (ε / 3 + ε / 3 + q)) with (ε/3) on Q by subfield Q. apply _.
+    mc_replace (q + ε - (ε / 3 + ε / 3 + q)) with (ε/3) on Q by decfield Q. apply _.
   + intros P. apply (ball_closed _ _ _). intros ε ?.
     destruct (P ε _) as [a[?[b[?[c[?[x'[[? Ex][y'[[? Ey][E B]]]]]]]]]]].
     rewrite (_ $ Ex), (_ $ Ey) in B.
@@ -446,3 +447,46 @@ Section subspace.
     intros S ? p ? x ?. exact (map_limit_spec (id:U ⇀ U) S p x).
   Qed.
 End subspace.
+
+
+(** A complete metric space supports definite description. *)
+
+Section complete_description.
+  Context `{CompleteMetricSpace (X:=X)}.
+
+  Context P `{!Singleton P X}.
+
+  Notation C := (CauchyFamilies X).
+
+  Definition desc_family : C := family (λ _, P).
+  Notation S := desc_family.
+
+  Instance: ∀ ε, S ε ⊆ X. Proof. intros. simpl. apply _. Qed.
+
+  Let desc_family_proper : S = S.
+  Proof.
+    intros ε₁ ? ε₂ ? x₁ ? x₂ ?. simpl in *.
+    cut (x₁ = x₂). intro E'. pose proof _ : P ⊆ X. now rewrite (X $ E').
+    apply (singleton_set_unique _ _).
+  Qed.
+
+  Instance: S ∊ C.
+  Proof. split. apply _.
+  + intros ?? E. unfold_sigs. red_sig. now simpl.
+  + intros ε _. simpl. apply _.
+  + now apply desc_family_proper.
+  Qed.
+
+  Definition metric_description := limit S.
+  Notation x := metric_description.
+
+  Hint Unfold metric_description : typeclass_instances.
+
+  Instance metric_description_el : x ∊ X := _.
+
+  Lemma metric_description_spec : x ∊ P.
+  Proof. destruct (inhabited P) as [y ely]. pose proof _ : P ⊆ X.
+    cut (x = y). intro E. now rewrite (X $ E).
+    apply (limit_const _ _). now intros ??.
+  Qed.
+End complete_description. 

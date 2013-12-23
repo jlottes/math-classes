@@ -69,10 +69,10 @@ Section ring_order.
   Qed.
 
   Lemma nonneg_negate x `{x ∊ R⁺} : -x ∊ R⁻.
-  Proof. destruct (_:x ∊ R⁺). split. apply _. rewrite_on R <- negate_0. now apply (flip_le_negate _ _). Qed.
+  Proof. destruct (_:x ∊ R⁺). split. apply _. red. rewrite_on R <- negate_0. now apply (flip_le_negate _ _). Qed.
 
   Lemma nonpos_negate x `{x ∊ R⁻} : -x ∊ R⁺.
-  Proof. destruct (_:x ∊ R⁻). split. apply _. rewrite_on R <- negate_0. now apply (flip_le_negate _ _). Qed.
+  Proof. destruct (_:x ∊ R⁻). split. apply _. red. rewrite_on R <- negate_0. now apply (flip_le_negate _ _). Qed.
 End ring_order.
 
 Hint Extern 4 (-_ ∊ _⁻) => eapply @nonneg_negate : typeclass_instances.
@@ -86,9 +86,6 @@ Section more_ring_order.
 
   Lemma negate_nonneg_nonpos x `{x ∊ R} : -x ∊ R⁺ → x ∊ R⁻.
   Proof. intro. rewrite_on R <- (negate_involutive x). apply _. Qed.
-
-  Lemma nonneg_nonpos_zero x `{x ∊ R⁺} `{x ∊ R⁻} : x = 0.
-  Proof. apply (subantisymmetry (≤) _ _); firstorder. Qed.
 
   Lemma flip_le_minus_r x `{x ∊ R} y `{y ∊ R} z `{z ∊ R} : z ≤ y - x ↔ z + x ≤ y.
   Proof. split; intro.
@@ -156,10 +153,10 @@ Section strict_ring_order.
   Qed.
 
   Lemma pos_negate x `{x ∊ R₊} : -x ∊ R₋.
-  Proof. destruct (_:x ∊ R₊). split. apply _. rewrite_on R <- negate_0. now apply (flip_lt_negate _ _). Qed.
+  Proof. destruct (_:x ∊ R₊). split. apply _. red. rewrite_on R <- negate_0. now apply (flip_lt_negate _ _). Qed.
 
   Lemma neg_negate x `{x ∊ R₋} : -x ∊ R₊.
-  Proof. destruct (_:x ∊ R₋). split. apply _. rewrite_on R <- negate_0. now apply (flip_lt_negate _ _). Qed.
+  Proof. destruct (_:x ∊ R₋). split. apply _. red. rewrite_on R <- negate_0. now apply (flip_lt_negate _ _). Qed.
 End strict_ring_order.
 
 Hint Extern 4 (-_ ∊ _₋) => eapply @pos_negate : typeclass_instances.
@@ -222,13 +219,13 @@ Qed.
 Section another_ring_order.
   Context `{Ring A (R:=R1)} `{Le A} `{!SemiRingOrder R1} `{Ring B (R:=R2)} `{Le B}.
 
-  Lemma projected_ring_order (f:R2 ⇀ R1) `{!Ring_Morphism R2 R1 f} `{!Injective R2 R1 f} :
+  Lemma projected_ring_order (f:R2 ⇀ R1) `{!SemiRing_Morphism R2 R1 f} `{!Injective R2 R1 f} :
     (∀ `{x ∊ R2} `{y ∊ R2}, x ≤ y ↔ f x ≤ f y) → SemiRingOrder R2.
   Proof. intros P. apply (projected_srorder f P). apply ring_partial_minus. Qed.
 
-  Context `{!SemiRingOrder R2} {f:R1 ⇀ R2} `{!Ring_Morphism R1 R2 f}.
+  Context `{!SemiRingOrder R2} {f:R1 ⇀ R2} `{!SemiRing_Morphism R1 R2 f}.
 
-  Lemma reflecting_preserves_nonneg : (∀ `{x ∊ R1} `{f x ∊ R2⁺}, x ∊ R1⁺) → OrderReflecting R1 R2 f.
+  Lemma reflecting_reflects_nonneg : (∀ `{x ∊ R1} `{f x ∊ R2⁺}, x ∊ R1⁺) → OrderReflecting R1 R2 f.
   Proof.
     intro. repeat (split; try apply _). intros x ? y ? F.
     apply (flip_nonneg_minus _ _). cut (f (y - x) ∊ R2⁺). intro. apply _.
@@ -247,7 +244,7 @@ End another_ring_order.
 Section another_strict_ring_order.
   Context `{Ring A (R:=R1)} `{Lt A} `{!StrictSemiRingOrder R1} `{Ring B (R:=R2)} `{Lt B}.
 
-  Lemma projected_strict_ring_order (f:R2 ⇀ R1) `{!Ring_Morphism R2 R1 f} :
+  Lemma projected_strict_ring_order (f:R2 ⇀ R1) `{!SemiRing_Morphism R2 R1 f} :
     (∀ `{x ∊ R2} `{y ∊ R2}, x < y ↔ f x < f y) → StrictSemiRingOrder R2.
   Proof. intros P. apply (projected_strict_srorder f P). apply ring_partial_minus. Qed.
 End another_strict_ring_order.
@@ -258,7 +255,7 @@ Section another_pseudo_ring_order.
 
   Existing Instance pseudo_order_setoid.
 
-  Lemma projected_pseudo_ring_order (f:R2 ⇀ R1) `{!Ring_Morphism R2 R1 f} `{!StrongInjective R2 R1 f} :
+  Lemma projected_pseudo_ring_order (f:R2 ⇀ R1) `{!SemiRing_Morphism R2 R1 f} `{!StrongInjective R2 R1 f} :
     (∀ `{x ∊ R2} `{y ∊ R2}, x < y ↔ f x < f y) → PseudoSemiRingOrder R2.
   Proof.
     intros P.
@@ -277,9 +274,10 @@ End another_pseudo_ring_order.
 
 Section another_full_pseudo_ring_order.
   Context `{Ring A (R:=R1)} `{UnEq A} `{Le A} `{Lt A} `{!FullPseudoSemiRingOrder R1}
-          `{Ring B (R:=R2)} `{UnEq B} `{Le B} `{Lt B} `{!StrongSetoid R2}.
+          `{Ring B (R:=R2)} `{UnEq B} `{Le B} `{Lt B}.
 
-  Lemma projected_full_pseudo_ring_order (f:R2 ⇀ R1) `{!Ring_Morphism R2 R1 f} `{!StrongInjective R2 R1 f} :
+  Lemma projected_full_pseudo_ring_order `{!StrongSetoid R2}
+      (f:R2 ⇀ R1) `{!SemiRing_Morphism R2 R1 f} `{!StrongInjective R2 R1 f} :
       (∀ `{x ∊ R2} `{y ∊ R2}, x ≤ y ↔ f x ≤ f y)
     → (∀ `{x ∊ R2} `{y ∊ R2}, x < y ↔ f x < f y)
     → FullPseudoSemiRingOrder R2.

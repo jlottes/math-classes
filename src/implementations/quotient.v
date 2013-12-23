@@ -1,30 +1,30 @@
 Require Import abstract_algebra theory.setoids theory.common_props.
 
-Inductive Quotient {A} (X Y:@Subset A) := equiv_class { rep : A }.
+Inductive Quotient {A} (X Y:@set A) := equiv_class { rep : A }.
 Infix "/" := Quotient : type_scope.
 Arguments rep {A X Y} _.
 Arguments equiv_class {A} X Y _.
 
-Definition quotient_subset {A} (X Y:@Subset A) : @Subset (X/Y) := λ p, rep p ∊ X.
-Infix "/" := quotient_subset : subset_scope.
+Definition quotient_set {A} (X Y:@set A) : @set (X/Y) := λ p, rep p ∊ X.
+Infix "/" := quotient_set : set_scope.
 
-Hint Extern 10 (@Subset (_/_)) => class_apply @quotient_subset : typeclass_instances.
+Hint Extern 10 (@set (_/_)) => class_apply @quotient_set : typeclass_instances.
 
 Local Notation "# x" := (equiv_class _ _ x) (at level 20, format "# x") : mc_scope.
 
-Lemma quotient_el `(X:Subset) Y x `{x ∊ X} : #x ∊ X/Y.
+Lemma quotient_el `(X:set) Y x `{x ∊ X} : #x ∊ X/Y.
 Proof. firstorder. Qed.
 Hint Extern 5 (equiv_class ?X ?Y _ ∊ ?X / ?Y) => eapply @quotient_el : typeclass_instances.
 
-Definition Quotient_lift_arg {A B} {X1 Y1:@Subset A} {X2:@Subset B} f : (X1/Y1) → B
+Definition Quotient_lift_arg {A B} {X1 Y1:@set A} {X2:@set B} f : (X1/Y1) → B
   := λ x  , f (rep x).
-Definition Quotient_lift1 {A B} {X1 Y1:@Subset A} {X2 Y2:@Subset B} f : (X1/Y1) → (X2/Y2)
+Definition Quotient_lift1 {A B} {X1 Y1:@set A} {X2 Y2:@set B} f : (X1/Y1) → (X2/Y2)
   := λ x  , #(f (rep x)).
-Definition Quotient_lift2 {A B C} {X1 Y1:@Subset A} {X2 Y2:@Subset B} {X3 Y3:@Subset C} f : (X1/Y1) → (X2/Y2) → (X3/Y3)
+Definition Quotient_lift2 {A B C} {X1 Y1:@set A} {X2 Y2:@set B} {X3 Y3:@set C} f : (X1/Y1) → (X2/Y2) → (X3/Y3)
   := λ x y, #(f (rep x) (rep y)).
 
 Section ops.
-  Context {A} (X Y:@Subset A).
+  Context {A} (X Y:@set A).
 
   Definition Quotient_inject : Cast X (X/Y) := equiv_class X Y.
 
@@ -53,9 +53,9 @@ Ltac quotient_destr :=
   repeat match goal with el : {| rep := ?x |} ∊ ?X / ?Y |- _ => change (x ∊ X) in el end.
 
 Section setoid.
-  Context {A} {X Y:@Subset A} {R} `{!SubEquivalence X R}.
+  Context {A} {X Y:@set A} {R} `{!Equivalence X R}.
 
-  Lemma quotient_subequiv : SubEquivalence (X/Y) (λ a b, R (rep a) (rep b)).
+  Lemma quotient_equivalence : Equivalence (X/Y) (λ a b, R (rep a) (rep b)).
   Proof. split; [intros ?? | intros ???? | intros ??????]; quotient_destr; simpl; intros; try easy.
     subtransitivity y.
   Qed.
@@ -63,16 +63,16 @@ Section setoid.
   Instance quotient_equiv: Equiv (X/Y) := λ a b, R (rep a) (rep b).
 
   Instance quotient_setoid : Setoid (X/Y).
-  Proof quotient_subequiv.
+  Proof quotient_equivalence.
 
 End setoid.
 
 Local Hint Extern 10 (Setoid (?X/?Y)) => eapply @quotient_setoid : typeclass_instances.
 
 Section morphisms.
-  Context {A} {X1 Y1:@Subset A} {R1} `{!SubEquivalence X1 R1}.
-  Context {B} {X2 Y2:@Subset B} {R2} `{!SubEquivalence X2 R2}.
-  Context {C} {X3 Y3:@Subset C} {R3} `{!SubEquivalence X3 R3}.
+  Context {A} {X1 Y1:@set A} {R1} `{!Equivalence X1 R1}.
+  Context {B} {X2 Y2:@set B} {R2} `{!Equivalence X2 R2}.
+  Context {C} {X3 Y3:@set C} {R3} `{!Equivalence X3 R3}.
 
   Notation R1' := (restrict_rel X1 R1).
   Notation R2' := (restrict_rel X2 R2).
@@ -165,7 +165,7 @@ Hint Extern 5 (Morphism _ (equiv_class _ _)) => eapply @equiv_class_morphism : t
 Hint Extern 5 (Morphism _ (cast _ (_/_))) => eapply @quotient_inject_morphism : typeclass_instances.
 
 Section sg_props.
-  Context `{Equiv A} {X Y:@Subset A} {R} `{!SubEquivalence X R} `{!SubRelation X (=) R}.
+  Context `{Equiv A} {X Y:@set A} {R} `{!Equivalence X R} `{!SubRelation X (=) R}.
 
   Instance: Equiv (X/Y) := λ a b, R (rep a) (rep b).
 
@@ -207,7 +207,7 @@ Hint Extern 10 (LeftInverse (&) inv mon_unit (?X/?Y)) => eapply @quotient_sg_op_
 Hint Extern 10 (RightInverse (&) inv mon_unit (?X/?Y)) => eapply @quotient_sg_op_right_inv : typeclass_instances.
 
 Section rng_props.
-  Context `{Equiv A} {X Y:@Subset A} {R} `{!SubEquivalence X R} `{!SubRelation X (=) R}.
+  Context `{Equiv A} {X Y:@set A} {R} `{!Equivalence X R} `{!SubRelation X (=) R}.
 
   Instance: Equiv (X/Y) := λ a b, R (rep a) (rep b).
 
